@@ -196,6 +196,47 @@ const leagueController = {
       next(error);
     }
   },
+
+  async initializeLeague(req, res, next) {
+  try {
+    const { savedGameId } = req.params;
+    const { season = 1, teamArchetypes = {} } = req.body; // Added teamArchetypes
+
+    const game = await loadOwnedGame(savedGameId, req.user.id);
+    if (!game) return res.status(404).json({ error: 'Game not found or unauthorized' });
+
+    const leagueService = new LeagueService(savedGameId);
+    const result = await leagueService.initializeLeague(season, teamArchetypes);
+
+    res.json({ success: true, message: 'League initialized successfully', data: result });
+  } catch (error) {
+    if (error.message.includes('already initialized')) {
+      return res.status(409).json({ error: error.message });
+    }
+    console.error('League initialization error:', error);
+    next(error);
+  }
+},
+
+// NEW: Get available archetypes
+async getArchetypes(req, res, next) {
+  try {
+    const archetypes = TeamArchetypeService.getArchetypes().map(arch => ({
+      id: arch.id,
+      label: arch.label,
+      description: arch.description,
+      icon: arch.icon,
+      strengths: TeamArchetypeService._getArchetypeStrengths(arch),
+      weaknesses: TeamArchetypeService._getArchetypeWeaknesses(arch),
+    }));
+    
+    res.json({ success: true, data: archetypes });
+  } catch (error) {
+    next(error);
+  }
+},
 };
+
+
 
 module.exports = leagueController;

@@ -15,4 +15,15 @@ router.get('/:savedGameId/teams', leagueController.getTeams);
 router.get('/:savedGameId/players', leagueController.getPlayers);
 router.post('/:savedGameId/trade', leagueController.tradePlayer);
 
+router.get('/saved-games/:savedGameId/league/archetypes', 
+  authMiddleware, 
+  leagueController.getArchetypes
+);
+
+// Initialize league with archetypes
+router.post('/saved-games/:savedGameId/league/initialize', 
+  authMiddleware, 
+  leagueController.initializeLeague
+);
+
 module.exports = router;

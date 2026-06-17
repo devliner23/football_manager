@@ -10,6 +10,7 @@
 
 const { supabaseAdmin } = require('../config/supabase');
 const NBA_TEAMS = require('../data/teams.json');
+const TeamArchetypeService = require('./teamArchetypeService'); // NEW
 
 const ROSTER_SIZE = 15;
 
@@ -169,23 +170,98 @@ function generatePotential(overall, age) {
  * 4. PLAYER + ROSTER GENERATION (pure - no DB access)
  * ------------------------------------------------------------------- */
 
-function generatePlayer(teamId, position) {
-  const baseTalent = generateBaseTalent();
-  const attributes = generateAttributes(baseTalent, position);
+function generatePlayer(teamId, position, archetypeId = null) {
+  const talentCurve = TeamArchetypeService.getTalentCurve(archetypeId);
+  const baseTalent = clamp(
+    randomGaussian(talentCurve.mean, talentCurve.stdDev),
+    TALENT_MIN,
+    TALENT_MAX
+  );
+  
+  // Generate initial attributes
+  let attributes = generateAttributes(baseTalent, position);
+  
+  // Apply archetype modifiers if present
+  if (archetypeId) {
+    attributes = TeamArchetypeService.applyAttributeModifiers(position, attributes, archetypeId);
+  }
+  
   const overall = calculateOverall(attributes, position);
-  const age = generateAge();
+  
+  // Handle archetype age range
+  let age = generateAge();
+  const ageRange = TeamArchetypeService.getAgeRange(archetypeId);
+  if (ageRange) {
+    age = Math.round(ageRange[0] + Math.random() * (ageRange[1] - ageRange[0]));
+  }
+  
   const heightInches = generateHeightInches(position);
+  
+  // Handle archetype height modifier
+  const heightMod = TeamArchetypeService.getHeightModifier(archetypeId);
+  const finalHeight = Math.min(90, heightInches + heightMod);
+  
+  // Calculate potential with archetype boost
+  const potentialBoost = TeamArchetypeService.getPotentialBoost(archetypeId);
+  let potential = generatePotential(overall, age);
+  if (potentialBoost) {
+    potential = clamp(potential + potentialBoost, overall, 99);
+  }
 
   return {
     teamId,
     name: generateName(),
     position,
     age,
-    heightInches,
-    weightLbs: generateWeightLbs(heightInches, position),
+    heightInches: finalHeight,
+    weightLbs: generateWeightLbs(finalHeight, position),
     overall,
-    potential: generatePotential(overall, age),
+    potential,
     ...attributes,
+  };
+}
+
+// Modified to use archetype-based position distribution
+function generateRosterForTeam(teamId, rosterSize = ROSTER_SIZE, archetypeId = null) {
+  const positions = TeamArchetypeService.generatePositionDistribution(archetypeId, rosterSize);
+  return positions.map((position) => generatePlayer(teamId, position, archetypeId));
+}
+
+// Modified to accept archetype in player row mapping
+function toPlayerRow(player, team, index, season) {
+  const nameParts = player.name.split(' ');
+  const firstName = nameParts[0];
+  const lastName = nameParts.slice(1).join(' ') || firstName;
+
+  return {
+    saved_game_id: player.savedGameId,
+    player_id: `${team.team_id}_${season}_${index + 1}`,
+    team_id: player.teamId,
+    first_name: firstName,
+    last_name: lastName,
+    position: player.position,
+    age: player.age,
+    height: player.heightInches,
+    weight: player.weightLbs,
+    overall_rating: player.overall,
+    potential_rating: player.potential,
+    traits: {
+      three_point: player.threePoint,
+      mid_range: player.midRange,
+      inside_scoring: player.insideScoring,
+      passing: player.passing,
+      ball_handling: player.ballHandling,
+      perimeter_defense: player.perimeterDefense,
+      post_defense: player.postDefense,
+      rebounding: player.rebounding,
+      speed: player.speed,
+      strength: player.strength,
+    },
+    games_played: 0,
+    points: 0,
+    rebounds: 0,
+    assists: 0,
+    season,
   };
 }
 
@@ -204,10 +280,6 @@ function generateRosterPositions(rosterSize = ROSTER_SIZE) {
     for (let i = 0; i < count; i++) positions.push(pos);
   }
   return positions;
-}
-
-function generateRosterForTeam(teamId, rosterSize = ROSTER_SIZE) {
-  return generateRosterPositions(rosterSize).map((position) => generatePlayer(teamId, position));
 }
 
 // Maps generated player data to the live `players` table shape. Skill
@@ -305,17 +377,21 @@ class LeagueService {
   }
 
   // Generates and inserts a full roster for every team passed in.
-  async createRosters(teams, season = 1, rosterSize = ROSTER_SIZE) {
-    const rows = teams.flatMap((team) =>
-      generateRosterForTeam(team.id, rosterSize).map((player, index) =>
+  async createRosters(teams, season = 1, rosterSize = ROSTER_SIZE, teamArchetypes = {}) {
+    const rows = teams.flatMap((team) => {
+      // Get archetype for this team (if specified)
+      const archetypeId = teamArchetypes[team.team_id] || null;
+      
+      return generateRosterForTeam(team.id, rosterSize, archetypeId).map((player, index) =>
         toPlayerRow({ ...player, savedGameId: this.savedGameId }, team, index, season)
-      )
-    );
+      );
+    });
 
     const { data, error } = await supabaseAdmin.from('players').insert(rows).select();
     if (error) throw new Error(`Failed to create players: ${error.message}`);
     return data;
   }
+
 
   // Seeds a 0-0 standings row per team so the standings endpoint has
   // something to return as soon as the league exists.
@@ -343,7 +419,7 @@ class LeagueService {
   // Creates the 30 teams, generates a 15-man roster for each, and seeds
   // season standings. Throws if this saved game already has a league, and
   // rolls back partial writes if any step fails partway through.
-  async initializeLeague(season = 1) {
+  async initializeLeague(season = 1, teamArchetypes = {}) {
     const existingTeams = await this.getTeams();
     if (existingTeams.length > 0) {
       throw new Error(`League already initialized for saved game ${this.savedGameId}`);
@@ -352,13 +428,25 @@ class LeagueService {
     let teams;
     try {
       teams = await this.createTeams();
-      const players = await this.createRosters(teams, season);
+      const players = await this.createRosters(teams, season, ROSTER_SIZE, teamArchetypes);
       await this.createSeasonStats(teams, season);
+
+      // Store archetype choices in saved_game metadata
+      await supabaseAdmin
+        .from('saved_games')
+        .update({
+          game_state: {
+            team_archetypes: teamArchetypes,
+            initialized_at: new Date().toISOString(),
+          }
+        })
+        .eq('id', this.savedGameId);
 
       return {
         season,
         teamsCreated: teams.length,
         playersCreated: players.length,
+        archetypesUsed: Object.keys(teamArchetypes).length,
       };
     } catch (err) {
       if (teams) await this.rollbackLeague();
