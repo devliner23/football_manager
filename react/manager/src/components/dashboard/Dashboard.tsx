@@ -5,6 +5,9 @@ import SavedGames from './SavedGames';
 import NewGameForm from './NewGameForm';
 import SelectedGame from '../pages/SelectedGame';
 import { SavedGame } from '../../types';
+
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import './Dashboard.css';
 
 const Dashboard: React.FC = () => {
@@ -129,16 +132,10 @@ const Dashboard: React.FC = () => {
           className={`sidebar-toggle ${!sidebarOpen ? 'collapsed' : ''}`}
           onClick={() => setSidebarOpen(!sidebarOpen)}
         >
-          {sidebarOpen ? '▶' : '◀'}
+          {sidebarOpen ? <ArrowForwardIosIcon /> : <ArrowBackIosNewIcon />}
         </button>
 
         <div className={`dashboard-sidebar ${sidebarOpen ? 'open' : 'collapsed'}`}>
-          <button
-            className="new-game-button"
-            onClick={() => setShowNewGameForm(true)}
-          >
-            ➕ New Season
-          </button>
 
           <div className="game-list">
             <h3>Your Saved Games</h3>

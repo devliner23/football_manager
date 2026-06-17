@@ -8,10 +8,11 @@
   flex-direction: column;
   position: relative;
   padding: 20px;
+  background: var(--bg-primary);
 }
 
 /* ============================================
-   GLOBAL HEADER
+   GLOBAL HEADER - TWO ROWS
    ============================================ */
 
 .game-global-header {
@@ -20,7 +21,7 @@
   -webkit-backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
   border-radius: 16px;
-  padding: 12px 24px;
+  padding: 12px 24px 8px 24px;
   margin-bottom: 20px;
   box-shadow: var(--glass-shadow);
   position: relative;
@@ -38,12 +39,11 @@
   box-shadow: 0 0 30px var(--primary-glow);
 }
 
-.game-global-header-content {
+.game-global-header-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  position: relative;
-  z-index: 1;
+  margin-bottom: 12px;
 }
 
 .game-global-header-left {
@@ -96,6 +96,12 @@
   50% { opacity: 0.3; }
 }
 
+.game-record {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
 .delete-game-btn {
   background: rgba(255, 23, 68, 0.1);
   color: var(--error);
@@ -113,6 +119,41 @@
   box-shadow: 0 0 30px rgba(255, 23, 68, 0.3);
 }
 
+/* ---- Navigation Tabs ---- */
+.game-global-nav {
+  display: flex;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  flex-wrap: wrap;
+}
+
+.nav-btn {
+  padding: 8px 18px;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.nav-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-btn.active {
+  color: var(--text-primary);
+  background: rgba(0, 212, 255, 0.12);
+  box-shadow: 0 0 30px rgba(0, 212, 255, 0.05);
+}
+
 /* ============================================
    FULL SCREEN CONTENT
    ============================================ */
@@ -126,7 +167,7 @@
 }
 
 /* ============================================
-   SIDEBAR
+   SIDEBAR (unchanged)
    ============================================ */
 
 .game-sidebar {
@@ -209,10 +250,6 @@
   font-weight: 600;
 }
 
-.sidebar-stat-value.streak {
-  color: var(--success);
-}
-
 .sidebar-action-btn {
   width: 100%;
   padding: 10px;
@@ -285,49 +322,6 @@
   min-height: 500px;
 }
 
-/* ============================================
-   TAB NAVIGATION
-   ============================================ */
-
-.tab-navigation {
-  display: flex;
-  gap: 4px;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 4px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-
-.tab-btn {
-  padding: 10px 20px;
-  background: transparent;
-  border: none;
-  border-radius: 10px;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-}
-
-.tab-btn:hover {
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.tab-btn.active {
-  color: var(--text-primary);
-  background: rgba(0, 212, 255, 0.1);
-  box-shadow: 0 0 30px rgba(0, 212, 255, 0.05);
-}
-
-/* ============================================
-   TAB CONTENT
-   ============================================ */
-
 .tab-content {
   flex: 1;
   overflow-y: auto;
@@ -358,7 +352,7 @@
 }
 
 /* ============================================
-   OVERVIEW PANEL
+   OVERVIEW PANEL - ENHANCED
    ============================================ */
 
 .overview-grid {
@@ -380,11 +374,18 @@
 
 .info-card h4 {
   margin: 0 0 12px 0;
-  font-size: 12px;
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.info-card h5 {
+  margin: 8px 0 4px 0;
+  font-size: 11px;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-weight: 600;
 }
 
 .info-row {
@@ -409,31 +410,29 @@
   font-size: 14px;
 }
 
-.form-indicators {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.form-indicator {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  font-size: 13px;
+.record-value {
   font-weight: 700;
+  color: var(--primary);
 }
 
-.form-indicator.win {
-  background: rgba(0, 230, 118, 0.15);
-  color: var(--success);
+.league-leaders-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
 }
 
-.form-indicator.loss {
-  background: rgba(255, 23, 68, 0.15);
-  color: var(--error);
+.leader-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.leader-row span:last-child {
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .quick-actions-grid {
@@ -441,10 +440,6 @@
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
 }
-
-/* ============================================
-   ACTION BUTTONS
-   ============================================ */
 
 .action-btn {
   padding: 10px 16px;
@@ -483,18 +478,6 @@
   box-shadow: 0 4px 30px rgba(0, 230, 118, 0.3);
 }
 
-.action-btn.warning {
-  background: rgba(255, 234, 0, 0.1);
-  color: var(--warning);
-  border: 1px solid rgba(255, 234, 0, 0.1);
-}
-
-.action-btn.warning:hover {
-  background: var(--warning);
-  color: #1a1a1a;
-  box-shadow: 0 4px 30px rgba(255, 234, 0, 0.3);
-}
-
 .action-btn.info {
   background: rgba(123, 47, 252, 0.15);
   color: #b388ff;
@@ -507,61 +490,38 @@
   box-shadow: 0 4px 30px var(--secondary-glow);
 }
 
-.action-btn.secondary {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.action-btn.secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-primary);
-}
-
-.action-btn.small {
-  padding: 6px 14px;
-  font-size: 10px;
-}
-
 /* ============================================
-   ROSTER, SCHEDULE, STANDINGS, STATS, TRADES
+   ROSTER PANEL
    ============================================ */
 
-/* These sections use the same styles as before but are now in a full-screen context */
-.roster-header,
-.schedule-header,
-.trades-header,
-.standings-panel h4,
-.stats-panel h4 {
+.roster-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
 }
 
-.roster-header h4,
-.schedule-header h4,
-.trades-header h4,
-.standings-panel h4,
-.stats-panel h4 {
+.roster-header h4 {
   margin: 0;
   font-size: 14px;
   color: var(--text-secondary);
 }
 
-.roster-table,
-.standings-table {
+.roster-count {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.roster-table {
   overflow-x: auto;
 }
 
-.roster-table table,
-.standings-table table {
+.roster-table table {
   width: 100%;
   border-collapse: collapse;
 }
 
-.roster-table th,
-.standings-table th {
+.roster-table th {
   text-align: left;
   padding: 10px 12px;
   color: var(--text-muted);
@@ -571,22 +531,15 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.roster-table td,
-.standings-table td {
+.roster-table td {
   padding: 10px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   font-size: 13px;
   color: var(--text-secondary);
 }
 
-.roster-table tr:hover,
-.standings-table tr:hover {
+.roster-table tr:hover {
   background: rgba(255, 255, 255, 0.03);
-}
-
-.standings-table tr.highlighted {
-  background: rgba(0, 212, 255, 0.05);
-  border-left: 3px solid var(--primary);
 }
 
 .rating {
@@ -599,228 +552,276 @@
   font-size: 12px;
 }
 
-.table-action-btn {
-  padding: 4px 14px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+.view-player-btn {
+  padding: 4px 12px;
+  background: rgba(0, 212, 255, 0.1);
+  color: #80d8ff;
+  border: 1px solid rgba(0, 212, 255, 0.15);
   border-radius: 6px;
   font-size: 11px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.table-action-btn:hover {
+.view-player-btn:hover {
   background: var(--primary);
   color: white;
   border-color: var(--primary);
 }
 
-/* Schedule */
-.schedule-list {
+/* ============================================
+   STANDINGS PANEL - VIBRANT
+   ============================================ */
+
+.standings-panel h4 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.standings-container {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 24px;
 }
 
-.schedule-item {
+.standings-group {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.standings-group-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.schedule-date {
-  font-weight: 500;
-  color: var(--text-secondary);
-  font-size: 12px;
-}
-
-.schedule-opponent {
-  font-weight: 500;
-  color: var(--text-primary);
-  flex: 1;
-  margin: 0 16px;
+  gap: 16px;
+  margin-bottom: 12px;
   font-size: 13px;
-}
-
-.schedule-result {
   font-weight: 600;
-  padding: 2px 12px;
-  border-radius: 8px;
-  font-size: 12px;
 }
 
-.schedule-result.win {
-  color: var(--success);
-  background: rgba(0, 230, 118, 0.1);
+.standings-group-header .conference {
+  color: var(--primary);
 }
 
-.schedule-result.loss {
-  color: var(--error);
-  background: rgba(255, 23, 68, 0.1);
-}
-
-.schedule-action {
-  padding: 4px 14px;
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 6px;
-  font-size: 11px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.schedule-action:hover {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
-}
-
-/* Stats */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-
-.stat-box {
-  background: rgba(255, 255, 255, 0.03);
-  padding: 16px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  text-align: center;
-}
-
-.stat-box-label {
-  display: block;
-  font-size: 10px;
+.standings-group-header .division {
   color: var(--text-muted);
+}
+
+.standings-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.standings-table th {
+  text-align: left;
+  padding: 8px 10px;
+  color: var(--text-muted);
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.stat-box-value {
-  display: block;
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
+.standings-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  font-size: 13px;
+  color: var(--text-secondary);
 }
 
-.stat-box-rank {
-  display: block;
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 4px;
+.standings-table tr.highlighted {
+  background: rgba(0, 212, 255, 0.08);
+  box-shadow: inset 0 0 20px rgba(0, 212, 255, 0.05);
+  border-left: 3px solid var(--primary);
 }
 
-/* Trades */
-.trade-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.trade-card {
-  background: rgba(255, 255, 255, 0.03);
-  padding: 16px;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-.trade-teams {
+.team-cell {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  gap: 10px;
 }
 
-.trade-team {
-  font-weight: 600;
-  font-size: 15px;
+.team-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+  flex-shrink: 0;
+}
+
+.team-name {
+  font-weight: 500;
   color: var(--text-primary);
 }
 
-.trade-arrow {
-  color: var(--text-muted);
+.user-badge {
+  font-size: 14px;
+  margin-left: 4px;
+}
+
+.wins {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.losses {
+  color: var(--error);
+  font-weight: 600;
+}
+
+.pct-bar {
+  position: relative;
+  width: 80px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.pct-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+.pct-label {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.playoff-badge {
   font-size: 16px;
 }
 
-.trade-details {
-  display: flex;
-  gap: 24px;
-  margin-bottom: 12px;
-  padding: 12px;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 8px;
+.playoff-badge.eliminated {
+  opacity: 0.2;
 }
 
-.trade-offer {
+/* ============================================
+   PLACEHOLDER TABS
+   ============================================ */
+
+.placeholder-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.placeholder-content {
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.placeholder-content h3 {
+  font-size: 24px;
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.coming-soon {
+  margin-top: 12px;
+  padding: 8px 20px;
+  background: rgba(255, 234, 0, 0.1);
+  border: 1px solid rgba(255, 234, 0, 0.15);
+  border-radius: 20px;
+  display: inline-block;
+  font-weight: 600;
+  color: var(--warning);
+}
+
+/* ============================================
+   MODAL
+   ============================================ */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-content {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 30px 40px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  position: relative;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.modal-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 28px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+  transform: rotate(90deg);
+}
+
+.modal-content h2 {
+  margin: 0 0 16px 0;
+  color: var(--text-primary);
+  font-size: 22px;
+}
+
+.modal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.modal-item {
   display: flex;
   flex-direction: column;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
 
-.trade-label {
+.modal-label {
   font-size: 10px;
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.trade-offer span:last-child {
-  font-weight: 500;
-  color: var(--text-primary);
-  font-size: 13px;
-}
-
-.trade-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.trade-action-btn {
-  padding: 6px 16px;
-  border: none;
-  border-radius: 6px;
-  font-size: 11px;
+.modal-value {
+  font-size: 16px;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.trade-action-btn.accept {
-  background: rgba(0, 230, 118, 0.1);
-  color: var(--success);
-}
-
-.trade-action-btn.accept:hover {
-  background: var(--success);
-  color: white;
-}
-
-.trade-action-btn.reject {
-  background: rgba(255, 23, 68, 0.1);
-  color: var(--error);
-}
-
-.trade-action-btn.reject:hover {
-  background: var(--error);
-  color: white;
-}
-
-.trade-action-btn.counter {
-  background: rgba(255, 234, 0, 0.1);
-  color: var(--warning);
-}
-
-.trade-action-btn.counter:hover {
-  background: var(--warning);
-  color: #1a1a1a;
+  color: var(--text-primary);
+  margin-top: 2px;
 }
 
 /* ============================================
@@ -858,8 +859,12 @@
     grid-template-columns: repeat(2, 1fr);
   }
   
-  .stats-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .league-leaders-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .modal-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -890,14 +895,15 @@
     padding: 16px;
   }
   
-  .tab-navigation {
+  .game-global-nav {
     flex-wrap: nowrap;
     overflow-x: auto;
+    padding: 4px 0;
   }
   
-  .tab-btn {
-    padding: 8px 14px;
-    font-size: 11px;
+  .nav-btn {
+    padding: 6px 14px;
+    font-size: 12px;
   }
   
   .overview-grid {
@@ -908,32 +914,18 @@
     grid-template-columns: 1fr 1fr;
   }
   
-  .stats-grid {
+  .league-leaders-grid {
     grid-template-columns: 1fr;
   }
   
-  .trade-details {
-    flex-direction: column;
-    gap: 8px;
+  .standings-table th,
+  .standings-table td {
+    padding: 6px 8px;
+    font-size: 12px;
   }
   
-  .schedule-item {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  
-  .schedule-opponent {
-    margin: 0;
-    width: 100%;
-    order: 1;
-  }
-  
-  .schedule-result {
-    order: 2;
-  }
-  
-  .schedule-action {
-    order: 3;
+  .pct-bar {
+    width: 50px;
   }
 }
 
@@ -957,5 +949,9 @@
   .delete-game-btn {
     padding: 4px 10px;
     font-size: 14px;
+  }
+  
+  .modal-content {
+    padding: 20px;
   }
 }

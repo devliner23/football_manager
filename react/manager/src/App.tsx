@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { useAuth } from './context/AuthContext';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
 import Dashboard from './components/dashboard/Dashboard';
+import VantaBackground from './components/VantaBackground';
+import ThemePanel from './components/theme/ThemePanel';
 import './index.css';
 
 // Floating orbs component
@@ -98,9 +100,8 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
+      <ThemePanel />
+      <AppContent />
     </BrowserRouter>
   );
 };

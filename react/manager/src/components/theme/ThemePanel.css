@@ -1,0 +1,302 @@
+/* src/components/ThemePanel/ThemePanel.css */
+
+/* Floating toggle button */
+.theme-toggle-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.1));
+  backdrop-filter: var(--glass-blur, blur(12px));
+  -webkit-backdrop-filter: var(--glass-blur, blur(12px));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.15));
+  border-radius: 50px;
+  color: var(--text-primary, white);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.4));
+}
+
+.theme-toggle-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  border-color: var(--team-primary, #00d4ff);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px var(--team-primary-glow, rgba(0, 212, 255, 0.2));
+}
+
+.theme-toggle-icon {
+  font-size: 20px;
+}
+
+.theme-toggle-label {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .theme-toggle-label {
+    display: inline;
+  }
+}
+
+/* Overlay */
+.theme-panel-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Panel */
+.theme-panel {
+  position: relative;
+  width: 90%;
+  max-width: 700px;
+  max-height: 80vh;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.08));
+  backdrop-filter: var(--glass-blur, blur(20px));
+  -webkit-backdrop-filter: var(--glass-blur, blur(20px));
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.15));
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow, 0 8px 32px rgba(0, 0, 0, 0.6));
+  animation: slideUp 0.3s ease;
+  overflow: hidden;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px) scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Header */
+.theme-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+}
+
+.theme-panel-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-primary, white);
+}
+
+.theme-panel-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.7));
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.theme-panel-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary, white);
+}
+
+/* Body */
+.theme-panel-body {
+  padding: 20px 24px;
+  max-height: calc(80vh - 140px);
+  overflow-y: auto;
+}
+
+.theme-search {
+  margin-bottom: 16px;
+}
+
+.theme-search input {
+  width: 100%;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+  border-radius: 8px;
+  color: var(--text-primary, white);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.theme-search input:focus {
+  outline: none;
+  border-color: var(--team-primary, #00d4ff);
+  box-shadow: 0 0 20px var(--team-primary-glow, rgba(0, 212, 255, 0.1));
+}
+
+.theme-search input::placeholder {
+  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+}
+
+/* Theme Grid */
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.theme-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 2px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.8));
+}
+
+.theme-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+  border-color: var(--glass-border, rgba(255, 255, 255, 0.2));
+}
+
+.theme-item.active {
+  border-color: var(--team-primary, #00d4ff);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 20px var(--team-primary-glow, rgba(0, 212, 255, 0.15));
+}
+
+.theme-preview {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.theme-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  transition: all 0.2s ease;
+}
+
+.theme-item:hover .theme-swatch {
+  transform: scale(1.1);
+}
+
+.theme-name {
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  color: var(--text-primary, white);
+  line-height: 1.2;
+}
+
+.theme-mascot {
+  font-size: 11px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+  text-align: center;
+}
+
+.theme-active-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: var(--team-primary, #00d4ff);
+  color: white;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+/* Footer */
+.theme-panel-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-top: 1px solid var(--glass-border, rgba(255, 255, 255, 0.1));
+}
+
+.theme-reset-btn {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.15));
+  border-radius: 8px;
+  color: var(--text-secondary, rgba(255, 255, 255, 0.8));
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.theme-reset-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--text-primary, white);
+}
+
+.theme-count {
+  font-size: 13px;
+  color: var(--text-muted, rgba(255, 255, 255, 0.4));
+}
+
+/* Scrollbar */
+.theme-panel-body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.theme-panel-body::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+}
+
+.theme-panel-body::-webkit-scrollbar-thumb {
+  background: var(--team-primary, #00d4ff);
+  border-radius: 2px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .theme-panel {
+    width: 95%;
+    max-height: 90vh;
+  }
+  
+  .theme-grid {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  
+  .theme-swatch {
+    width: 24px;
+    height: 24px;
+  }
+  
+  .theme-name {
+    font-size: 12px;
+  }
+}

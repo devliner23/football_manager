@@ -3,16 +3,27 @@
    ============================================ */
 
 :root {
-  /* Primary Colors - Electric Blue/Neon */
-  --primary: #00d4ff;
-  --primary-dark: #0099cc;
-  --primary-glow: rgba(0, 212, 255, 0.3);
-  --primary-gradient: linear-gradient(135deg, #00d4ff 0%, #0066ff 100%);
+
+  --team-primary: #00d4ff;
+  --team-secondary: #7b2ffc;
+  --team-accent: #ff6b35;
+  --team-primary-glow: rgba(0, 212, 255, 0.3);
+  --team-secondary-glow: rgba(123, 47, 252, 0.3);
+  --team-background: radial-gradient(ellipse at 20% 50%, rgba(0, 212, 255, 0.08) 0%, transparent 60%),
+                      radial-gradient(ellipse at 80% 20%, rgba(123, 47, 252, 0.08) 0%, transparent 50%),
+                      radial-gradient(ellipse at 50% 80%, rgba(255, 107, 53, 0.05) 0%, transparent 50%),
+                      #0a0e1a;
+
+  /* Primary Colors - Electric Blue/Neon (fallback) */
+  --primary: var(--team-primary, #00d4ff);
+  --primary-dark: var(--team-primary, #0099cc);
+  --primary-glow: var(--team-primary-glow, rgba(0, 212, 255, 0.3));
+  --primary-gradient: linear-gradient(135deg, var(--team-primary, #00d4ff) 0%, var(--team-secondary, #0066ff) 100%);
   
   /* Secondary Colors */
-  --secondary: #7b2ffc;
-  --secondary-glow: rgba(123, 47, 252, 0.3);
-  --accent: #ff6b35;
+  --secondary: var(--team-secondary, #7b2ffc);
+  --secondary-glow: var(--team-secondary-glow, rgba(123, 47, 252, 0.3));
+  --accent: var(--team-accent, #ff6b35);
   --accent-glow: rgba(255, 107, 53, 0.3);
   
   /* Success/Error */
@@ -49,11 +60,13 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--bg-primary);
+  background: var(--team-background, #0a0e1a);
+  transition: background 0.5s ease;
   color: var(--text-primary);
   min-height: 100vh;
   overflow-x: hidden;
 }
+
 
 /* ============================================
    ANIMATED BACKGROUND

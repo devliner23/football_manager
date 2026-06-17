@@ -235,6 +235,93 @@ async getArchetypes(req, res, next) {
     next(error);
   }
 },
+
+// POST /saved-games/:savedGameId/league/simulate-next-game
+async simulateNextGame(req, res, next) {
+  try {
+    const { savedGameId } = req.params;
+
+    const game = await loadOwnedGame(savedGameId, req.user.id);
+    if (!game) return res.status(404).json({ error: 'Game not found or unauthorized' });
+
+    const leagueService = new LeagueService(savedGameId);
+    
+    // Find the next scheduled game for the current season
+    const seasonId = game.game_state?.season_id;
+    if (!seasonId) {
+      return res.status(400).json({ error: 'No season initialized for this game' });
+    }
+
+    const { data: nextGame, error: findError } = await supabaseAdmin
+      .from('games')
+      .select('*')
+      .eq('season_id', seasonId)
+      .eq('status', 'scheduled')
+      .order('week', { ascending: true })
+      .limit(1)
+      .single();
+
+    if (findError || !nextGame) {
+      // No more games – mark season as finished
+      await supabaseAdmin
+        .from('seasons')
+        .update({ status: 'finished', end_date: new Date().toISOString() })
+        .eq('id', seasonId);
+      
+      return res.json({
+        success: true,
+        message: 'Season complete',
+        seasonComplete: true,
+      });
+    }
+
+    const result = await leagueService.simulateGame(nextGame.id);
+
+    // Update saved_game's current_season? Only if season ends, but we handle that above.
+    // Also update game_state with last simulated game
+    await supabaseAdmin
+      .from('saved_games')
+      .update({
+        game_state: {
+          ...game.game_state,
+          last_simulated_game: nextGame.id,
+          last_simulated_at: new Date().toISOString(),
+        }
+      })
+      .eq('id', savedGameId);
+
+    res.json({
+      success: true,
+      message: 'Game simulated',
+      data: result,
+      seasonComplete: false,
+    });
+  } catch (error) {
+    console.error('Simulate next game error:', error);
+    next(error);
+  }
+},
+
+async simulateWeek(req, res, next) {
+  try {
+    const { savedGameId } = req.params;
+
+    const game = await loadOwnedGame(savedGameId, req.user.id);
+    if (!game) return res.status(404).json({ error: 'Game not found or unauthorized' });
+
+    const leagueService = new LeagueService(savedGameId);
+    const result = await leagueService.simulateWeek();
+
+    res.json({
+      success: true,
+      ...result,
+    });
+  } catch (error) {
+    console.error('Simulate week error:', error);
+    next(error);
+  }
+}
+
 };
 
 

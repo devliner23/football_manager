@@ -1,0 +1,212 @@
+{
+  "Atlanta Hawks": {
+    "primary": "#E03A3E",
+    "secondary": "#C1D32A",
+    "accent": "#26282A",
+    "mascot": "Hawk",
+    "background": "linear-gradient(135deg, #E03A3E 0%, #26282A 100%)"
+  },
+  "Boston Celtics": {
+    "primary": "#007A33",
+    "secondary": "#BA9653",
+    "accent": "#FFFFFF",
+    "mascot": "Leprechaun",
+    "background": "linear-gradient(135deg, #007A33 0%, #BA9653 100%)"
+  },
+  "Brooklyn Nets": {
+    "primary": "#000000",
+    "secondary": "#FFFFFF",
+    "accent": "#85714D",
+    "mascot": "Knight",
+    "background": "linear-gradient(135deg, #000000 0%, #85714D 100%)"
+  },
+  "Charlotte Hornets": {
+    "primary": "#00788C",
+    "secondary": "#1D1160",
+    "accent": "#A1A1A4",
+    "mascot": "Hornet",
+    "background": "linear-gradient(135deg, #00788C 0%, #1D1160 100%)"
+  },
+  "Chicago Bulls": {
+    "primary": "#CE1141",
+    "secondary": "#000000",
+    "accent": "#FFFFFF",
+    "mascot": "Bull",
+    "background": "linear-gradient(135deg, #CE1141 0%, #000000 100%)"
+  },
+  "Cleveland Cavaliers": {
+    "primary": "#6F263D",
+    "secondary": "#FFB81C",
+    "accent": "#041E42",
+    "mascot": "Cavalier",
+    "background": "linear-gradient(135deg, #6F263D 0%, #FFB81C 100%)"
+  },
+  "Dallas Mavericks": {
+    "primary": "#00538C",
+    "secondary": "#B8C4CA",
+    "accent": "#002B5E",
+    "mascot": "Maverick",
+    "background": "linear-gradient(135deg, #00538C 0%, #B8C4CA 100%)"
+  },
+  "Denver Nuggets": {
+    "primary": "#0E2240",
+    "secondary": "#FEC524",
+    "accent": "#1D428A",
+    "mascot": "Miner",
+    "background": "linear-gradient(135deg, #0E2240 0%, #FEC524 100%)"
+  },
+  "Detroit Pistons": {
+    "primary": "#C8102E",
+    "secondary": "#1D42BA",
+    "accent": "#FFFFFF",
+    "mascot": "Horse",
+    "background": "linear-gradient(135deg, #C8102E 0%, #1D42BA 100%)"
+  },
+  "Golden State Warriors": {
+    "primary": "#FFC72C",
+    "secondary": "#1D428A",
+    "accent": "#FFFFFF",
+    "mascot": "Warrior",
+    "background": "linear-gradient(135deg, #FFC72C 0%, #1D428A 100%)"
+  },
+  "Houston Rockets": {
+    "primary": "#CE1141",
+    "secondary": "#000000",
+    "accent": "#FFFFFF",
+    "mascot": "Rocket",
+    "background": "linear-gradient(135deg, #CE1141 0%, #000000 100%)"
+  },
+  "Indiana Pacers": {
+    "primary": "#FDBB30",
+    "secondary": "#002D62",
+    "accent": "#000000",
+    "mascot": "Pacer",
+    "background": "linear-gradient(135deg, #FDBB30 0%, #002D62 100%)"
+  },
+  "LA Clippers": {
+    "primary": "#C8102E",
+    "secondary": "#1D428A",
+    "accent": "#FFFFFF",
+    "mascot": "Clipper",
+    "background": "linear-gradient(135deg, #C8102E 0%, #1D428A 100%)"
+  },
+  "Los Angeles Lakers": {
+    "primary": "#552A83",
+    "secondary": "#FDB927",
+    "accent": "#000000",
+    "mascot": "Laker",
+    "background": "linear-gradient(135deg, #552A83 0%, #FDB927 100%)"
+  },
+  "Memphis Grizzlies": {
+    "primary": "#12173F",
+    "secondary": "#5D76A9",
+    "accent": "#EBB12C",
+    "mascot": "Grizzly",
+    "background": "linear-gradient(135deg, #12173F 0%, #5D76A9 100%)"
+  },
+  "Miami Heat": {
+    "primary": "#98002E",
+    "secondary": "#F9A01B",
+    "accent": "#000000",
+    "mascot": "Heat",
+    "background": "linear-gradient(135deg, #98002E 0%, #F9A01B 100%)"
+  },
+  "Milwaukee Bucks": {
+    "primary": "#00471B",
+    "secondary": "#EEE1C6",
+    "accent": "#0077C0",
+    "mascot": "Buck",
+    "background": "linear-gradient(135deg, #00471B 0%, #EEE1C6 100%)"
+  },
+  "Minnesota Timberwolves": {
+    "primary": "#0C2340",
+    "secondary": "#78BE20",
+    "accent": "#236192",
+    "mascot": "Timberwolf",
+    "background": "linear-gradient(135deg, #0C2340 0%, #78BE20 100%)"
+  },
+  "New Orleans Pelicans": {
+    "primary": "#0C2340",
+    "secondary": "#C8102E",
+    "accent": "#85714D",
+    "mascot": "Pelican",
+    "background": "linear-gradient(135deg, #0C2340 0%, #C8102E 100%)"
+  },
+  "New York Knicks": {
+    "primary": "#006BB6",
+    "secondary": "#F58426",
+    "accent": "#BEC0C2",
+    "mascot": "Knickerbocker",
+    "background": "linear-gradient(135deg, #006BB6 0%, #F58426 100%)"
+  },
+  "Oklahoma City Thunder": {
+    "primary": "#007AC1",
+    "secondary": "#FDBB30",
+    "accent": "#002D62",
+    "mascot": "Thunder",
+    "background": "linear-gradient(135deg, #007AC1 0%, #FDBB30 100%)"
+  },
+  "Orlando Magic": {
+    "primary": "#0077C0",
+    "secondary": "#C4CED4",
+    "accent": "#000000",
+    "mascot": "Magic",
+    "background": "linear-gradient(135deg, #0077C0 0%, #C4CED4 100%)"
+  },
+  "Philadelphia 76ers": {
+    "primary": "#006BB6",
+    "secondary": "#ED174C",
+    "accent": "#FFFFFF",
+    "mascot": "Liberty Bell",
+    "background": "linear-gradient(135deg, #006BB6 0%, #ED174C 100%)"
+  },
+  "Phoenix Suns": {
+    "primary": "#1D1160",
+    "secondary": "#E56020",
+    "accent": "#000000",
+    "mascot": "Sun",
+    "background": "linear-gradient(135deg, #1D1160 0%, #E56020 100%)"
+  },
+  "Portland Trail Blazers": {
+    "primary": "#E03A3E",
+    "secondary": "#000000",
+    "accent": "#FFFFFF",
+    "mascot": "Trailblazer",
+    "background": "linear-gradient(135deg, #E03A3E 0%, #000000 100%)"
+  },
+  "Sacramento Kings": {
+    "primary": "#5A2D81",
+    "secondary": "#63727A",
+    "accent": "#000000",
+    "mascot": "King",
+    "background": "linear-gradient(135deg, #5A2D81 0%, #63727A 100%)"
+  },
+  "San Antonio Spurs": {
+    "primary": "#000000",
+    "secondary": "#C4CED4",
+    "accent": "#FFFFFF",
+    "mascot": "Spur",
+    "background": "linear-gradient(135deg, #000000 0%, #C4CED4 100%)"
+  },
+  "Toronto Raptors": {
+    "primary": "#CE1141",
+    "secondary": "#000000",
+    "accent": "#A1A1A4",
+    "mascot": "Raptor",
+    "background": "linear-gradient(135deg, #CE1141 0%, #000000 100%)"
+  },
+  "Utah Jazz": {
+    "primary": "#002B5C",
+    "secondary": "#F9A01B",
+    "accent": "#00471B",
+    "mascot": "Jazz",
+    "background": "linear-gradient(135deg, #002B5C 0%, #F9A01B 100%)"
+  },
+  "Washington Wizards": {
+    "primary": "#002B5C",
+    "secondary": "#E31837",
+    "accent": "#C4CED4",
+    "mascot": "Wizard",
+    "background": "linear-gradient(135deg, #002B5C 0%, #E31837 100%)"
+  }
+}
