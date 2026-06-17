@@ -1,29 +1,39 @@
 const express = require('express');
-const cors = require('cors');
+const corsMiddleware = require('./middleware/cors'); 
 const helmet = require('helmet');
 const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
 
 // Import routes
+const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const gameRoutes = require('./routes/gameRoutes');
 const teamRoutes = require('./routes/teamRoutes');
-
-// Import middleware
-const errorHandler = require('./middleware/errorHandler');
+const leagueRoutes = require('./routes/leagueRoutes');
 
 const app = express();
 
+app.use(corsMiddleware);
+
+const errorHandler = require('./middleware/errorHandler');
+
 // Middleware
-app.use(helmet());
-app.use(cors());
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" }
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 app.use(morgan('dev'));
 
-// Routes
+// Public routes (no authentication required)
+app.use('/api/auth', authRoutes);
+
+// Protected routes (authentication required)
 app.use('/api/users', userRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/teams', teamRoutes);
+app.use('/api/league', leagueRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

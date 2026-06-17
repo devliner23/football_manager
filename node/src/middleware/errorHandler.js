@@ -1,16 +1,17 @@
 const errorHandler = (err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Error:', err.stack);
   
   const status = err.status || 500;
   const message = err.message || 'Internal Server Error';
   
+  // Always return a flat error object for the frontend
   res.status(status).json({
-    error: {
-      message,
-      status,
-      timestamp: new Date().toISOString(),
-      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-    }
+    success: false,
+    error: message,  // Send just the error message as a string
+    // Only include stack in development
+    ...(process.env.NODE_ENV === 'development' && { 
+      details: err.stack 
+    })
   });
 };
 

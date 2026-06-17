@@ -9,9 +9,20 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Client for authenticated users (uses RLS)
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+});
 
 // Admin client for backend operations (bypasses RLS)
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false
+  }
+});
 
 module.exports = { supabase, supabaseAdmin };
