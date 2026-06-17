@@ -1,44 +1,26 @@
-// leagueService.js
+// services/LeagueService.js
 //
-// Generates full 15-man rosters for every team in the league, with talent
-// distributed the way real basketball talent is: a normal (bell curve)
-// distribution naturally produces a small handful of superstars, a wider
-// band of stars/good starters, and a large mass of role players and deep
-// bench guys - no special-casing needed, that's just what a bell curve
-// looks like when you slice it into tiers.
+// Owns league creation for a single saved game: reading the static NBA
+// team list, creating per-save team rows, generating 15-man rosters with
+// an NBA-like talent curve, and seeding season standings.
 //
-// ASSUMPTIONS - adjust these to match your actual project:
-//   - PostgreSQL access via `pg` (node-postgres). If you're on
-//     Sequelize/Knex/Prisma instead, swap out section 5 (PERSISTENCE) -
-//     everything above it (the actual generation logic) is plain JS and
-//     doesn't care how you save it.
-//   - A `teams` table already exists with an `id` primary key.
-//   - A `players` table exists (or will - see players_schema.sql) with a
-//     `team_id` column that's a foreign key to teams.id. That FK is the
-//     thing that makes trades trivial: a trade is just one UPDATE.
-//   - CommonJS modules (require/module.exports). Say the word if your
-//     project uses ESM (import/export) instead.
+// Game simulation (schedules, box scores, win/loss results) is NOT part
+// of this file - simulateSeason() is left as a clearly-marked stub. That
+// is a separate engine and deserves its own design pass.
 
-const { Pool } = require('pg');
+const { supabaseAdmin } = require('../config/supabase');
+const NBA_TEAMS = require('../data/teams.json');
 
-// Lazily-created pool so this file doesn't force its own DB connection if
-// you'd rather inject a pool/client you already have configured elsewhere
-// (e.g. a shared db.js). Every persistence function below accepts an
-// optional `db` argument for exactly that reason.
-let defaultPool = null;
-function getDefaultPool() {
-  if (!defaultPool) defaultPool = new Pool(); // reads PG* env vars
-  return defaultPool;
-}
+const ROSTER_SIZE = 15;
 
 /* ----------------------------------------------------------------------
  * 1. TALENT DISTRIBUTION
  * ------------------------------------------------------------------- */
 
 // Box-Muller transform: converts Math.random()'s flat 0-1 distribution
-// into a normal (bell-curve) one. This is the entire trick - a bell curve
-// is "few at the extremes, lots in the middle" by definition, which is
-// exactly the shape NBA talent actually takes.
+// into a normal (bell-curve) one. A bell curve is "few at the extremes,
+// lots in the middle" by definition - exactly the shape NBA talent
+// actually takes, so this is the entire trick.
 function randomGaussian(mean = 0, stdDev = 1) {
   let u = 0, v = 0;
   while (u === 0) u = Math.random();
@@ -53,12 +35,9 @@ function clamp(value, min, max) {
 
 // Tune these two constants to reshape the entire league's talent curve.
 // With mean 60 / stdDev 11, across a 30-team / 450-player league you get
-// roughly:
-//   90+   overall -> a handful of players        (superstars)
-//   80-89 overall -> a few dozen                 (stars / all-stars)
-//   70-79 overall -> ~80-100                      (good starters)
-//   55-69 overall -> ~200                          (role players / rotation)
-//   <55   overall -> the rest                      (deep bench / fringe)
+// roughly: a handful of 90+ superstars, a few dozen 80-89 stars, ~80-100
+// good 70-79 starters, ~200 role players in the 55-69 range, and the
+// rest as deep bench / fringe roster talent below that.
 const TALENT_MEAN = 60;
 const TALENT_STDDEV = 11;
 const TALENT_MIN = 35;
@@ -87,16 +66,23 @@ const POSITION_MODIFIERS = {
 };
 
 const HEIGHT_RANGES_INCHES = { PG: [72, 76], SG: [75, 79], SF: [77, 81], PF: [80, 83], C: [82, 87] };
+const WEIGHT_RANGES_LBS = { PG: [175, 205], SG: [195, 222], SF: [212, 240], PF: [228, 258], C: [245, 290] };
 
 function generateHeightInches(position) {
   const [min, max] = HEIGHT_RANGES_INCHES[position];
   return Math.round(min + Math.random() * (max - min));
 }
 
+// Weight scales with where this player's height falls within their
+// position's normal range, plus some independent noise so a player isn't
+// purely a function of height (some are leaner/bulkier than their height
+// alone would suggest).
 function generateWeightLbs(heightInches, position) {
-  const base = (heightInches - 60) * 6.5;
-  const positionBulk = { PG: 0, SG: 5, SF: 10, PF: 20, C: 30 }[position];
-  return clamp(base + positionBulk + randomGaussian(0, 8), 160, 290);
+  const [hMin, hMax] = HEIGHT_RANGES_INCHES[position];
+  const [wMin, wMax] = WEIGHT_RANGES_LBS[position];
+  const heightFraction = (heightInches - hMin) / (hMax - hMin);
+  const base = wMin + heightFraction * (wMax - wMin);
+  return clamp(base + randomGaussian(0, 8), wMin - 15, wMax + 15);
 }
 
 function randomFrom(list) {
@@ -180,7 +166,7 @@ function generatePotential(overall, age) {
 }
 
 /* ----------------------------------------------------------------------
- * 4. PLAYER + ROSTER GENERATION
+ * 4. PLAYER + ROSTER GENERATION (pure - no DB access)
  * ------------------------------------------------------------------- */
 
 function generatePlayer(teamId, position) {
@@ -204,8 +190,8 @@ function generatePlayer(teamId, position) {
 }
 
 // 15 players split into 3 per position by default (PG/SG/SF/PF/C) so every
-// team can actually field a full lineup plus bench depth at each spot.
-function generateRosterPositions(rosterSize = 15) {
+// team can field a full lineup plus bench depth at each spot.
+function generateRosterPositions(rosterSize = ROSTER_SIZE) {
   const perPosition = Math.floor(rosterSize / POSITIONS.length);
   let remainder = rosterSize - perPosition * POSITIONS.length;
   const positions = [];
@@ -220,118 +206,205 @@ function generateRosterPositions(rosterSize = 15) {
   return positions;
 }
 
-function generateRosterForTeam(teamId, rosterSize = 15) {
+function generateRosterForTeam(teamId, rosterSize = ROSTER_SIZE) {
   return generateRosterPositions(rosterSize).map((position) => generatePlayer(teamId, position));
 }
 
-function generateLeague(teamIds, rosterSize = 15) {
-  return teamIds.flatMap((teamId) => generateRosterForTeam(teamId, rosterSize));
+// Maps generated player data to the live `players` table shape. Skill
+// attributes are stored in `traits` JSON because the DB uses the older
+// playerGenerator column layout (first_name, overall_rating, etc.).
+function toPlayerRow(player, team, index, season) {
+  const nameParts = player.name.split(' ');
+  const firstName = nameParts[0];
+  const lastName = nameParts.slice(1).join(' ') || firstName;
+  const isStarter = index < 5;
+  const isStar = index < 2;
+
+  return {
+    saved_game_id: player.savedGameId,
+    player_id: `${team.team_id}_${season}_${index + 1}`,
+    team_id: player.teamId,
+    first_name: firstName,
+    last_name: lastName,
+    position: player.position,
+    age: player.age,
+    height: player.heightInches,
+    weight: player.weightLbs,
+    overall_rating: player.overall,
+    potential_rating: player.potential,
+    traits: {
+      three_point: player.threePoint,
+      mid_range: player.midRange,
+      inside_scoring: player.insideScoring,
+      passing: player.passing,
+      ball_handling: player.ballHandling,
+      perimeter_defense: player.perimeterDefense,
+      post_defense: player.postDefense,
+      rebounding: player.rebounding,
+      speed: player.speed,
+      strength: player.strength,
+    },
+    games_played: 0,
+    points: 0,
+    rebounds: 0,
+    assists: 0,
+    season,
+  };
 }
 
 /* ----------------------------------------------------------------------
- * 5. PERSISTENCE (PostgreSQL via `pg`)
+ * 5. LEAGUE SERVICE - scoped to one saved game
  * ------------------------------------------------------------------- */
 
-const PLAYER_COLUMNS = [
-  'team_id', 'name', 'position', 'age', 'height_inches', 'weight_lbs',
-  'overall', 'potential', 'three_point', 'mid_range', 'inside_scoring',
-  'passing', 'ball_handling', 'perimeter_defense', 'post_defense',
-  'rebounding', 'speed', 'strength',
-];
+class LeagueService {
+  constructor(savedGameId) {
+    if (!savedGameId) throw new Error('LeagueService requires a savedGameId');
+    this.savedGameId = savedGameId;
+  }
 
-function playerToRow(player) {
-  return [
-    player.teamId, player.name, player.position, player.age, player.heightInches,
-    player.weightLbs, player.overall, player.potential, player.threePoint,
-    player.midRange, player.insideScoring, player.passing, player.ballHandling,
-    player.perimeterDefense, player.postDefense, player.rebounding, player.speed,
-    player.strength,
-  ];
-}
+  // Returns the teams already created for this saved game (empty array if
+  // the league hasn't been initialized yet).
+  async getTeams() {
+    const { data, error } = await supabaseAdmin
+      .from('teams')
+      .select('*')
+      .eq('saved_game_id', this.savedGameId);
 
-// Bulk-inserts an array of generated players in a single statement.
-async function insertPlayers(players, db = getDefaultPool()) {
-  if (players.length === 0) return [];
+    if (error) throw new Error(`Failed to load teams: ${error.message}`);
+    return data;
+  }
 
-  const valuesSql = [];
-  const params = [];
-  players.forEach((player, i) => {
-    const row = playerToRow(player);
-    const placeholders = row.map((_, j) => `$${i * row.length + j + 1}`);
-    valuesSql.push(`(${placeholders.join(', ')})`);
-    params.push(...row);
-  });
+  async getRosterForTeam(teamId) {
+    const { data, error } = await supabaseAdmin
+      .from('players')
+      .select('*')
+      .eq('saved_game_id', this.savedGameId)
+      .eq('team_id', teamId)
+      .order('overall_rating', { ascending: false });
 
-  const query = `
-    INSERT INTO players (${PLAYER_COLUMNS.join(', ')})
-    VALUES ${valuesSql.join(', ')}
-    RETURNING *;
-  `;
+    if (error) throw new Error(`Failed to load roster: ${error.message}`);
+    return data;
+  }
 
-  const result = await db.query(query, params);
-  return result.rows;
-}
+  // Inserts one row per NBA_TEAMS entry, scoped to this saved game.
+  async createTeams() {
+    const rows = NBA_TEAMS.map((team) => ({
+      saved_game_id: this.savedGameId,
+      // Stable franchise key; matches saved_games.managed_club_id from the UI.
+      team_id: team.name,
+      city: team.city,
+      name: team.name,
+      abbreviation: team.abbreviation,
+      conference: team.conference,
+      division: team.division,
+    }));
 
-// Generates and saves a full roster for every team ID provided, wrapped
-// in a transaction so a failure partway through doesn't leave some teams
-// rostered and others not.
-async function generateAndSaveLeague(teamIds, rosterSize = 15) {
-  const pool = getDefaultPool();
-  const client = await pool.connect();
-  try {
-    await client.query('BEGIN');
-    const saved = [];
-    // Inserted per-team rather than as one giant statement - keeps each
-    // query well under Postgres's bound-parameter limit and means one
-    // bad team's data doesn't blow up the whole batch's query string.
-    for (const teamId of teamIds) {
-      const roster = generateRosterForTeam(teamId, rosterSize);
-      saved.push(...(await insertPlayers(roster, client)));
+    const { data, error } = await supabaseAdmin.from('teams').insert(rows).select();
+    if (error) throw new Error(`Failed to create teams: ${error.message}`);
+    return data;
+  }
+
+  // Generates and inserts a full roster for every team passed in.
+  async createRosters(teams, season = 1, rosterSize = ROSTER_SIZE) {
+    const rows = teams.flatMap((team) =>
+      generateRosterForTeam(team.id, rosterSize).map((player, index) =>
+        toPlayerRow({ ...player, savedGameId: this.savedGameId }, team, index, season)
+      )
+    );
+
+    const { data, error } = await supabaseAdmin.from('players').insert(rows).select();
+    if (error) throw new Error(`Failed to create players: ${error.message}`);
+    return data;
+  }
+
+  // Seeds a 0-0 standings row per team so the standings endpoint has
+  // something to return as soon as the league exists.
+  async createSeasonStats(teams, season) {
+    const rows = teams.map((team) => ({
+      saved_game_id: this.savedGameId,
+      team_id: team.id,
+      season,
+      wins: 0,
+      losses: 0,
+    }));
+
+    const { data, error } = await supabaseAdmin.from('team_season_stats').insert(rows).select();
+    if (error) throw new Error(`Failed to create season stats: ${error.message}`);
+    return data;
+  }
+
+  // Deletes the teams created for this saved game. teams.id cascades to
+  // players and team_season_stats (ON DELETE CASCADE in the schema), so
+  // this one call cleans up everything from a failed initialization.
+  async rollbackLeague() {
+    await supabaseAdmin.from('teams').delete().eq('saved_game_id', this.savedGameId);
+  }
+
+  // Creates the 30 teams, generates a 15-man roster for each, and seeds
+  // season standings. Throws if this saved game already has a league, and
+  // rolls back partial writes if any step fails partway through.
+  async initializeLeague(season = 1) {
+    const existingTeams = await this.getTeams();
+    if (existingTeams.length > 0) {
+      throw new Error(`League already initialized for saved game ${this.savedGameId}`);
     }
-    await client.query('COMMIT');
-    return saved;
-  } catch (err) {
-    await client.query('ROLLBACK');
-    throw err;
-  } finally {
-    client.release();
+
+    let teams;
+    try {
+      teams = await this.createTeams();
+      const players = await this.createRosters(teams, season);
+      await this.createSeasonStats(teams, season);
+
+      return {
+        season,
+        teamsCreated: teams.length,
+        playersCreated: players.length,
+      };
+    } catch (err) {
+      if (teams) await this.rollbackLeague();
+      throw err;
+    }
+  }
+
+  // Trades are simple once team_id is a foreign key - just repoint it.
+  // Validates the destination team belongs to this same saved game so a
+  // bad call can't reassign a player into a different save's league.
+  async tradePlayer(playerId, newTeamId) {
+    const { data: destTeam, error: teamError } = await supabaseAdmin
+      .from('teams')
+      .select('id')
+      .eq('id', newTeamId)
+      .eq('saved_game_id', this.savedGameId)
+      .single();
+
+    if (teamError || !destTeam) {
+      throw new Error('Destination team not found in this saved game');
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('players')
+      .update({ team_id: newTeamId })
+      .eq('id', playerId)
+      .eq('saved_game_id', this.savedGameId)
+      .select()
+      .single();
+
+    if (error) throw new Error(`Failed to trade player: ${error.message}`);
+    return data;
+  }
+
+  // Not implemented here - schedules, game results, and stat tracking are
+  // a separate system from league/roster generation.
+  async simulateSeason() {
+    throw new Error(
+      'simulateSeason() is not implemented yet. Game simulation (schedules, results, stat tracking) is a separate feature from league initialization.'
+    );
   }
 }
 
-// Convenience wrapper for "start a new league": pulls every team ID from
-// the teams table, then generates + saves a roster for each one.
-async function generateAndSaveFullLeague(rosterSize = 15) {
-  const pool = getDefaultPool();
-  const { rows } = await pool.query('SELECT id FROM teams ORDER BY id;');
-  return generateAndSaveLeague(rows.map((r) => r.id), rosterSize);
-}
+// Pure generation helpers exposed as static properties for unit testing
+// without touching the database.
+LeagueService.generatePlayer = generatePlayer;
+LeagueService.generateRosterForTeam = generateRosterForTeam;
 
-// Trades are trivial once team_id is a foreign key - it's just an UPDATE.
-async function tradePlayer(playerId, newTeamId, db = getDefaultPool()) {
-  const { rows } = await db.query(
-    'UPDATE players SET team_id = $1 WHERE id = $2 RETURNING *;',
-    [newTeamId, playerId]
-  );
-  return rows[0] || null;
-}
-
-async function getRosterForTeam(teamId, db = getDefaultPool()) {
-  const { rows } = await db.query(
-    'SELECT * FROM players WHERE team_id = $1 ORDER BY overall DESC;',
-    [teamId]
-  );
-  return rows;
-}
-
-module.exports = {
-  // generation (pure, no DB)
-  generatePlayer,
-  generateRosterForTeam,
-  generateLeague,
-  // persistence
-  generateAndSaveLeague,
-  generateAndSaveFullLeague,
-  tradePlayer,
-  getRosterForTeam,
-  insertPlayers,
-};
+module.exports = LeagueService;

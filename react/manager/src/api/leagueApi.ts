@@ -1,66 +1,64 @@
-import api from './client';
+// api/leagueApi.ts
+import api from "./client";
 
 export interface Team {
   id: string;
+  saved_game_id: string;
   team_id: string;
-  name: string;
   city: string;
+  name: string;
   abbreviation: string;
   conference: string;
   division: string;
-  wins: number;
-  losses: number;
-  points_for: number;
-  points_against: number;
+  wins?: number;
+  losses?: number;
 }
 
 export interface Player {
   id: string;
-  player_id: string;
+  saved_game_id: string;
   team_id: string;
   first_name: string;
   last_name: string;
   position: string;
+  age: number;
+  height: number;
+  weight: number;
   overall_rating: number;
-  points: number;
-  rebounds: number;
-  assists: number;
-  steals: number;
-  blocks: number;
-  // ... other stats
+  potential_rating: number;
+  traits?: Record<string, number>;
+  points?: number;
+  rebounds?: number;
+  assists?: number;
 }
 
-export interface LeagueData {
-  teams: Team[];
-  players: Player[];
-  standings: any[];
+export interface StandingsRow {
+  team_id: string;
   season: number;
+  wins: number;
+  losses: number;
 }
 
 export const leagueAPI = {
-  // Initialize a new league season
-  initializeLeague: (savedGameId: string, season: number = 1) =>
-    api.post(`/api/league/${savedGameId}/initialize`, { season }),
+  getTeams: (savedGameId: string) =>
+    api.get<{ success: boolean; data: Team[] }>(`/api/league/${savedGameId}/teams`),
 
-  // Get full league data
-  getLeagueData: (savedGameId: string, season: number = 1) =>
-    api.get<{ success: boolean; data: LeagueData }>(
-      `/api/league/${savedGameId}/data?season=${season}`
-    ),
+  getPlayers: (savedGameId: string) =>
+    api.get<{ success: boolean; data: Player[] }>(`/api/league/${savedGameId}/players`),
 
-  // Get team roster
-  getTeamRoster: (savedGameId: string, teamId: string, season: number = 1) =>
-    api.get(`/api/league/${savedGameId}/roster/${teamId}?season=${season}`),
-
-  // Get player stats
-  getPlayerStats: (savedGameId: string, playerId: string, season: number = 1) =>
-    api.get(`/api/league/${savedGameId}/player/${playerId}?season=${season}`),
-
-  // Simulate season
-  simulateSeason: (savedGameId: string) =>
-    api.post(`/api/league/${savedGameId}/simulate-season`),
-
-  // Get standings
   getStandings: (savedGameId: string) =>
-    api.get(`/api/league/${savedGameId}/standings`),
+    api.get<{ success: boolean; data: StandingsRow[] }>(`/api/league/${savedGameId}/standings`),
+
+  simulateSeason: (savedGameId: string) =>
+    api.post<{ success: boolean; data: any }>(`/api/league/${savedGameId}/simulate-season`),
+
+  tradePlayer: (savedGameId: string, playerId: string, newTeamId: string) =>
+    api.post<{ success: boolean; data: Player }>(`/api/league/${savedGameId}/trade`, {
+      playerId,
+      newTeamId,
+    }),
+
+  initializeLeague: (savedGameId: string, season: number = 1) =>
+    api.post<{ success: boolean; data: any }>(`/api/league/${savedGameId}/initialize`, { season }),
+  // initializeLeague, getLeagueLeaders, getPlayerStats... as needed
 };

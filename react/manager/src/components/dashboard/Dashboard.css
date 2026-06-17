@@ -16,38 +16,51 @@
    ============================================ */
 
 .dashboard-header {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  padding: 16px 24px;
-  margin-bottom: 20px;
-  box-shadow: var(--glass-shadow);
   position: relative;
-  overflow: hidden;
+  padding: 0 20px 18px;
+  margin-bottom: 24px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
 }
 
 .dashboard-header::before {
   content: '';
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
   height: 2px;
-  background: var(--primary-gradient);
-  box-shadow: 0 0 30px var(--primary-glow);
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255,255,255,.95),
+    transparent
+  );
+
+  box-shadow:
+    0 0 10px rgba(255,255,255,.8),
+    0 0 30px rgba(255,255,255,.4);
 }
 
 .dashboard-header::after {
   content: '';
   position: absolute;
-  top: -50%;
-  right: -20%;
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, rgba(0, 212, 255, 0.05), transparent 70%);
-  border-radius: 50%;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 60px;
+
+  background: linear-gradient(
+    to top,
+    rgba(255,255,255,.12),
+    rgba(255,255,255,.03),
+    transparent
+  );
+
   pointer-events: none;
 }
 

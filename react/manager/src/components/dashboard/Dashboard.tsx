@@ -15,6 +15,7 @@ const Dashboard: React.FC = () => {
   const [showNewGameForm, setShowNewGameForm] = useState<boolean>(false);
   const [selectedGame, setSelectedGame] = useState<SavedGame | null>(null);
   const [isCreatingGame, setIsCreatingGame] = useState<boolean>(false);
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false);
 
   useEffect(() => {
     loadSavedGames();
@@ -93,12 +94,17 @@ const Dashboard: React.FC = () => {
         <div className="header-content">
           <h1>🏀 Basketball GM</h1>
           <div className="user-info">
-            <span className="username">Welcome, {user?.username || 'Coach'}!</span>
-            <button onClick={logout} className="logout-button">
-              Logout
+            <span className="username">
+                {user?.username || 'Coach'}
+            </span>
+
+            <button
+                className="settings-button"
+                onClick={() => setShowSettingsMenu(true)}
+            >
+                ⚙
             </button>
-          </div>
-        </div>
+          </div>        </div>
       </header>
 
       <div className="dashboard-content">
@@ -162,7 +168,26 @@ const Dashboard: React.FC = () => {
           <p>Creating your league…</p>
         </div>
       )}
-    </div>
+
+      {showSettingsMenu && (
+      <div
+            className="modal-overlay"
+            onClick={() => setShowSettingsMenu(false)}
+        >
+            <div
+            className="settings-modal"
+            onClick={(e) => e.stopPropagation()}
+            >
+            <h3>Menu</h3>
+
+            <button>▶ Resume</button>
+            <button>🔊 Audio</button>
+            <button>⚙ Settings</button>
+            <button onClick={logout}>🚪 Logout</button>
+            </div>
+        </div>
+        )}
+      </div>
   );
 };
 

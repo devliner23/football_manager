@@ -11,5 +11,8 @@ router.post('/:savedGameId/simulate-season', leagueController.simulateSeason);
 router.get('/:savedGameId/standings', leagueController.getStandings);
 router.get('/:savedGameId/leaders/:stat', leagueController.getLeagueLeaders);
 router.get('/:savedGameId/players/:playerId', leagueController.getPlayerStats);
+router.get('/:savedGameId/teams', leagueController.getTeams);
+router.get('/:savedGameId/players', leagueController.getPlayers);
+router.post('/:savedGameId/trade', leagueController.tradePlayer);
 
 module.exports = router;
