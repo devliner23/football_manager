@@ -9,6 +9,7 @@ interface NewGameFormProps {
   onGameCreated: (game: SavedGame) => void;
 }
 
+
 const NewGameForm: React.FC<NewGameFormProps> = ({ onClose, onGameCreated }) => {
   const [formData, setFormData] = useState({
     name: '',

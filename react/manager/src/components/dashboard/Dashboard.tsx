@@ -16,6 +16,7 @@ const Dashboard: React.FC = () => {
   const [selectedGame, setSelectedGame] = useState<SavedGame | null>(null);
   const [isCreatingGame, setIsCreatingGame] = useState<boolean>(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     loadSavedGames();
@@ -35,11 +36,9 @@ const Dashboard: React.FC = () => {
   };
 
   const handleGameCreated = (newGame: SavedGame): void => {
-    // Close modal, show loading, then navigate to the new game
     setShowNewGameForm(false);
     setIsCreatingGame(true);
 
-    // Simulate a short loading delay for UX (or you can wait for league data)
     setTimeout(() => {
       setSavedGames([newGame, ...savedGames]);
       setSelectedGame(newGame);
@@ -75,7 +74,23 @@ const Dashboard: React.FC = () => {
     setSelectedGame(null);
   };
 
-  // If a game is selected, render only SelectedGame (full screen)
+  // Get the most recently updated game
+  const getLatestGame = (): SavedGame | null => {
+    if (savedGames.length === 0) return null;
+    return savedGames.reduce((latest, current) => {
+      const latestDate = new Date(latest.updated_at || latest.created_at || 0);
+      const currentDate = new Date(current.updated_at || current.created_at || 0);
+      return currentDate > latestDate ? current : latest;
+    });
+  };
+
+  const handleContinueLatest = (): void => {
+    const latest = getLatestGame();
+    if (latest) {
+      setSelectedGame(latest);
+    }
+  };
+
   if (selectedGame) {
     return (
       <SelectedGame
@@ -87,7 +102,9 @@ const Dashboard: React.FC = () => {
     );
   }
 
-  // Otherwise render the dashboard with a modal for new game
+  const latestGame = getLatestGame();
+  const hasGames = savedGames.length > 0;
+
   return (
     <div className="dashboard">
       <header className="dashboard-header">
@@ -95,20 +112,27 @@ const Dashboard: React.FC = () => {
           <h1>🏀 Basketball GM</h1>
           <div className="user-info">
             <span className="username">
-                {user?.username || 'Coach'}
+              {user?.username || 'Coach'}
             </span>
-
             <button
-                className="settings-button"
-                onClick={() => setShowSettingsMenu(true)}
+              className="settings-button"
+              onClick={() => setShowSettingsMenu(true)}
             >
-                ⚙
+              ⚙
             </button>
-          </div>        </div>
+          </div>
+        </div>
       </header>
 
       <div className="dashboard-content">
-        <div className="dashboard-sidebar">
+        <button
+          className={`sidebar-toggle ${!sidebarOpen ? 'collapsed' : ''}`}
+          onClick={() => setSidebarOpen(!sidebarOpen)}
+        >
+          {sidebarOpen ? '▶' : '◀'}
+        </button>
+
+        <div className={`dashboard-sidebar ${sidebarOpen ? 'open' : 'collapsed'}`}>
           <button
             className="new-game-button"
             onClick={() => setShowNewGameForm(true)}
@@ -139,19 +163,42 @@ const Dashboard: React.FC = () => {
         </div>
 
         <div className="dashboard-main">
-          <div className="welcome-message">
-            <h2>Welcome to Basketball GM!</h2>
-            <p>Select a saved game from the sidebar or start a new season.</p>
-            <div className="quick-actions">
-              <button onClick={() => setShowNewGameForm(true)} className="quick-action-button">
-                🏆 Start New Season
+          <div className="split-panel">
+            {/* Continue Last Save Panel - Only show if there are games */}
+            {hasGames && latestGame && (
+              <div className="panel-card continue-panel">
+                <span className="icon">▶️</span>
+                <h2>Continue Last Save</h2>
+                <p>Pick up where you left off in your most recent season.</p>
+                <button 
+                  className="panel-button" 
+                  onClick={handleContinueLatest}
+                >
+                  Continue Game
+                </button>
+              </div>
+            )}
+
+            {/* Create New Season Panel - Always shown */}
+            <div className={`panel-card new-panel ${!hasGames ? 'full-width' : ''}`}>
+              <span className="icon">🏆</span>
+              <h2>{hasGames ? 'Create New Season' : 'Start Your First Season'}</h2>
+              <p>
+                {hasGames 
+                  ? 'Start a fresh basketball season with a new team and roster.'
+                  : 'No saved games found. Create your first basketball season now!'}
+              </p>
+              <button 
+                className="panel-button" 
+                onClick={() => setShowNewGameForm(true)}
+              >
+                {hasGames ? 'New Season' : 'Get Started'}
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* New Game Modal */}
       {showNewGameForm && (
         <div className="modal-overlay">
           <NewGameForm
@@ -161,7 +208,6 @@ const Dashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Loading Overlay */}
       {isCreatingGame && (
         <div className="loading-overlay">
           <div className="loading-spinner"></div>
@@ -170,24 +216,23 @@ const Dashboard: React.FC = () => {
       )}
 
       {showSettingsMenu && (
-      <div
-            className="modal-overlay"
-            onClick={() => setShowSettingsMenu(false)}
+        <div
+          className="modal-overlay"
+          onClick={() => setShowSettingsMenu(false)}
         >
-            <div
+          <div
             className="settings-modal"
             onClick={(e) => e.stopPropagation()}
-            >
+          >
             <h3>Menu</h3>
-
             <button>▶ Resume</button>
             <button>🔊 Audio</button>
             <button>⚙ Settings</button>
             <button onClick={logout}>🚪 Logout</button>
-            </div>
+          </div>
         </div>
-        )}
-      </div>
+      )}
+    </div>
   );
 };
 
