@@ -4,7 +4,7 @@ import { userAPI, gameAPI } from '../../api/client';
 import SavedGames from './SavedGames';
 import NewGameForm from './NewGameForm';
 import SelectedGame from '../pages/SelectedGame';
-import { SavedGame } from '../../types';
+import { SavedGame } from '../../shared';
 
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';

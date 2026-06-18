@@ -3,71 +3,60 @@ const gameService = require('../services/gameService');
 
 const gameController = {
   // Create a new saved game
-  async createGame(req, res, next) {
-    try {
-      const { name, managed_club_id, difficulty = 'pro' } = req.body;
-      
-      if (!name || !managed_club_id) {
-        return res.status(400).json({ 
-          error: 'Game name and managed club are required' 
-        });
-      }
-      
-      const gameData = {
-        user_id: req.user.id,
-        name,
-        managed_club_id,
-        difficulty,
-        current_season: 1,
-        current_game_date: new Date(),
-        is_auto_save: false,
-        game_state: {
-          season: 1,
-          clubs: [],
-          players: [],
-          standings: {},
-          settings: {
-            difficulty,
-            quarters: 4,
-            quarter_length: 12
-          },
-          created_at: new Date().toISOString()
-        }
-      };
-      
-      const { data: game, error } = await supabase
-        .from('saved_games')
-        .insert([gameData])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      
-      // Create initial league history entry
-      await supabase
-        .from('league_history')
-        .insert([{
-          saved_game_id: game.id,
-          season: 1,
-          champion_id: '',
-          champion_name: '',
-          season_data: { 
-            initial: true,
-            created_at: new Date().toISOString()
-          }
-        }]);
-      
-      res.status(201).json({
-        success: true,
-        data: game,
-        message: 'Game created successfully'
+// in gameController.js
+
+async createGame(req, res, next) {
+  try {
+    const { name, managed_club_id, difficulty = 'pro' } = req.body;
+    
+    if (!name || !managed_club_id) {
+      return res.status(400).json({ 
+        error: 'Game name and managed club are required' 
       });
-    } catch (error) {
-      console.error('Create game error:', error);
-      next(error);
     }
-  },
-  
+    
+    const gameData = {
+      user_id: req.user.id,          // now references auth.users
+      name,
+      managed_club_id,
+      difficulty,
+      current_season: 1,
+      current_game_date: new Date(),
+      is_auto_save: false,
+      game_state: {
+        season: 1,
+        clubs: [],
+        players: [],
+        standings: {},
+        settings: {
+          difficulty,
+          quarters: 4,
+          quarter_length: 12
+        },
+        created_at: new Date().toISOString()
+      }
+    };
+    
+    const { data: game, error } = await supabase
+      .from('saved_games')
+      .insert([gameData])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // ❌ Remove the league_history insert – it will be created later when the season ends.
+    
+    res.status(201).json({
+      success: true,
+      data: game,
+      message: 'Game created successfully'
+    });
+  } catch (error) {
+    console.error('Create game error:', error);
+    next(error);
+  }
+},
   // Get game by ID
   async getGame(req, res, next) {
     try {

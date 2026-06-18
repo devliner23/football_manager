@@ -1,5 +1,5 @@
 import React from 'react';
-import { SavedGame } from '../../types';
+import { SavedGame } from '../../shared';
 
 interface SavedGamesProps {
   games: SavedGame[];

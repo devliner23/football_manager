@@ -1,23 +1,14 @@
 // services/LeagueService.js
-//
-// Owns league creation for a single saved game: reading the static NBA
-// team list, creating per-save team rows, generating 15-man rosters with
-// an NBA-like talent curve, and seeding season standings.
-//
-// Game simulation (schedules, box scores, win/loss results) is NOT part
-// of this file - simulateSeason() is left as a clearly-marked stub.
-
 const { supabaseAdmin } = require('../config/supabase');
 const NBA_TEAMS = require('../data/teams.json');
-const TeamArchetypeService = require('./teamArchetypeService'); // NEW
+const TeamArchetypeService = require('./teamArchetypeService');
 const GameSimulationEngine = require('./gameSimulationEngine');
 
 const ROSTER_SIZE = 15;
 
-/* ----------------------------------------------------------------------
- * 1. TALENT DISTRIBUTION (UNCHANGED)
- * ------------------------------------------------------------------- */
-
+// ----------------------------------------------------------------------
+// 1. TALENT DISTRIBUTION (unchanged)
+// ----------------------------------------------------------------------
 function randomGaussian(mean = 0, stdDev = 1) {
   let u = 0, v = 0;
   while (u === 0) u = Math.random();
@@ -39,10 +30,9 @@ function generateBaseTalent() {
   return clamp(randomGaussian(TALENT_MEAN, TALENT_STDDEV), TALENT_MIN, TALENT_MAX);
 }
 
-/* ----------------------------------------------------------------------
- * 2. POSITIONS, PHYSICAL TRAITS, NAMES (UNCHANGED)
- * ------------------------------------------------------------------- */
-
+// ----------------------------------------------------------------------
+// 2. POSITIONS, PHYSICAL TRAITS, NAMES (unchanged)
+// ----------------------------------------------------------------------
 const POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C'];
 
 const POSITION_MODIFIERS = {
@@ -95,10 +85,9 @@ function generateAge() {
   return clamp(randomGaussian(26, 4), 19, 39);
 }
 
-/* ----------------------------------------------------------------------
- * 3. SKILL ATTRIBUTES & OVERALL RATING (UNCHANGED)
- * ------------------------------------------------------------------- */
-
+// ----------------------------------------------------------------------
+// 3. SKILL ATTRIBUTES & OVERALL RATING (unchanged)
+// ----------------------------------------------------------------------
 const ATTRIBUTE_KEYS = [
   'threePoint', 'midRange', 'insideScoring', 'passing', 'ballHandling',
   'perimeterDefense', 'postDefense', 'rebounding', 'speed', 'strength',
@@ -139,11 +128,9 @@ function generatePotential(overall, age) {
   return clamp(overall + Math.max(0, upside), overall, 99);
 }
 
-/* ----------------------------------------------------------------------
- * 4. PLAYER + ROSTER GENERATION (MODIFIED to support archetypes)
- * ------------------------------------------------------------------- */
-
-// [UNCHANGED] – still used as fallback
+// ----------------------------------------------------------------------
+// 4. PLAYER + ROSTER GENERATION (with archetype support)
+// ----------------------------------------------------------------------
 function generateRosterPositions(rosterSize = ROSTER_SIZE) {
   const perPosition = Math.floor(rosterSize / POSITIONS.length);
   let remainder = rosterSize - perPosition * POSITIONS.length;
@@ -159,9 +146,7 @@ function generateRosterPositions(rosterSize = ROSTER_SIZE) {
   return positions;
 }
 
-// [MODIFIED] now accepts optional archetypeId
-function generatePlayer(teamId, position, archetypeId = null) {
-  // Use archetype talent curve if provided, else fallback to original mean/std
+function generatePlayer(teamId, position, archetypeId = null, savedGameId) {
   const talentCurve = archetypeId
     ? TeamArchetypeService.getTalentCurve(archetypeId)
     : { mean: TALENT_MEAN, stdDev: TALENT_STDDEV };
@@ -200,42 +185,37 @@ function generatePlayer(teamId, position, archetypeId = null) {
     name: generateName(),
     position,
     age,
-    heightInches: finalHeight,
-    weightLbs: generateWeightLbs(finalHeight, position),
+    height: finalHeight,
+    weight: generateWeightLbs(finalHeight, position),
     overall,
     potential,
     ...attributes,
+    savedGameId,
   };
 }
 
-// [MODIFIED] now accepts optional archetypeId
-function generateRosterForTeam(teamId, rosterSize = ROSTER_SIZE, archetypeId = null) {
-  // If archetype is provided, use its position distribution; else use the original balanced distribution
+function generateRosterForTeam(teamId, rosterSize = ROSTER_SIZE, archetypeId = null, savedGameId) {
   const positions = archetypeId
     ? TeamArchetypeService.generatePositionDistribution(archetypeId, rosterSize)
     : generateRosterPositions(rosterSize);
 
-  return positions.map((position) => generatePlayer(teamId, position, archetypeId));
+  return positions.map((position) => generatePlayer(teamId, position, archetypeId, savedGameId));
 }
 
-// [UNCHANGED] – mapping to DB columns
 function toPlayerRow(player, team, index, season) {
   const nameParts = player.name.split(' ');
   const firstName = nameParts[0];
   const lastName = nameParts.slice(1).join(' ') || firstName;
-  const isStarter = index < 5;
-  const isStar = index < 2;
 
   return {
     saved_game_id: player.savedGameId,
-    player_id: `${team.team_id}_${season}_${index + 1}`,
     team_id: player.teamId,
     first_name: firstName,
     last_name: lastName,
     position: player.position,
     age: player.age,
-    height: player.heightInches,
-    weight: player.weightLbs,
+    height: player.height,
+    weight: player.weight,
     overall_rating: player.overall,
     potential_rating: player.potential,
     traits: {
@@ -250,36 +230,28 @@ function toPlayerRow(player, team, index, season) {
       speed: player.speed,
       strength: player.strength,
     },
-    games_played: 0,
-    points: 0,
-    rebounds: 0,
-    assists: 0,
-    season,
+    // season stats will be in player_season_stats
   };
 }
 
-/* ----------------------------------------------------------------------
- * 5. LEAGUE SERVICE – scoped to one saved game
- * ------------------------------------------------------------------- */
-
+// ----------------------------------------------------------------------
+// 5. LEAGUE SERVICE
+// ----------------------------------------------------------------------
 class LeagueService {
   constructor(savedGameId) {
     if (!savedGameId) throw new Error('LeagueService requires a savedGameId');
     this.savedGameId = savedGameId;
   }
 
-  // [UNCHANGED]
   async getTeams() {
     const { data, error } = await supabaseAdmin
       .from('teams')
       .select('*')
       .eq('saved_game_id', this.savedGameId);
-
     if (error) throw new Error(`Failed to load teams: ${error.message}`);
     return data;
   }
 
-  // [UNCHANGED]
   async getRosterForTeam(teamId) {
     const { data, error } = await supabaseAdmin
       .from('players')
@@ -287,63 +259,55 @@ class LeagueService {
       .eq('saved_game_id', this.savedGameId)
       .eq('team_id', teamId)
       .order('overall_rating', { ascending: false });
-
     if (error) throw new Error(`Failed to load roster: ${error.message}`);
-    return data;
+    // Flatten traits into top-level for simulation engine
+    return data.map(player => ({
+      ...player,
+      ...player.traits,
+    }));
   }
 
-  // [UNCHANGED]
   async createTeams() {
     const rows = NBA_TEAMS.map((team) => ({
       saved_game_id: this.savedGameId,
-      team_id: team.name,
-      city: team.city,
       name: team.name,
+      city: team.city,
       abbreviation: team.abbreviation,
       conference: team.conference,
       division: team.division,
     }));
-
     const { data, error } = await supabaseAdmin.from('teams').insert(rows).select();
     if (error) throw new Error(`Failed to create teams: ${error.message}`);
     return data;
   }
 
-  // [MODIFIED] now accepts optional teamArchetypes (fourth parameter)
   async createRosters(teams, season = 1, rosterSize = ROSTER_SIZE, teamArchetypes = {}) {
     const rows = teams.flatMap((team) => {
-      const archetypeId = teamArchetypes[team.team_id] || null;
-      return generateRosterForTeam(team.id, rosterSize, archetypeId).map((player, index) =>
-        toPlayerRow({ ...player, savedGameId: this.savedGameId }, team, index, season)
+      const archetypeId = teamArchetypes[team.name] || null;
+      return generateRosterForTeam(team.id, rosterSize, archetypeId, this.savedGameId).map((player, index) =>
+        toPlayerRow(player, team, index, season)
       );
     });
-
     const { data, error } = await supabaseAdmin.from('players').insert(rows).select();
     if (error) throw new Error(`Failed to create players: ${error.message}`);
     return data;
   }
 
-  // [UNCHANGED]
-  async createSeasonStats(teams, season) {
+  async createSeasonStats(teams, seasonId) {
     const rows = teams.map((team) => ({
       saved_game_id: this.savedGameId,
       team_id: team.id,
-      season,
+      season_id: seasonId,
       wins: 0,
       losses: 0,
+      points_for: 0,
+      points_against: 0,
     }));
-
     const { data, error } = await supabaseAdmin.from('team_season_stats').insert(rows).select();
     if (error) throw new Error(`Failed to create season stats: ${error.message}`);
     return data;
   }
 
-  // [UNCHANGED]
-  async rollbackLeague() {
-    await supabaseAdmin.from('teams').delete().eq('saved_game_id', this.savedGameId);
-  }
-
-  // [NEW] create a season record
   async createSeason(seasonNumber) {
     const { data, error } = await supabaseAdmin
       .from('seasons')
@@ -355,71 +319,94 @@ class LeagueService {
       })
       .select()
       .single();
-
     if (error) throw new Error(`Failed to create season: ${error.message}`);
     return data;
   }
 
-  // [NEW] generate a round‑robin schedule
   async generateSchedule(teams, seasonId) {
     const teamIds = teams.map(t => t.id);
     const games = [];
+    const today = new Date();
+    // Set a start date for the season (e.g., today + 1 day to avoid yesterday)
+    const startDate = new Date(today);
+    startDate.setDate(startDate.getDate() + 1);
 
+    // Generate double round-robin (home/away)
     for (let i = 0; i < teamIds.length; i++) {
-      for (let j = i + 1; j < teamIds.length; j++) {
+        for (let j = i + 1; j < teamIds.length; j++) {
         const home = teamIds[i];
         const away = teamIds[j];
-
         games.push({
-          season_id: seasonId,
-          home_team_id: home,
-          away_team_id: away,
-          status: 'scheduled',
-          week: games.length + 1,
+            season_id: seasonId,
+            home_team_id: home,
+            away_team_id: away,
+            status: 'scheduled',
+            game_date: startDate,          // assign a date (will be adjusted later)
+            saved_game_id: this.savedGameId,
         });
-
         games.push({
-          season_id: seasonId,
-          home_team_id: away,
-          away_team_id: home,
-          status: 'scheduled',
-          week: games.length + 1,
+            season_id: seasonId,
+            home_team_id: away,
+            away_team_id: home,
+            status: 'scheduled',
+            game_date: startDate,
+            saved_game_id: this.savedGameId,
         });
-      }
+        }
     }
 
+    // Shuffle the games to randomise order
+    for (let i = games.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [games[i], games[j]] = [games[j], games[i]];
+    }
+
+    // Distribute dates across a season (e.g., 180 days)
+    const totalGames = games.length;
+    const daysRange = 180; // approx 6 months
+    let gameIndex = 0;
+    for (const game of games) {
+        const daysOffset = Math.floor((gameIndex / totalGames) * daysRange);
+        const gameDate = new Date(startDate);
+        gameDate.setDate(gameDate.getDate() + daysOffset);
+        game.game_date = gameDate;
+        gameIndex++;
+    }
+
+    // Assign week numbers (optional, ~15 games per week)
+    const GAMES_PER_WEEK = 15;
+    for (let i = 0; i < games.length; i++) {
+        games[i].week = Math.floor(i / GAMES_PER_WEEK) + 1;
+    }
+
+    // Insert in batches
     const BATCH_SIZE = 100;
     for (let i = 0; i < games.length; i += BATCH_SIZE) {
-      const batch = games.slice(i, i + BATCH_SIZE);
-      const { error } = await supabaseAdmin.from('games').insert(batch);
-      if (error) throw new Error(`Failed to create schedule: ${error.message}`);
+        const batch = games.slice(i, i + BATCH_SIZE);
+        const { error } = await supabaseAdmin.from('games').insert(batch);
+        if (error) throw new Error(`Failed to create schedule: ${error.message}`);
     }
 
     return games.length;
   }
 
-  // [MODIFIED] now also creates season and schedule, with rollback
+  async rollbackLeague() {
+    await supabaseAdmin.from('teams').delete().eq('saved_game_id', this.savedGameId);
+  }
+
   async initializeLeague(season = 1, teamArchetypes = {}) {
     const existingTeams = await this.getTeams();
     if (existingTeams.length > 0) {
       throw new Error(`League already initialized for saved game ${this.savedGameId}`);
     }
-
-    let teams;
-    let seasonRecord;
+    let teams, seasonRecord;
     try {
-      // 1. Create teams, rosters, standings (original)
       teams = await this.createTeams();
       const players = await this.createRosters(teams, season, ROSTER_SIZE, teamArchetypes);
-      await this.createSeasonStats(teams, season);
-
-      // 2. Create season record
       seasonRecord = await this.createSeason(season);
-
-      // 3. Generate schedule
+      await this.createSeasonStats(teams, seasonRecord.id);
       const gamesCount = await this.generateSchedule(teams, seasonRecord.id);
-
-      // 4. Update saved_games with season info
+      // Update saved_games with season info
       const currentState = (await this._getGameState()) || {};
       await supabaseAdmin
         .from('saved_games')
@@ -434,7 +421,6 @@ class LeagueService {
           }
         })
         .eq('id', this.savedGameId);
-
       return {
         season,
         teamsCreated: teams.length,
@@ -451,39 +437,520 @@ class LeagueService {
     }
   }
 
-  // [UNCHANGED] stub
-  async simulateSeason() {
-    throw new Error(
-      'simulateSeason() is not implemented yet. Game simulation (schedules, results, stat tracking) is a separate feature from league initialization.'
-    );
-  }
+  // ----------------------------------------------------------------------
+  // GAME SIMULATION
+  // ----------------------------------------------------------------------
 
-  // [UNCHANGED]
-  async tradePlayer(playerId, newTeamId) {
-    const { data: destTeam, error: teamError } = await supabaseAdmin
-      .from('teams')
-      .select('id')
-      .eq('id', newTeamId)
-      .eq('saved_game_id', this.savedGameId)
-      .single();
+  async simulateGame(gameId) {
+    // Fetch the game record (no nested joins)
+    const { data: game, error: gameError } = await supabaseAdmin
+        .from('games')
+        .select('*')
+        .eq('id', gameId)
+        .single();
 
-    if (teamError || !destTeam) {
-      throw new Error('Destination team not found in this saved game');
+    if (gameError) throw new Error(`Game not found: ${gameError.message}`);
+    if (game.status !== 'scheduled') {
+        throw new Error(`Game ${gameId} is already ${game.status}`);
     }
 
-    const { data, error } = await supabaseAdmin
-      .from('players')
-      .update({ team_id: newTeamId })
-      .eq('id', playerId)
-      .eq('saved_game_id', this.savedGameId)
-      .select()
-      .single();
+    const seasonId = game.season_id;
+    const homeTeamId = game.home_team_id;
+    const awayTeamId = game.away_team_id;
 
-    if (error) throw new Error(`Failed to trade player: ${error.message}`);
-    return data;
+    // ✅ Validate all required IDs
+    if (!seasonId || !homeTeamId || !awayTeamId) {
+        console.error('❌ Game data missing IDs:', { seasonId, homeTeamId, awayTeamId, game });
+        throw new Error(`Game ${gameId} is missing required IDs (season, home, or away)`);
+    }
+
+    // Optional: fetch team names for response
+    const { data: homeTeam } = await supabaseAdmin
+        .from('teams')
+        .select('name')
+        .eq('id', homeTeamId)
+        .single();
+
+    const { data: awayTeam } = await supabaseAdmin
+        .from('teams')
+        .select('name')
+        .eq('id', awayTeamId)
+        .single();
+
+    // Fetch rosters
+    const homePlayers = await this.getRosterForTeam(homeTeamId);
+    const awayPlayers = await this.getRosterForTeam(awayTeamId);
+
+    // Simulate using the engine
+    const result = GameSimulationEngine.simulateGame(homePlayers, awayPlayers, {
+        homeCourtAdvantage: 1.03,
+    });
+
+    // Build box scores – explicitly set team_id
+    const homeBoxScores = result.homeBoxScores.map(b => ({
+        ...b,
+        game_id: gameId,
+        team_id: homeTeamId,
+        saved_game_id: this.savedGameId,
+        minutes_played: b.minutes_played || 0,
+        points: b.points || 0,
+        fgm: b.fgm || 0,
+        fga: b.fga || 0,
+        fgm_3: b.fgm_3 || 0,
+        fga_3: b.fga_3 || 0,
+        ftm: b.ftm || 0,
+        fta: b.fta || 0,
+        offensive_rebounds: b.offensive_rebounds || 0,
+        defensive_rebounds: b.defensive_rebounds || 0,
+        rebounds: (b.offensive_rebounds || 0) + (b.defensive_rebounds || 0),
+        assists: b.assists || 0,
+        steals: b.steals || 0,
+        blocks: b.blocks || 0,
+        turnovers: b.turnovers || 0,
+        personal_fouls: b.personal_fouls || 0,
+        plus_minus: b.plus_minus || 0,
+    }));
+
+    const awayBoxScores = result.awayBoxScores.map(b => ({
+        ...b,
+        game_id: gameId,
+        team_id: awayTeamId,
+        saved_game_id: this.savedGameId,
+        minutes_played: b.minutes_played || 0,
+        points: b.points || 0,
+        fgm: b.fgm || 0,
+        fga: b.fga || 0,
+        fgm_3: b.fgm_3 || 0,
+        fga_3: b.fga_3 || 0,
+        ftm: b.ftm || 0,
+        fta: b.fta || 0,
+        offensive_rebounds: b.offensive_rebounds || 0,
+        defensive_rebounds: b.defensive_rebounds || 0,
+        rebounds: (b.offensive_rebounds || 0) + (b.defensive_rebounds || 0),
+        assists: b.assists || 0,
+        steals: b.steals || 0,
+        blocks: b.blocks || 0,
+        turnovers: b.turnovers || 0,
+        personal_fouls: b.personal_fouls || 0,
+        plus_minus: b.plus_minus || 0,
+    }));
+
+    const allStats = [...homeBoxScores, ...awayBoxScores];
+
+    try {
+        // Insert player game stats
+        const { error: statsError } = await supabaseAdmin
+        .from('player_game_stats')
+        .insert(allStats);
+        if (statsError) throw new Error(`Failed to insert player stats: ${statsError.message}`);
+
+        // Update game record
+        const { error: updateGameError } = await supabaseAdmin
+        .from('games')
+        .update({
+            home_score: result.homeScore,
+            away_score: result.awayScore,
+            status: 'completed',      // ✅ use 'completed' (or 'final' if you updated the constraint)
+            played_at: new Date().toISOString(),
+        })
+        .eq('id', gameId);
+        if (updateGameError) throw new Error(`Failed to update game: ${updateGameError.message}`);
+
+        // Update team season stats
+        await this._updateTeamStats(seasonId, homeTeamId, result.homeScore, result.awayScore, true);
+        await this._updateTeamStats(seasonId, awayTeamId, result.awayScore, result.homeScore, false);
+
+        // Update player season stats (aggregated)
+        await this._updatePlayerSeasonStats(seasonId, allStats);
+
+        return {
+        gameId,
+        homeTeam: homeTeam?.name || 'Home',
+        awayTeam: awayTeam?.name || 'Away',
+        homeScore: result.homeScore,
+        awayScore: result.awayScore,
+        overtime: result.overtime,
+        overtimeCount: result.overtimeCount,
+        };
+    } catch (error) {
+        throw error;
+    }
   }
 
-  // [NEW] helper to fetch current game_state without overwriting
+  async _updateTeamStats(seasonId, teamId, pointsFor, pointsAgainst, isHome) {
+    const win = pointsFor > pointsAgainst;
+    const { data: current, error } = await supabaseAdmin
+      .from('team_season_stats')
+      .select('wins, losses, points_for, points_against, home_wins, home_losses, away_wins, away_losses')
+      .eq('team_id', teamId)
+      .eq('season_id', seasonId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw new Error(`Failed to fetch team stats: ${error.message}`);
+    const stats = current || { wins: 0, losses: 0, points_for: 0, points_against: 0, home_wins: 0, home_losses: 0, away_wins: 0, away_losses: 0 };
+
+    const update = {
+      wins: stats.wins + (win ? 1 : 0),
+      losses: stats.losses + (win ? 0 : 1),
+      points_for: (stats.points_for || 0) + pointsFor,
+      points_against: (stats.points_against || 0) + pointsAgainst,
+    };
+
+    if (isHome) {
+      update.home_wins = (stats.home_wins || 0) + (win ? 1 : 0);
+      update.home_losses = (stats.home_losses || 0) + (win ? 0 : 1);
+    } else {
+      update.away_wins = (stats.away_wins || 0) + (win ? 1 : 0);
+      update.away_losses = (stats.away_losses || 0) + (win ? 0 : 1);
+    }
+
+    if (current) {
+      const { error: updateError } = await supabaseAdmin
+        .from('team_season_stats')
+        .update(update)
+        .eq('id', current.id);
+      if (updateError) throw new Error(`Failed to update team stats: ${updateError.message}`);
+    } else {
+      const { error: insertError } = await supabaseAdmin
+        .from('team_season_stats')
+        .insert({
+          team_id: teamId,
+          season_id: seasonId,
+          saved_game_id: this.savedGameId,
+          ...update,
+        });
+      if (insertError) throw new Error(`Failed to insert team stats: ${insertError.message}`);
+    }
+  }
+
+  async _updatePlayerSeasonStats(seasonId, boxScores) {
+    for (const box of boxScores) {
+      const { data: existing, error: findError } = await supabaseAdmin
+        .from('player_season_stats')
+        .select('*')
+        .eq('player_id', box.player_id)
+        .eq('season_id', seasonId)
+        .single();
+
+      if (findError && findError.code !== 'PGRST116') {
+        throw new Error(`Failed to find player season stats: ${findError.message}`);
+      }
+
+      const newStats = {
+        games_played: (existing?.games_played || 0) + 1,
+        total_points: (existing?.total_points || 0) + box.points,
+        total_rebounds: (existing?.total_rebounds || 0) + box.rebounds,
+        total_assists: (existing?.total_assists || 0) + box.assists,
+        total_steals: (existing?.total_steals || 0) + box.steals,
+        total_blocks: (existing?.total_blocks || 0) + box.blocks,
+        total_turnovers: (existing?.total_turnovers || 0) + box.turnovers,
+        total_fga: (existing?.total_fga || 0) + box.fga,
+        total_fgm: (existing?.total_fgm || 0) + box.fgm,
+        total_fga_3: (existing?.total_fga_3 || 0) + box.fga_3,
+        total_fgm_3: (existing?.total_fgm_3 || 0) + box.fgm_3,
+        total_fta: (existing?.total_fta || 0) + box.fta,
+        total_ftm: (existing?.total_ftm || 0) + box.ftm,
+        offensive_rebounds: (existing?.offensive_rebounds || 0) + (box.offensive_rebounds || 0),
+        defensive_rebounds: (existing?.defensive_rebounds || 0) + (box.defensive_rebounds || 0),
+        minutes: (existing?.minutes || 0) + (box.minutes_played || 0),
+      };
+
+      if (existing) {
+        const { error: updateError } = await supabaseAdmin
+          .from('player_season_stats')
+          .update(newStats)
+          .eq('id', existing.id);
+        if (updateError) throw new Error(`Failed to update player stats: ${updateError.message}`);
+      } else {
+        const { error: insertError } = await supabaseAdmin
+          .from('player_season_stats')
+          .insert({
+            player_id: box.player_id,
+            season_id: seasonId,
+            team_id: box.team_id,
+            saved_game_id: this.savedGameId,
+            ...newStats,
+          });
+        if (insertError) throw new Error(`Failed to insert player stats: ${insertError.message}`);
+      }
+    }
+  }
+
+  async getCurrentSeasonId() {
+    const { data: game, error } = await supabaseAdmin
+      .from('saved_games')
+      .select('game_state')
+      .eq('id', this.savedGameId)
+      .single();
+    if (error) throw new Error(`Failed to get saved game: ${error.message}`);
+    const seasonId = game.game_state?.season_id;
+    if (!seasonId) {
+      const { data: seasons, error: sError } = await supabaseAdmin
+        .from('seasons')
+        .select('id')
+        .eq('saved_game_id', this.savedGameId)
+        .order('season_number', { ascending: false })
+        .limit(1);
+      if (sError || seasons.length === 0) {
+        throw new Error('No season found for this saved game');
+      }
+      return seasons[0].id;
+    }
+    return seasonId;
+  }
+
+  async simulateWeek() {
+    const seasonId = await this.getCurrentSeasonId();
+
+    // Find the next week with scheduled games
+    const { data: nextWeekData, error: weekError } = await supabaseAdmin
+        .from('games')
+        .select('week')
+        .eq('season_id', seasonId)
+        .eq('status', 'scheduled')
+        .order('week', { ascending: true })
+        .limit(1);
+
+    if (weekError) throw new Error(`Failed to find next week: ${weekError.message}`);
+    if (!nextWeekData || nextWeekData.length === 0) {
+        await supabaseAdmin
+        .from('seasons')
+        .update({ status: 'finished', end_date: new Date().toISOString() })
+        .eq('id', seasonId);
+        return { seasonComplete: true };
+    }
+
+    const weekNumber = nextWeekData[0].week;
+
+    const { data: weekGames, error: gamesError } = await supabaseAdmin
+        .from('games')
+        .select('*')
+        .eq('season_id', seasonId)
+        .eq('status', 'scheduled')
+        .eq('week', weekNumber);
+
+    if (gamesError) throw new Error(`Failed to fetch week games: ${gamesError.message}`);
+
+    // ── 1. Fetch all rosters in parallel ──────────────────────────────────────
+    const teamIds = [...new Set(weekGames.flatMap(g => [g.home_team_id, g.away_team_id]))];
+
+    const rosterEntries = await Promise.all(
+        teamIds.map(async (teamId) => [teamId, await this.getRosterForTeam(teamId)])
+    );
+    const rosterMap = Object.fromEntries(rosterEntries);
+
+    // ── 2. Run all simulations in memory (pure CPU, no awaits needed) ─────────
+    const simResults = weekGames.map((game) => {
+        const homePlayers = rosterMap[game.home_team_id];
+        const awayPlayers = rosterMap[game.away_team_id];
+
+        const result = GameSimulationEngine.simulateGame(homePlayers, awayPlayers, {
+        homeCourtAdvantage: 1.03,
+        });
+
+        const mapBoxScore = (b, teamId) => ({
+        game_id: game.id,
+        team_id: teamId,
+        saved_game_id: this.savedGameId,
+        player_id: b.player_id,
+        minutes_played: b.minutes_played || 0,
+        points: b.points || 0,
+        fgm: b.fgm || 0,
+        fga: b.fga || 0,
+        fgm_3: b.fgm_3 || 0,
+        fga_3: b.fga_3 || 0,
+        ftm: b.ftm || 0,
+        fta: b.fta || 0,
+        offensive_rebounds: b.offensive_rebounds || 0,
+        defensive_rebounds: b.defensive_rebounds || 0,
+        rebounds: (b.offensive_rebounds || 0) + (b.defensive_rebounds || 0),
+        assists: b.assists || 0,
+        steals: b.steals || 0,
+        blocks: b.blocks || 0,
+        turnovers: b.turnovers || 0,
+        personal_fouls: b.personal_fouls || 0,
+        plus_minus: b.plus_minus || 0,
+        });
+
+        return {
+        game,
+        result,
+        allBoxScores: [
+            ...result.homeBoxScores.map(b => mapBoxScore(b, game.home_team_id)),
+            ...result.awayBoxScores.map(b => mapBoxScore(b, game.away_team_id)),
+        ],
+        };
+    });
+
+    // ── 3. Batch insert all player_game_stats in one shot ────────────────────
+    const allBoxScores = simResults.flatMap(s => s.allBoxScores);
+    const { error: statsError } = await supabaseAdmin
+        .from('player_game_stats')
+        .insert(allBoxScores);
+    if (statsError) throw new Error(`Failed to insert player stats: ${statsError.message}`);
+
+    // ── 4. Batch update all game records ──────────────────────────────────────
+    await Promise.all(
+        simResults.map(({ game, result }) =>
+        supabaseAdmin
+            .from('games')
+            .update({
+            home_score: result.homeScore,
+            away_score: result.awayScore,
+            status: 'completed',
+            played_at: new Date().toISOString(),
+            })
+            .eq('id', game.id)
+        )
+    );
+
+    // ── 5. Aggregate team stat deltas in memory, then batch upsert ────────────
+    const teamStatDeltas = {};
+    for (const { game, result } of simResults) {
+        const applyDelta = (teamId, pf, pa, isHome) => {
+        if (!teamStatDeltas[teamId]) {
+            teamStatDeltas[teamId] = { wins: 0, losses: 0, points_for: 0, points_against: 0, home_wins: 0, home_losses: 0, away_wins: 0, away_losses: 0 };
+        }
+        const win = pf > pa;
+        const d = teamStatDeltas[teamId];
+        d.wins += win ? 1 : 0;
+        d.losses += win ? 0 : 1;
+        d.points_for += pf;
+        d.points_against += pa;
+        if (isHome) { d.home_wins += win ? 1 : 0; d.home_losses += win ? 0 : 1; }
+        else        { d.away_wins += win ? 1 : 0; d.away_losses += win ? 0 : 1; }
+        };
+        applyDelta(game.home_team_id, result.homeScore, result.awayScore, true);
+        applyDelta(game.away_team_id, result.awayScore, result.homeScore, false);
+    }
+
+    // Fetch current team stats once, apply deltas, then batch upsert
+    const { data: currentTeamStats } = await supabaseAdmin
+        .from('team_season_stats')
+        .select('*')
+        .eq('season_id', seasonId)
+        .in('team_id', Object.keys(teamStatDeltas));
+
+    const teamStatsById = Object.fromEntries((currentTeamStats || []).map(s => [s.team_id, s]));
+
+    const teamStatUpserts = Object.entries(teamStatDeltas).map(([teamId, delta]) => {
+        const existing = teamStatsById[teamId] || {};
+        return {
+        id: existing.id,                       // undefined triggers insert if no id
+        team_id: teamId,
+        season_id: seasonId,
+        saved_game_id: this.savedGameId,
+        wins:           (existing.wins           || 0) + delta.wins,
+        losses:         (existing.losses         || 0) + delta.losses,
+        points_for:     (existing.points_for     || 0) + delta.points_for,
+        points_against: (existing.points_against || 0) + delta.points_against,
+        home_wins:      (existing.home_wins      || 0) + delta.home_wins,
+        home_losses:    (existing.home_losses    || 0) + delta.home_losses,
+        away_wins:      (existing.away_wins      || 0) + delta.away_wins,
+        away_losses:    (existing.away_losses    || 0) + delta.away_losses,
+        };
+    });
+
+    const { error: teamUpsertError } = await supabaseAdmin
+        .from('team_season_stats')
+        .upsert(teamStatUpserts, { onConflict: 'id' });
+    if (teamUpsertError) throw new Error(`Failed to upsert team stats: ${teamUpsertError.message}`);
+
+    // ── 6. Aggregate player season stat deltas in memory, then batch upsert ──
+    const playerDeltas = {};
+    for (const box of allBoxScores) {
+        if (!playerDeltas[box.player_id]) {
+        playerDeltas[box.player_id] = { team_id: box.team_id, games_played: 0, total_points: 0, total_rebounds: 0, total_assists: 0, total_steals: 0, total_blocks: 0, total_turnovers: 0, total_fga: 0, total_fgm: 0, total_fga_3: 0, total_fgm_3: 0, total_fta: 0, total_ftm: 0, offensive_rebounds: 0, defensive_rebounds: 0, minutes: 0 };
+        }
+        const d = playerDeltas[box.player_id];
+        d.games_played      += 1;
+        d.total_points      += box.points;
+        d.total_rebounds    += box.rebounds;
+        d.total_assists     += box.assists;
+        d.total_steals      += box.steals;
+        d.total_blocks      += box.blocks;
+        d.total_turnovers   += box.turnovers;
+        d.total_fga         += box.fga;
+        d.total_fgm         += box.fgm;
+        d.total_fga_3       += box.fga_3;
+        d.total_fgm_3       += box.fgm_3;
+        d.total_fta         += box.fta;
+        d.total_ftm         += box.ftm;
+        d.offensive_rebounds += box.offensive_rebounds;
+        d.defensive_rebounds += box.defensive_rebounds;
+        d.minutes           += box.minutes_played;
+    }
+
+    const playerIds = Object.keys(playerDeltas);
+    const { data: currentPlayerStats } = await supabaseAdmin
+        .from('player_season_stats')
+        .select('*')
+        .eq('season_id', seasonId)
+        .in('player_id', playerIds);
+
+    const playerStatsById = Object.fromEntries((currentPlayerStats || []).map(s => [s.player_id, s]));
+
+    const playerStatUpserts = playerIds.map((playerId) => {
+        const delta = playerDeltas[playerId];
+        const existing = playerStatsById[playerId] || {};
+        return {
+        player_id: playerId,
+        season_id: seasonId,
+        team_id: delta.team_id,
+        saved_game_id: this.savedGameId,
+        games_played:       (existing.games_played       || 0) + delta.games_played,
+        total_points:       (existing.total_points       || 0) + delta.total_points,
+        total_rebounds:     (existing.total_rebounds     || 0) + delta.total_rebounds,
+        total_assists:      (existing.total_assists      || 0) + delta.total_assists,
+        total_steals:       (existing.total_steals       || 0) + delta.total_steals,
+        total_blocks:       (existing.total_blocks       || 0) + delta.total_blocks,
+        total_turnovers:    (existing.total_turnovers    || 0) + delta.total_turnovers,
+        total_fga:          (existing.total_fga          || 0) + delta.total_fga,
+        total_fgm:          (existing.total_fgm          || 0) + delta.total_fgm,
+        total_fga_3:        (existing.total_fga_3        || 0) + delta.total_fga_3,
+        total_fgm_3:        (existing.total_fgm_3        || 0) + delta.total_fgm_3,
+        total_fta:          (existing.total_fta          || 0) + delta.total_fta,
+        total_ftm:          (existing.total_ftm          || 0) + delta.total_ftm,
+        offensive_rebounds: (existing.offensive_rebounds || 0) + delta.offensive_rebounds,
+        defensive_rebounds: (existing.defensive_rebounds || 0) + delta.defensive_rebounds,
+        minutes:            (existing.minutes            || 0) + delta.minutes,
+        };
+    });
+
+    const BATCH_SIZE = 200;
+    for (let i = 0; i < playerStatUpserts.length; i += BATCH_SIZE) {
+        const { error: playerUpsertError } = await supabaseAdmin
+        .from('player_season_stats')
+        .upsert(playerStatUpserts.slice(i, i + BATCH_SIZE), { onConflict: 'id' });
+        if (playerUpsertError) throw new Error(`Failed to upsert player season stats: ${playerUpsertError.message}`);
+    }
+
+    // ── 7. Update saved_games state ───────────────────────────────────────────
+    const currentState = await this._getGameState();
+    await supabaseAdmin
+        .from('saved_games')
+        .update({
+        game_state: {
+            ...currentState,
+            last_simulated_week: weekNumber,
+            last_simulated_at: new Date().toISOString(),
+        },
+        })
+        .eq('id', this.savedGameId);
+
+    return {
+        seasonComplete: false,
+        week: weekNumber,
+        games: simResults.map(({ game, result }) => ({
+        gameId: game.id,
+        homeScore: result.homeScore,
+        awayScore: result.awayScore,
+        overtime: result.overtime,
+        overtimeCount: result.overtimeCount,
+        })),
+    };
+  };
+
   async _getGameState() {
     const { data, error } = await supabaseAdmin
       .from('saved_games')
@@ -494,351 +961,34 @@ class LeagueService {
     return data.game_state || {};
   }
 
-  // services/LeagueService.js
-
-/**
- * Simulate a single game and persist all results.
- * @param {string} gameId - UUID of the game to simulate.
- * @returns {Object} - game result summary.
- */
-async simulateGame(gameId) {
-  // Fetch the game with home/away team details
-  const { data: game, error: gameError } = await supabaseAdmin
-    .from('games')
-    .select(`
-      *,
-      home_team:home_team_id(*),
-      away_team:away_team_id(*)
-    `)
-    .eq('id', gameId)
-    .single();
-
-  if (gameError) throw new Error(`Game not found: ${gameError.message}`);
-  if (game.status !== 'scheduled') {
-    throw new Error(`Game ${gameId} is already ${game.status}`);
+  // Stub for full season simulation (not yet implemented)
+  async simulateSeason() {
+    throw new Error('simulateSeason() is not implemented. Use simulateWeek() instead.');
   }
 
-  const seasonId = game.season_id;
-  const homeTeam = game.home_team;
-  const awayTeam = game.away_team;
-
-  // Fetch rosters
-  const homePlayers = await this.getRosterForTeam(homeTeam.id);
-  const awayPlayers = await this.getRosterForTeam(awayTeam.id);
-
-  // Use the simulation engine
-  const result = GameSimulationEngine.simulateGame(homePlayers, awayPlayers, {
-    homeCourtAdvantage: 1.03,
-  });
-
-  // Extract box scores
-  const homeBoxScores = result.homeBoxScores.map(b => ({
-    ...b,
-    game_id: gameId,
-    team_id: homeTeam.id,
-  }));
-  
-  const awayBoxScores = result.awayBoxScores.map(b => ({
-    ...b,
-    game_id: gameId,
-    team_id: awayTeam.id,
-  }));
-
-  const allStats = [...homeBoxScores, ...awayBoxScores];
-
-  try {
-    // Insert player_game_stats
-    const { error: statsError } = await supabaseAdmin
-      .from('player_game_stats')
-      .insert(allStats);
-    if (statsError) throw new Error(`Failed to insert player stats: ${statsError.message}`);
-
-    // Update game record
-    const { error: updateGameError } = await supabaseAdmin
-      .from('games')
-      .update({
-        home_score: result.homeScore,
-        away_score: result.awayScore,
-        status: 'final',
-        played_at: new Date().toISOString(),
-      })
-      .eq('id', gameId);
-    if (updateGameError) throw new Error(`Failed to update game: ${updateGameError.message}`);
-
-    // Update team stats
-    await this._updateTeamStats(seasonId, homeTeam.id, result.homeScore, result.awayScore, true);
-    await this._updateTeamStats(seasonId, awayTeam.id, result.awayScore, result.homeScore, false);
-
-    // Update player season stats
-    await this._updatePlayerSeasonStats(seasonId, allStats, this.savedGameId);
-
-    return {
-      gameId,
-      homeTeam: homeTeam.name,
-      awayTeam: awayTeam.name,
-      homeScore: result.homeScore,
-      awayScore: result.awayScore,
-      overtime: result.overtime,
-      overtimeCount: result.overtimeCount,
-    };
-  } catch (error) {
-    throw error;
-  }
-}/**
- * Generate box scores for a team's players based on ratings.
- * Each player gets minutes and stats proportional to their overall rating.
- */
-_generateBoxScores(players, teamId, gameId) {
-  const sorted = [...players].sort((a, b) => b.overall_rating - a.overall_rating);
-  const totalMinutes = 48 * 5;
-  let remaining = totalMinutes;
-  const boxScores = [];
-
-  sorted.forEach((player, index) => {
-    let minutes;
-    if (index < 5) {
-      minutes = Math.round(30 + Math.random() * 8);
-    } else {
-      minutes = Math.round(4 + Math.random() * 14);
-    }
-    minutes = Math.min(minutes, remaining);
-    remaining -= minutes;
-    if (remaining < 0) minutes += remaining;
-
-    const rating = player.overall_rating;
-    const points = Math.round((rating / 10) * (minutes / 36) * (0.8 + 0.4 * Math.random()));
-    const rebounds = Math.round((rating / 20) * (minutes / 36) * (0.8 + 0.4 * Math.random()));
-    const assists = Math.round((rating / 25) * (minutes / 36) * (0.8 + 0.4 * Math.random()));
-    const steals = Math.round((rating / 40) * (minutes / 36) * (0.8 + 0.4 * Math.random()));
-    const blocks = Math.round((rating / 50) * (minutes / 36) * (0.8 + 0.4 * Math.random()));
-    const turnovers = Math.round((rating / 60) * (minutes / 36) * (0.8 + 0.4 * Math.random()));
-
-    const fga = Math.round(points / 2 + Math.random() * 4);
-    const fgm = Math.round(fga * (0.42 + 0.08 * Math.random()));
-    const fga3 = Math.round(fga * (0.2 + 0.2 * Math.random()));
-    const fgm3 = Math.round(fga3 * (0.35 + 0.05 * Math.random()));
-    const fta = Math.round((fga / 2) * (0.3 + 0.2 * Math.random()));
-    const ftm = Math.round(fta * (0.75 + 0.1 * Math.random()));
-
-    boxScores.push({
-      player_id: player.id,
-      game_id: gameId,
-      team_id: teamId,
-      minutes_played: minutes,
-      points,
-      rebounds,
-      assists,
-      steals,
-      blocks,
-      turnovers,
-      fga,
-      fgm,
-      fga_3: fga3,
-      fgm_3: fgm3,
-      fta,
-      ftm,
-    });
-  });
-
-  return boxScores;
-}
-
-_sumBoxScores(boxScores) {
-  const totals = { points: 0, rebounds: 0, assists: 0, steals: 0, blocks: 0, turnovers: 0 };
-  boxScores.forEach(b => {
-    totals.points += b.points;
-    totals.rebounds += b.rebounds;
-    totals.assists += b.assists;
-    totals.steals += b.steals;
-    totals.blocks += b.blocks;
-    totals.turnovers += b.turnovers;
-  });
-  return totals;
-}
-
-async _updateTeamStats(seasonId, teamId, pointsFor, pointsAgainst, isHome) {
-  // We need to determine win/loss
-  const win = pointsFor > pointsAgainst;
-  const { data: current, error } = await supabaseAdmin
-    .from('team_season_stats')
-    .select('wins, losses, points_for, points_against')
-    .eq('team_id', teamId)
-    .eq('season', (await this._getSeasonNumber(seasonId)))
-    .single();
-
-  if (error) throw new Error(`Failed to fetch team stats: ${error.message}`);
-
-  const newWins = current.wins + (win ? 1 : 0);
-  const newLosses = current.losses + (win ? 0 : 1);
-  const newPointsFor = (current.points_for || 0) + pointsFor;
-  const newPointsAgainst = (current.points_against || 0) + pointsAgainst;
-
-  const { error: updateError } = await supabaseAdmin
-    .from('team_season_stats')
-    .update({
-      wins: newWins,
-      losses: newLosses,
-      points_for: newPointsFor,
-      points_against: newPointsAgainst,
-    })
-    .eq('team_id', teamId)
-    .eq('season', (await this._getSeasonNumber(seasonId)));
-
-  if (updateError) throw new Error(`Failed to update team stats: ${updateError.message}`);
-}
-
-async _updatePlayerSeasonStats(seasonId, boxScores, savedGameId) {
-  for (const box of boxScores) {
-    const { data: existing, error: findError } = await supabaseAdmin
-      .from('player_season_stats')
-      .select('*')
-      .eq('player_id', box.player_id)
-      .eq('season_id', seasonId)
-      .single();
-
-    if (findError && findError.code !== 'PGRST116') {
-      throw new Error(`Failed to find player season stats: ${findError.message}`);
-    }
-
-    const newStats = {
-      games_played: (existing?.games_played || 0) + 1,
-      total_points: (existing?.total_points || 0) + box.points,
-      total_rebounds: (existing?.total_rebounds || 0) + box.rebounds,
-      total_assists: (existing?.total_assists || 0) + box.assists,
-      total_steals: (existing?.total_steals || 0) + box.steals,
-      total_blocks: (existing?.total_blocks || 0) + box.blocks,
-      total_turnovers: (existing?.total_turnovers || 0) + box.turnovers,
-      total_fga: (existing?.total_fga || 0) + box.fga,
-      total_fgm: (existing?.total_fgm || 0) + box.fgm,
-      total_fga_3: (existing?.total_fga_3 || 0) + box.fga_3,
-      total_fgm_3: (existing?.total_fgm_3 || 0) + box.fgm_3,
-      total_fta: (existing?.total_fta || 0) + box.fta,
-      total_ftm: (existing?.total_ftm || 0) + box.ftm,
-    };
-
-    if (existing) {
-      const { error: updateError } = await supabaseAdmin
-        .from('player_season_stats')
-        .update(newStats)
-        .eq('id', existing.id);
-      if (updateError) throw new Error(`Failed to update player stats: ${updateError.message}`);
-    } else {
-      const { error: insertError } = await supabaseAdmin
-        .from('player_season_stats')
-        .insert({
-          player_id: box.player_id,
-          season_id: seasonId,
-          saved_game_id: savedGameId,
-          team_id: box.team_id,  
-          ...newStats,
-        });
-      if (insertError) throw new Error(`Failed to insert player stats: ${insertError.message}`);
-    }
-  }
-}
-
-async _getSeasonNumber(seasonId) {
-  const { data, error } = await supabaseAdmin
-    .from('seasons')
-    .select('season_number')
-    .eq('id', seasonId)
-    .single();
-  if (error) throw new Error(`Failed to get season number: ${error.message}`);
-  return data.season_number;
-}
-
-// services/LeagueService.js
-
-async getCurrentSeasonId() {
-  // Fetch from saved_games.game_state or the most recent season
-  const { data: game, error } = await supabaseAdmin
-    .from('saved_games')
-    .select('game_state')
-    .eq('id', this.savedGameId)
-    .single();
-  if (error) throw new Error(`Failed to get saved game: ${error.message}`);
-  
-  const seasonId = game.game_state?.season_id;
-  if (!seasonId) {
-    // Fallback: get the latest season for this saved game
-    const { data: seasons, error: sError } = await supabaseAdmin
-      .from('seasons')
+  async tradePlayer(playerId, newTeamId) {
+    const { data: destTeam, error: teamError } = await supabaseAdmin
+      .from('teams')
       .select('id')
+      .eq('id', newTeamId)
       .eq('saved_game_id', this.savedGameId)
-      .order('season_number', { ascending: false })
-      .limit(1);
-    if (sError || seasons.length === 0) {
-      throw new Error('No season found for this saved game');
+      .single();
+    if (teamError || !destTeam) {
+      throw new Error('Destination team not found in this saved game');
     }
-    return seasons[0].id;
+    const { data, error } = await supabaseAdmin
+      .from('players')
+      .update({ team_id: newTeamId })
+      .eq('id', playerId)
+      .eq('saved_game_id', this.savedGameId)
+      .select()
+      .single();
+    if (error) throw new Error(`Failed to trade player: ${error.message}`);
+    return data;
   }
-  return seasonId;
 }
 
-// services/LeagueService.js
-
-async simulateWeek() {
-  const seasonId = await this.getCurrentSeasonId();
-
-  // 1. Find the next week with scheduled games
-  const { data: nextWeekData, error: weekError } = await supabaseAdmin
-    .from('games')
-    .select('week')
-    .eq('season_id', seasonId)
-    .eq('status', 'scheduled')
-    .order('week', { ascending: true })
-    .limit(1);
-
-  if (weekError) throw new Error(`Failed to find next week: ${weekError.message}`);
-  if (!nextWeekData || nextWeekData.length === 0) {
-    // No more games – season is complete
-    await supabaseAdmin
-      .from('seasons')
-      .update({ status: 'finished', end_date: new Date().toISOString() })
-      .eq('id', seasonId);
-    return { seasonComplete: true };
-  }
-
-  const weekNumber = nextWeekData[0].week;
-
-  // 2. Fetch all scheduled games for that week
-  const { data: weekGames, error: gamesError } = await supabaseAdmin
-    .from('games')
-    .select('*')
-    .eq('season_id', seasonId)
-    .eq('status', 'scheduled')
-    .eq('week', weekNumber);
-
-  if (gamesError) throw new Error(`Failed to fetch week games: ${gamesError.message}`);
-
-  // 3. Simulate each game sequentially
-  const results = [];
-  for (const game of weekGames) {
-    const result = await this.simulateGame(game.id);
-    results.push(result);
-  }
-
-  // 4. Update saved_game state (optional)
-  await supabaseAdmin
-    .from('saved_games')
-    .update({
-      game_state: {
-        ...(await this._getGameState()),
-        last_simulated_week: weekNumber,
-        last_simulated_at: new Date().toISOString(),
-      }
-    })
-    .eq('id', this.savedGameId);
-
-  return {
-    seasonComplete: false,
-    week: weekNumber,
-    games: results,
-  };
-}
-}
-
-// Pure generation helpers exposed for testing (unchanged)
+// Expose helpers for testing
 LeagueService.generatePlayer = generatePlayer;
 LeagueService.generateRosterForTeam = generateRosterForTeam;
 

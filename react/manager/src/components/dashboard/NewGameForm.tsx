@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { gameAPI } from '../../api/client';
 import { leagueAPI } from '../../api/leagueApi';
-import { SavedGame } from '../../types';
+import { SavedGame } from '../../shared';
 import './Dashboard.css';
 
 interface NewGameFormProps {
@@ -37,29 +37,27 @@ const NewGameForm: React.FC<NewGameFormProps> = ({ onClose, onGameCreated }) => 
 
     setLoading(true);
     try {
-      // 1. Create the saved game
+      // 1. Create the saved game (original logic)
       const response = await gameAPI.createGame(formData);
       if (response.data.success && response.data.data) {
         const savedGame = response.data.data;
 
-        // 2. Initialize the league for this game (season 1)
-        const leagueResponse = await leagueAPI.initializeLeague(savedGame.id, 1);
-        if (leagueResponse.data.success) {
-          // 3. Pass the game with league data to parent
-          onGameCreated(savedGame);
-        } else {
-          setError('League initialization failed');
-        }
+        // 2. Initialize the league – now returns data directly (no .data.success)
+        await leagueAPI.initializeLeague(savedGame.id, { season: 1 });
+
+        // 3. Pass the game to parent
+        onGameCreated(savedGame);
       } else {
         setError('Failed to create game');
       }
     } catch (err: any) {
+      console.error('Failed to create game or initialize league:', err);
       setError(err.response?.data?.error || 'Failed to create game');
     } finally {
       setLoading(false);
     }
   };
-
+  
   return (
     <div className="new-game-form">
       <div className="form-header">

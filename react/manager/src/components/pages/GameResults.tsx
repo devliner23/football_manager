@@ -1,5 +1,3 @@
-// components/GameResults.tsx
-
 import React, { useState, useEffect } from 'react';
 import { leagueAPI, GameResult } from '../../api/leagueApi';
 import './GameResults.css';
@@ -22,10 +20,8 @@ const GameResults: React.FC<GameResultsProps> = ({ savedGameId, onGameClick }) =
   const loadRecentGames = async () => {
     setLoading(true);
     try {
-      const response = await leagueAPI.getRecentGames(savedGameId, 10);
-      if (response.data.success) {
-        setGames(response.data.data);
-      }
+      const gamesData = await leagueAPI.getRecentGames(savedGameId, 10);
+      setGames(gamesData);
     } catch (error) {
       console.error('Failed to load games:', error);
     } finally {
@@ -41,12 +37,10 @@ const GameResults: React.FC<GameResultsProps> = ({ savedGameId, onGameClick }) =
     }
 
     try {
-      const response = await leagueAPI.getGameDetails(gameId);
-      if (response.data.success) {
-        setBoxScores(response.data.data.boxScores);
-        setExpandedGame(gameId);
-        if (onGameClick) onGameClick(gameId);
-      }
+      const gameDetail = await leagueAPI.getGameDetails(gameId);
+      setBoxScores(gameDetail.boxScores);
+      setExpandedGame(gameId);
+      if (onGameClick) onGameClick(gameId);
     } catch (error) {
       console.error('Failed to load game details:', error);
     }

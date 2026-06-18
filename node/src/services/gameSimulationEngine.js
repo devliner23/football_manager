@@ -550,7 +550,7 @@ class GameSimulationEngine {
   /**
    * Generate detailed box scores for players
    */
-  static _generateBoxScores(players, teamScore, opponentScore, isHome) {
+static _generateBoxScores(players, teamScore, opponentScore, isHome) {
     const totalMinutes = 48 * 5;
     const sorted = [...players].sort((a, b) => b.overall_rating - a.overall_rating);
     
@@ -558,17 +558,13 @@ class GameSimulationEngine {
     const ratedPlayers = sorted.map((p, index) => {
       let minutes;
       if (index < 5) {
-        // Starters get 28-38 minutes
         minutes = 28 + Math.random() * 10;
       } else if (index < 9) {
-        // Bench rotation gets 12-22 minutes
         minutes = 12 + Math.random() * 10;
       } else {
-        // Deep bench gets 2-8 minutes
         minutes = 2 + Math.random() * 6;
       }
       
-      // Adjust based on rating
       const ratingFactor = (p.overall_rating - 40) / 60;
       minutes = minutes * (0.8 + ratingFactor * 0.4);
       
@@ -579,6 +575,11 @@ class GameSimulationEngine {
     const totalAllocated = ratedPlayers.reduce((sum, p) => sum + p.minutes, 0);
     const scaleFactor = totalMinutes / totalAllocated;
     
+    // Calculate team plus/minus for each player (simplified)
+    // We'll give each player a plus/minus based on their rating and team score differential
+    const scoreDiff = teamScore - opponentScore;
+    const avgRating = sorted.reduce((s, p) => s + p.overall_rating, 0) / sorted.length;
+    
     const boxScores = ratedPlayers.map(p => {
       const minutes = Math.round(p.minutes * scaleFactor);
       
@@ -586,11 +587,10 @@ class GameSimulationEngine {
       const ratingFactor = p.overall_rating / 100;
       const minuteFactor = minutes / 36;
       
-      // Calculate points with realistic distribution
+      // Points and shots
       const usageRate = 0.15 + ratingFactor * 0.2;
       const shotAttempts = Math.round(minuteFactor * 12 * (0.7 + ratingFactor * 0.6));
       
-      // Distribute shot types based on position and ratings
       const threeRate = Math.min(0.6, p.three_point / 120);
       const midRate = Math.min(0.5, p.mid_range / 120);
       const insideRate = 1 - threeRate - midRate;
@@ -598,7 +598,6 @@ class GameSimulationEngine {
       let fga = 0, fgm = 0, fga3 = 0, fgm3 = 0;
       let fta = 0, ftm = 0;
       
-      // Simulate shot attempts
       for (let i = 0; i < shotAttempts; i++) {
         const shotType = Math.random();
         let made = false;
@@ -630,13 +629,15 @@ class GameSimulationEngine {
         if (Math.random() < makeRate) ftm++;
       }
       
-      // Calculate points
       const points = fgm * 2 + fgm3 * 3 + ftm;
       
-      // Other stats
-      const rebounds = Math.round(
+      // Rebounds – split into offensive and defensive (30/70)
+      const totalRebounds = Math.round(
         minuteFactor * 4 * (0.5 + (p.rebounding / 100) * 0.6) * (isHome ? 1.05 : 1)
       );
+      const offensiveRebounds = Math.round(totalRebounds * (0.25 + Math.random() * 0.1));
+      const defensiveRebounds = totalRebounds - offensiveRebounds;
+      
       const assists = Math.round(
         minuteFactor * 3 * (0.5 + (p.passing / 100) * 0.6)
       );
@@ -650,16 +651,28 @@ class GameSimulationEngine {
         minuteFactor * 2 * (1 - (p.ball_handling / 100) * 0.4)
       );
       
+      // Personal fouls: 1-6 based on minutes and defensive aggression
+      const foulRate = 0.15 + (1 - p.perimeter_defense / 100) * 0.3;
+      const personalFouls = Math.min(6, Math.round(minuteFactor * foulRate * 8));
+      
+      // Plus/minus: approximate from team score differential and player rating
+      const playerImpact = (p.overall_rating / 100) * (minutes / 48);
+      const plusMinus = Math.round(scoreDiff * playerImpact * 0.5 + (Math.random() - 0.5) * 4);
+      
       return {
         player_id: p.id,
         team_id: p.team_id,
         minutes_played: minutes,
         points,
-        rebounds,
+        rebounds: totalRebounds, // keep total for any legacy use, but also split
+        offensive_rebounds: offensiveRebounds,
+        defensive_rebounds: defensiveRebounds,
         assists,
         steals,
         blocks,
         turnovers,
+        personal_fouls: personalFouls,
+        plus_minus: plusMinus,
         fga,
         fgm,
         fga_3: fga3,

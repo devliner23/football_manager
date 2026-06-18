@@ -1,66 +1,45 @@
-const { supabase } = require('../config/supabase');
+// middleware/auth.js
 const jwt = require('jsonwebtoken');
+const { supabaseAdmin } = require('../config/supabase'); // if using Supabase
 
 const authMiddleware = async (req, res, next) => {
   try {
-    // Get token from Authorization header
+    // Get token from header
     const authHeader = req.headers.authorization;
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ 
-        error: 'Authentication required',
-        message: 'Please provide a valid token'
-      });
+    if (!authHeader) {
+      console.log('No Authorization header');
+      return res.status(401).json({ error: 'No token provided' });
     }
-    
-    const token = authHeader.split(' ')[1];
-    
-    // Verify JWT token
-    let decoded;
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+      console.log('Invalid Authorization format');
+      return res.status(401).json({ error: 'Invalid token format' });
+    }
+    const token = parts[1];
+    console.log('Token received:', token.substring(0, 20) + '...');
+
+    // Option 1: If using custom JWT
     try {
-      decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = decoded; // attach user info
+      console.log('Token verified, user:', decoded.id);
+      next();
     } catch (jwtError) {
-      if (jwtError.name === 'TokenExpiredError') {
-        return res.status(401).json({ 
-          error: 'Token expired',
-          code: 'TOKEN_EXPIRED'
-        });
-      }
-      return res.status(401).json({ 
-        error: 'Invalid token',
-        code: 'INVALID_TOKEN'
-      });
+      console.error('JWT verification failed:', jwtError.message);
+      return res.status(401).json({ error: 'Invalid token' });
     }
-    
-    // Verify user exists in Supabase
-    const { data: user, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', decoded.id)
-      .single();
-    
-    if (error || !user) {
-      return res.status(401).json({ 
-        error: 'User not found',
-        code: 'USER_NOT_FOUND'
-      });
-    }
-    
-    // Attach user to request
-    req.user = {
-      id: decoded.id,
-      email: decoded.email,
-      username: decoded.username || user.username,
-      ...user
-    };
-    
-    next();
-  } catch (error) {
-    console.error('Auth middleware error:', error);
-    res.status(401).json({ 
-      error: 'Authentication failed',
-      code: 'AUTH_FAILED'
-    });
+
+    // Option 2: If using Supabase
+    // const { data: user, error } = await supabaseAdmin.auth.api.getUser(token);
+    // if (error) {
+    //   console.error('Supabase token verification error:', error);
+    //   return res.status(401).json({ error: 'Invalid token' });
+    // }
+    // req.user = user;
+    // next();
+  } catch (err) {
+    console.error('Auth middleware error:', err);
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 

@@ -1,0 +1,34 @@
+.schedule-tab {
+  padding: 20px;
+}
+.schedule-week {
+  margin-bottom: 24px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 16px;
+}
+.schedule-week h3 {
+  margin-bottom: 12px;
+  color: #333;
+}
+.schedule-games {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.schedule-game {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #f9f9f9;
+  border-radius: 4px;
+}
+.schedule-game .game-teams {
+  font-weight: 500;
+}
+.schedule-game .game-status {
+  color: #555;
+}
+.schedule-game .game-date {
+  color: #888;
+  font-size: 0.9em;
+}

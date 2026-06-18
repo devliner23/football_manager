@@ -1,89 +1,119 @@
-// api/leagueApi.ts
-import api from "./client";
+// src/api/leagueApi.ts
+import axios from 'axios';
+import { 
+  Team, 
+  Player, 
+  StandingsRow, 
+  SavedGame, 
+  GameResult, 
+  PlayerGameStats,
+  ApiResponse 
+} from '../shared';
+import api from './client';
 
-export interface Team {
-  id: string;
-  saved_game_id: string;
-  team_id: string;
-  city: string;
-  name: string;
-  abbreviation: string;
-  conference: string;
-  division: string;
-  wins?: number;
-  losses?: number;
-}
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
-export interface Player {
-  id: string;
-  saved_game_id: string;
-  team_id: string;
-  first_name: string;
-  last_name: string;
-  position: string;
-  age: number;
-  height: number;
-  weight: number;
-  overall_rating: number;
-  potential_rating: number;
-  traits?: Record<string, number>;
-  points?: number;
-  rebounds?: number;
-  assists?: number;
-}
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error.response?.data || error.message);
+    return Promise.reject(error);
+  }
+);
 
-export interface StandingsRow {
-  team_id: string;
-  season: number;
-  wins: number;
-  losses: number;
-}
-
-export interface GameResult {
-  id: string;
-  season_id: string;
-  home_team_id: string;
-  away_team_id: string;
-  home_score: number;
-  away_score: number;
-  status: 'scheduled' | 'final' | 'in_progress';
-  played_at: string;
-  week: number;
-  home_team?: Team;
-  away_team?: Team;
+// Helper to extract data from ApiResponse
+function extractData<T>(response: { data: ApiResponse<T> }): T {
+  if (!response.data.success) {
+    throw new Error(response.data.error || 'API request failed');
+  }
+  return response.data.data;
 }
 
 export const leagueAPI = {
-  getTeams: (savedGameId: string) =>
-    api.get<{ success: boolean; data: Team[] }>(`/api/league/${savedGameId}/teams`),
+  // ── Teams ──────────────────────────────────────────────────
+  getTeams: async (savedGameId: string) => {
+    const response = await api.get<ApiResponse<Team[]>>(`/api/league/${savedGameId}/teams`);
+    return extractData(response);
+  },
 
-  getPlayers: (savedGameId: string) =>
-    api.get<{ success: boolean; data: Player[] }>(`/api/league/${savedGameId}/players`),
+  // ── Players ────────────────────────────────────────────────
+  getPlayers: async (savedGameId: string) => {
+    const response = await api.get<ApiResponse<Player[]>>(`/api/league/${savedGameId}/players`);
+    return extractData(response);
+  },
 
-  getStandings: (savedGameId: string) =>
-    api.get<{ success: boolean; data: StandingsRow[] }>(`/api/league/${savedGameId}/standings`),
+  // ── Standings ──────────────────────────────────────────────
+  getStandings: async (savedGameId: string) => {
+    const response = await api.get<ApiResponse<StandingsRow[]>>(`/api/league/${savedGameId}/standings`);
+    return extractData(response);
+  },
 
-  simulateSeason: (savedGameId: string) =>
-    api.post<{ success: boolean; data: any }>(`/api/league/${savedGameId}/simulate-season`),
+  // ── Games ──────────────────────────────────────────────────
+  getGames: async (savedGameId: string, limit?: number) => {
+    const response = await api.get<ApiResponse<GameResult[]>>(
+      `/api/league/${savedGameId}/games${limit ? `?limit=${limit}` : ''}`
+    );
+    return extractData(response);
+  },
 
-  tradePlayer: (savedGameId: string, playerId: string, newTeamId: string) =>
-    api.post<{ success: boolean; data: Player }>(`/api/league/${savedGameId}/trade`, {
-      playerId,
-      newTeamId,
-    }),
+  getRecentGames: async (savedGameId: string, limit: number = 10) => {
+    const response = await api.get<ApiResponse<GameResult[]>>(
+      `/api/league/${savedGameId}/games/recent?limit=${limit}`
+    );
+    return extractData(response);
+  },
 
-  initializeLeague: (savedGameId: string, season: number = 1) =>
-    api.post<{ success: boolean; data: any }>(`/api/league/${savedGameId}/initialize`, { season }),
+  getGameDetails: async (gameId: string) => {
+    const response = await api.get<ApiResponse<GameResult & { boxScores: PlayerGameStats[] }>>(
+      `/api/league/games/${gameId}`
+    );
+    return extractData(response);
+  },
 
-  simulateWeek: (savedGameId: string) =>
-    api.post(`/api/league/${savedGameId}/simulate-week`),
+  // ── Simulation ─────────────────────────────────────────────
+  simulateWeek: async (savedGameId: string) => {
+    const response = await api.post<ApiResponse<{ 
+      seasonComplete: boolean; 
+      week?: number; 
+      games?: GameResult[] 
+    }>>(`/api/league/${savedGameId}/simulate-week`);
+    return extractData(response);
+  },
 
-  getGames: (savedGameId: string, limit?: number) => 
-  api.get(`/league/${savedGameId}/games${limit ? `?limit=${limit}` : ''}`),
+  simulateSeason: async (savedGameId: string) => {
+    const response = await api.post<ApiResponse<{ message: string }>>(`/api/league/${savedGameId}/simulate-season`);
+    return extractData(response);
+  },
 
-  getRecentGames: (savedGameId: string, limit: number = 10) =>
-    api.get(`/league/${savedGameId}/games/recent?limit=${limit}`),
+  // ── League Management ──────────────────────────────────────
+  initializeLeague: async (savedGameId: string, options: { season?: number; teamArchetypes?: Record<string, string> }) => {
+    const response = await api.post<ApiResponse<{ 
+      season: number; 
+      teamsCreated: number; 
+      playersCreated: number; 
+      gamesCreated: number; 
+      archetypesUsed: number 
+    }>>(`/api/league/${savedGameId}/initialize`, options);
+    return extractData(response);
+  },
 
-  getGameDetails: (gameId: string) =>
-    api.get(`/league/games/${gameId}`),
+  // ── Trades ──────────────────────────────────────────────────
+  tradePlayer: async (savedGameId: string, data: { playerId: string; newTeamId: string }) => {
+    const response = await api.post<ApiResponse<Player>>(`/api/league/${savedGameId}/trade`, data);
+    return extractData(response);
+  },
+
+  // ── League Leaders ─────────────────────────────────────────
+  getLeagueLeaders: async (savedGameId: string, stat: string) => {
+    const response = await api.get<ApiResponse<Player[]>>(`/api/league/${savedGameId}/leaders/${stat}`);
+    return extractData(response);
+  },
+
+  // src/api/leagueApi.ts
+  getSchedule: async (savedGameId: string) => {
+    const response = await api.get<ApiResponse<Record<number, GameResult[]>>>(`/league/${savedGameId}/schedule`);
+    return extractData(response);
+},
 };
+
+export type { Team, Player, StandingsRow, SavedGame, GameResult, PlayerGameStats };

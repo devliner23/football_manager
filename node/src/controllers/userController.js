@@ -56,24 +56,19 @@ const userController = {
   // Get user's saved games
   async getSavedGames(req, res, next) {
     try {
-      const { data: games, error } = await supabase
+        const { data: games, error } = await supabase
         .from('saved_games')
         .select('*')
-        .eq('user_id', req.user.id)
+        .eq('user_id', req.user.id)   // use 'user_id'
         .order('last_played', { ascending: false });
-      
-      if (error) throw error;
-      
-      res.json({
-        success: true,
-        data: games,
-        count: games.length
-      });
+        
+        if (error) throw error;
+        res.json({ success: true, data: games });
     } catch (error) {
-      next(error);
+        next(error);
     }
   },
-  
+    
   // Get a specific saved game with all related data
   async getGameWithData(req, res, next) {
     try {

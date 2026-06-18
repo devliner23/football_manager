@@ -141,7 +141,6 @@ const authController = {
               full_name: existingAuthUser.user_metadata?.full_name || null,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
-              last_login: new Date().toISOString()
             };
             
             const { data: createdProfile, error: createError } = await supabaseAdmin
