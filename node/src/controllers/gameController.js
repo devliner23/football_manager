@@ -1,58 +1,61 @@
 const { supabase } = require('../config/supabase');
 const gameService = require('../services/gameService');
+const { resolveTeamId } = require("../utils/resolveUUID");
 
 const gameController = {
-  // Create a new saved game
-// in gameController.js
 
 async createGame(req, res, next) {
   try {
-    const { name, managed_club_id, difficulty = 'pro' } = req.body;
-    
-    if (!name || !managed_club_id) {
-      return res.status(400).json({ 
-        error: 'Game name and managed club are required' 
+    // 1. Destructure ALL required fields from the request body
+    const {
+      saved_game_id,
+      season_id,
+      home_team,          // team name (e.g., "Thunder") or UUID
+      away_team,          // team name (e.g., "Lakers") or UUID
+      game_date,
+      week,               // optional
+      status = 'scheduled'
+    } = req.body;
+
+    // 2. Validate required fields
+    if (!saved_game_id || !season_id || !home_team || !away_team) {
+      return res.status(400).json({
+        error: 'Missing required fields: saved_game_id, season_id, home_team, away_team'
       });
     }
-    
-    const gameData = {
-      user_id: req.user.id,          // now references auth.users
-      name,
-      managed_club_id,
-      difficulty,
-      current_season: 1,
-      current_game_date: new Date(),
-      is_auto_save: false,
-      game_state: {
-        season: 1,
-        clubs: [],
-        players: [],
-        standings: {},
-        settings: {
-          difficulty,
-          quarters: 4,
-          quarter_length: 12
-        },
-        created_at: new Date().toISOString()
-      }
-    };
-    
-    const { data: game, error } = await supabase
-      .from('saved_games')
-      .insert([gameData])
-      .select()
+
+    // 3. Resolve team names → UUIDs (scoped to the saved game)
+    const homeTeamId = await resolveTeamId(saved_game_id, home_team);
+    const awayTeamId = await resolveTeamId(saved_game_id, away_team);
+
+    // 4. Insert the game into the `games` table
+    const { data, error } = await supabaseAdmin
+      .from('games')
+      .insert({
+        saved_game_id,
+        season_id,
+        home_team_id: homeTeamId,
+        away_team_id: awayTeamId,
+        game_date: game_date || new Date().toISOString(),
+        week: week || null,
+        status: status,
+        // other fields will use defaults (home_score, away_score, etc.)
+      })
+      .select()   // returns the inserted row
       .single();
-    
+
     if (error) throw error;
-    
-    // ❌ Remove the league_history insert – it will be created later when the season ends.
-    
+
     res.status(201).json({
       success: true,
-      data: game,
+      data,
       message: 'Game created successfully'
     });
   } catch (error) {
+    // If the error is from resolveTeamId (team not found)
+    if (error.message.startsWith('Team "') && error.message.includes('not found')) {
+      return res.status(404).json({ error: error.message });
+    }
     console.error('Create game error:', error);
     next(error);
   }

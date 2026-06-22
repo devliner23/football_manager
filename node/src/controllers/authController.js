@@ -106,97 +106,81 @@ const authController = {
   // Login user
   async login(req, res, next) {
     try {
-      console.log('🔐 Login attempt:', req.body.email);
-      
-      const { email, password } = req.body;
+        console.log('🔐 Login attempt:', req.body.email);
+        const { email, password } = req.body;
 
-      if (!email || !password) {
-        return res.status(400).json({ 
-          success: false,
-          error: 'Email and password are required' 
+        if (!email || !password) {
+        return res.status(400).json({
+            success: false,
+            error: 'Email and password are required'
         });
-      }
-
-      // Check if user exists in profiles
-      const { data: profile, error: profileCheckError } = await supabaseAdmin
-        .from('profiles')
-        .select('*')
-        .eq('email', email)
-        .maybeSingle();
-
-      // If no profile found, check if user exists in auth
-      if (!profile) {
-        console.log('📧 No profile found, checking auth...');
-        try {
-          const { data: authUsers } = await supabaseAdmin.auth.admin.listUsers();
-          const existingAuthUser = authUsers.users.find(u => u.email === email);
-          
-          if (existingAuthUser) {
-            console.log('✅ User exists in auth, but profile is missing. Creating profile...');
-            // Create profile for existing auth user
-            const newProfile = {
-              id: existingAuthUser.id,
-              email: existingAuthUser.email,
-              username: existingAuthUser.user_metadata?.username || email.split('@')[0],
-              full_name: existingAuthUser.user_metadata?.full_name || null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString(),
-            };
-            
-            const { data: createdProfile, error: createError } = await supabaseAdmin
-              .from('profiles')
-              .insert([newProfile])
-              .select()
-              .single();
-            
-            if (createError) {
-              console.error('❌ Failed to create profile:', createError);
-              return res.status(401).json({ 
-                success: false,
-                error: 'User profile not found' 
-              });
-            }
-            
-            console.log('✅ Profile created for existing auth user');
-            // Use the created profile for login
-            const { data: finalProfile, error: finalError } = await supabaseAdmin
-              .from('profiles')
-              .select('*')
-              .eq('id', existingAuthUser.id)
-              .single();
-            
-            if (finalError || !finalProfile) {
-              console.error('❌ Failed to fetch created profile:', finalError);
-              return res.status(401).json({ 
-                success: false,
-                error: 'User profile not found' 
-              });
-            }
-            
-            // Continue with login using the profile
-            const authResult = await performLogin(email, password, finalProfile, res);
-            if (authResult) return authResult;
-          }
-        } catch (authError) {
-          console.error('❌ Auth check error:', authError);
         }
-        
-        return res.status(401).json({ 
-          success: false,
-          error: 'Invalid email or password' 
-        });
-      }
 
-      // Perform login with existing profile
-      const authResult = await performLogin(email, password, profile, res);
-      if (authResult) return authResult;
+        // 1. Authenticate with Supabase Auth
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password
+        });
+
+        // 2. Handle authentication errors
+        if (authError) {
+        console.error('❌ Auth error:', authError);
+
+        // Optionally handle email confirmation (you can keep or remove this)
+        if (authError.code === 'email_not_confirmed') {
+            return res.status(401).json({
+            success: false,
+            error: 'Please confirm your email before logging in.'
+            });
+        }
+
+        return res.status(401).json({
+            success: false,
+            error: 'Invalid email or password'
+        });
+        }
+
+        // 3. Extract user data from auth response
+        const user = authData.user;
+        const metadata = user.user_metadata || {};
+
+        // 4. Generate your own JWT (or use Supabase access token)
+        const token = jwt.sign(
+        {
+            id: user.id,
+            email: user.email,
+            username: metadata.username || user.email.split('@')[0],
+            full_name: metadata.full_name || null
+        },
+        process.env.JWT_SECRET || 'fallback-secret-key-for-development',
+        { expiresIn: '7d' }
+        );
+
+        // 5. (Optional) Update last_login – you can skip this or use a separate table
+        // but we'll leave it out since we're profile‑less.
+
+        console.log('✅ Login successful for:', email);
+
+        return res.json({
+        success: true,
+        message: 'Login successful',
+        user: {
+            id: user.id,
+            email: user.email,
+            username: metadata.username || user.email.split('@')[0],
+            full_name: metadata.full_name || null,
+            avatar_url: metadata.avatar_url || null
+            // Add any other fields you might have stored in metadata
+        },
+        token
+        });
 
     } catch (error) {
-      console.error('❌ Login error:', error);
-      res.status(500).json({
+        console.error('❌ Login error:', error);
+        res.status(500).json({
         success: false,
         error: error.message || 'Internal server error'
-      });
+        });
     }
   },
 
