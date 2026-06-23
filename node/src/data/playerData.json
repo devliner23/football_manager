@@ -1,0 +1,96 @@
+{
+  "firstNames": [
+    "James","Michael","Marcus","Anthony","Brandon","Tyler","Jordan","Isaiah",
+    "Malik","Andre","Devin","Carlos","Xavier","Elijah","Caleb","Dominic",
+    "Jalen","Trevor","Aaron","Nathaniel","Cameron","Julian","Mason","Eli",
+    "Tristan","Marco","Damon","Reggie","Theo","Quentin"
+  ],
+  "lastNames": [
+    "Carter","Bennett","Walker","Reed","Foster","Coleman","Hayes","Sullivan",
+    "Mercer","Whitfield","Donovan","Pierce","Hawkins","Lawson","Vance","Mosley",
+    "Whitaker","Sterling","Marsh","Calloway","Beckett","Hollis","Sandoval",
+    "Pruitt","Thatcher","Galloway","Brewer","Stone","Nakamura","Okafor"
+  ],
+  "traitDefinitions": {
+    "clutch_shooter": { "name": "Clutch Shooter", "category": "Shooting", "base": 40, "variance": 30 },
+    "deep_range": { "name": "Deep Range", "category": "Shooting", "base": 40, "variance": 30 },
+    "mid_range": { "name": "Mid-Range Maestro", "category": "Shooting", "base": 40, "variance": 30 },
+    "catch_shoot": { "name": "Catch & Shoot", "category": "Shooting", "base": 40, "variance": 30 },
+    "stepback": { "name": "Stepback Specialist", "category": "Shooting", "base": 40, "variance": 30 },
+    "finisher": { "name": "Finisher", "category": "Scoring", "base": 40, "variance": 30 },
+    "slasher": { "name": "Slasher", "category": "Scoring", "base": 40, "variance": 30 },
+    "post_scorer": { "name": "Post Scorer", "category": "Scoring", "base": 40, "variance": 30 },
+    "float_game": { "name": "Floater Game", "category": "Scoring", "base": 40, "variance": 30 },
+    "floor_general": { "name": "Floor General", "category": "Playmaking", "base": 40, "variance": 30 },
+    "dimer": { "name": "Dimer", "category": "Playmaking", "base": 40, "variance": 30 },
+    "handles": { "name": "Ball Handler", "category": "Playmaking", "base": 40, "variance": 30 },
+    "breakstarter": { "name": "Break Starter", "category": "Playmaking", "base": 40, "variance": 30 },
+    "lockdown": { "name": "Lockdown Defender", "category": "Defense", "base": 40, "variance": 30 },
+    "rim_protector": { "name": "Rim Protector", "category": "Defense", "base": 40, "variance": 30 },
+    "pickpocket": { "name": "Pickpocket", "category": "Defense", "base": 40, "variance": 30 },
+    "chase_down": { "name": "Chase Down", "category": "Defense", "base": 40, "variance": 30 },
+    "speedster": { "name": "Speedster", "category": "Athleticism", "base": 40, "variance": 30 },
+    "vertical": { "name": "High Flyer", "category": "Athleticism", "base": 40, "variance": 30 },
+    "stamina": { "name": "Iron Man", "category": "Athleticism", "base": 40, "variance": 30 },
+    "clutch_performer": { "name": "Clutch Performer", "category": "Clutch", "base": 40, "variance": 30 },
+    "microwave": { "name": "Microwave", "category": "Clutch", "base": 40, "variance": 30 },
+    "ice_veins": { "name": "Ice Veins", "category": "Clutch", "base": 40, "variance": 30 },
+    "leader": { "name": "Leader", "category": "Intangible", "base": 40, "variance": 30 },
+    "glue_guy": { "name": "Glue Guy", "category": "Intangible", "base": 40, "variance": 30 },
+    "hustle": { "name": "Hustle", "category": "Intangible", "base": 40, "variance": 30 }
+  },
+  "positionHeights": {
+    "PG": [70, 76],
+    "SG": [73, 79],
+    "SF": [76, 82],
+    "PF": [79, 85],
+    "C": [82, 88]
+  },
+  "ageRanges": {
+    "rookie": [19, 22],
+    "star": [24, 32],
+    "rolePlayer": [22, 35],
+    "bench": [22, 35]
+  },
+  "weightRange": [180, 240],
+  "ratingAdjustments": {
+    "starter": [5, 10],
+    "bench": [-10, -5],
+    "star": [8, 15],
+    "randomVariation": [-3, 3]
+  },
+  "numTraitsByRating": {
+    "90": [6, 8],
+    "80": [4, 6],
+    "70": [2, 4],
+    "default": [1, 2]
+  },
+  "positionTraitPools": {
+    "PG": ["dimer", "floor_general", "handles", "breakstarter", "speedster", "pickpocket", "clutch_performer", "leader"],
+    "SG": ["catch_shoot", "stepback", "deep_range", "mid_range", "slasher", "lockdown", "microwave", "ice_veins"],
+    "SF": ["slasher", "finisher", "mid_range", "deep_range", "lockdown", "chase_down", "speedster", "vertical"],
+    "PF": ["post_scorer", "finisher", "mid_range", "rim_protector", "lockdown", "vertical", "hustle", "glue_guy"],
+    "C": ["post_scorer", "rim_protector", "finisher", "lockdown", "vertical", "hustle", "stamina", "glue_guy"]
+  },
+  "extraTraitsForStars": ["clutch_performer", "ice_veins", "floor_general"],
+  "skillAttributes": {
+    "keys": ["threePoint", "midRange", "insideScoring", "passing", "ballHandling", "perimeterDefense", "postDefense", "rebounding", "speed", "strength"],
+    "positionModifiers": {
+      "PG": { "threePoint": 6, "midRange": 3, "insideScoring": -8, "passing": 10, "ballHandling": 12, "perimeterDefense": 4, "postDefense": -10, "rebounding": -12, "speed": 8, "strength": -6 },
+      "SG": { "threePoint": 8, "midRange": 5, "insideScoring": -4, "passing": 2, "ballHandling": 6, "perimeterDefense": 4, "postDefense": -8, "rebounding": -8, "speed": 5, "strength": -3 },
+      "SF": { "threePoint": 2, "midRange": 2, "insideScoring": 2, "passing": 0, "ballHandling": 0, "perimeterDefense": 2, "postDefense": 0, "rebounding": 0, "speed": 2, "strength": 0 },
+      "PF": { "threePoint": -4, "midRange": -2, "insideScoring": 6, "passing": -4, "ballHandling": -6, "perimeterDefense": -2, "postDefense": 6, "rebounding": 8, "speed": -3, "strength": 6 },
+      "C":  { "threePoint": -10, "midRange": -6, "insideScoring": 8, "passing": -8, "ballHandling": -10, "perimeterDefense": -6, "postDefense": 10, "rebounding": 14, "speed": -8, "strength": 10 }
+    },
+    "overallWeights": {
+      "PG": { "threePoint": 1, "midRange": 1, "insideScoring": 0.5, "passing": 2, "ballHandling": 1.5, "perimeterDefense": 1, "postDefense": 0.3, "rebounding": 0.4, "speed": 1.2, "strength": 0.5 },
+      "SG": { "threePoint": 1.5, "midRange": 1.3, "insideScoring": 0.8, "passing": 1, "ballHandling": 1.2, "perimeterDefense": 1, "postDefense": 0.4, "rebounding": 0.5, "speed": 1, "strength": 0.6 },
+      "SF": { "threePoint": 1.1, "midRange": 1.1, "insideScoring": 1.1, "passing": 0.9, "ballHandling": 0.9, "perimeterDefense": 1, "postDefense": 0.8, "rebounding": 0.9, "speed": 0.9, "strength": 0.9 },
+      "PF": { "threePoint": 0.6, "midRange": 0.9, "insideScoring": 1.3, "passing": 0.6, "ballHandling": 0.5, "perimeterDefense": 0.7, "postDefense": 1.3, "rebounding": 1.4, "speed": 0.6, "strength": 1.2 },
+      "C":  { "threePoint": 0.3, "midRange": 0.6, "insideScoring": 1.4, "passing": 0.5, "ballHandling": 0.3, "perimeterDefense": 0.5, "postDefense": 1.6, "rebounding": 1.7, "speed": 0.5, "strength": 1.4 }
+    },
+    "attributeNoise": 9,
+    "minAttr": 25,
+    "maxAttr": 99
+  }
+}

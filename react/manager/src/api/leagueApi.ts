@@ -86,7 +86,7 @@ export const leagueAPI = {
   },
 
   // ── League Management ──────────────────────────────────────
-  initializeLeague: async (savedGameId: string, options: { season?: number; teamArchetypes?: Record<string, string> }) => {
+  initializeLeague: async (savedGameId: string, options: { season?: number; managedClub?: string; teamArchetypes?: Record<string, string> }) => {
     const response = await api.post<ApiResponse<{ 
       season: number; 
       teamsCreated: number; 
@@ -111,7 +111,7 @@ export const leagueAPI = {
 
   // src/api/leagueApi.ts
   getSchedule: async (savedGameId: string) => {
-    const response = await api.get<ApiResponse<Record<number, GameResult[]>>>(`/league/${savedGameId}/schedule`);
+    const response = await api.get<ApiResponse<Record<number, GameResult[]>>>(`/api/league/${savedGameId}/schedule`);
     return extractData(response);
 },
 };

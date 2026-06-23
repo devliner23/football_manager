@@ -33,14 +33,29 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams }) => {
           <div className="schedule-games">
             {schedule[Number(week)].map(game => (
               <div key={game.id} className="schedule-game">
-                <span className="game-teams">
-                  {getTeamName(game.home_team_id)} vs {getTeamName(game.away_team_id)}
-                </span>
-                <span className="game-status">
-                  {`Final: ${game.home_score}-${game.away_score}`}
-                </span>
-                <span className="game-date">{new Date(game.played_at).toLocaleDateString()}</span>
-              </div>
+                <div className="game-matchup">
+                    <span className="home-team">
+                    {getTeamName(game.home_team_id)}
+                    </span>
+
+                    <span className="vs">VS</span>
+
+                    <span className="away-team">
+                    {getTeamName(game.away_team_id)}
+                    </span>
+                </div>
+
+                <div className="game-result">
+                    {game.home_score} - {game.away_score}
+                </div>
+
+                <div className="game-meta">
+                    <span className="status-badge">Final</span>
+                    <span className="game-date">
+                    {new Date(game.played_at).toLocaleDateString()}
+                    </span>
+                </div>
+              </div>            
             ))}
           </div>
         </div>

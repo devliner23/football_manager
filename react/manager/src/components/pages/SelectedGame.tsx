@@ -135,8 +135,8 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
       />
 
       <nav className="game-global-nav">
-        {(['overview', 'roster', 'standings', 'trade', 'freeagents', 'frontoffice'] as TabType[]).map((tab) => (
-          <><button
+        {(['overview', 'roster', 'standings', 'trade', 'freeagents', 'frontoffice', 'schedule'] as TabType[]).map((tab) => (
+          <button
             key={tab}
             className={`nav-btn ${activeTab === tab ? 'active' : ''}`}
             onClick={() => setActiveTab(tab)}
@@ -147,14 +147,8 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
             {tab === 'trade' && '🔄 Trade Center'}
             {tab === 'freeagents' && '📋 Free Agents'}
             {tab === 'frontoffice' && '🏢 Front Office'}
+            {tab === 'schedule' && '📅 Schedule'}
           </button>
-          <button
-            key="schedule"
-            className={`nav-btn ${activeTab === 'schedule' ? 'active' : ''}`}
-            onClick={() => setActiveTab('schedule')}
-            >
-            📅 Schedule
-          </button></>
         ))}
       </nav>
 

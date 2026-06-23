@@ -1,235 +1,12 @@
-// services/leagueService.js
 const { supabaseAdmin } = require('../config/supabase');
 const NBA_TEAMS = require('../data/teams.json');
-const TeamArchetypeService = require('./teamArchetypeService');
 const GameSimulationEngine = require('./gameSimulationEngine');
+const PlayerGenerator = require('./playerGenerator'); // new import
 
 const ROSTER_SIZE = 15;
 
 // ----------------------------------------------------------------------
-// 1. TALENT DISTRIBUTION
-// ----------------------------------------------------------------------
-function randomGaussian(mean = 0, stdDev = 1) {
-  let u = 0, v = 0;
-  while (u === 0) u = Math.random();
-  while (v === 0) v = Math.random();
-  const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-  return z * stdDev + mean;
-}
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, Math.round(value)));
-}
-
-const TALENT_MEAN   = 60;
-const TALENT_STDDEV = 11;
-const TALENT_MIN    = 35;
-const TALENT_MAX    = 99;
-
-function generateBaseTalent() {
-  return clamp(randomGaussian(TALENT_MEAN, TALENT_STDDEV), TALENT_MIN, TALENT_MAX);
-}
-
-// ----------------------------------------------------------------------
-// 2. POSITIONS, PHYSICAL TRAITS, NAMES
-// ----------------------------------------------------------------------
-const POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C'];
-
-const POSITION_MODIFIERS = {
-  PG: { threePoint:  6, midRange:  3, insideScoring: -8, passing: 10, ballHandling: 12, perimeterDefense:  4, postDefense: -10, rebounding: -12, speed:  8, strength:  -6 },
-  SG: { threePoint:  8, midRange:  5, insideScoring: -4, passing:  2, ballHandling:  6, perimeterDefense:  4, postDefense:  -8, rebounding:  -8, speed:  5, strength:  -3 },
-  SF: { threePoint:  2, midRange:  2, insideScoring:  2, passing:  0, ballHandling:  0, perimeterDefense:  2, postDefense:   0, rebounding:   0, speed:  2, strength:   0 },
-  PF: { threePoint: -4, midRange: -2, insideScoring:  6, passing: -4, ballHandling: -6, perimeterDefense: -2, postDefense:   6, rebounding:   8, speed: -3, strength:   6 },
-  C:  { threePoint:-10, midRange: -6, insideScoring:  8, passing: -8, ballHandling:-10, perimeterDefense: -6, postDefense:  10, rebounding:  14, speed: -8, strength:  10 },
-};
-
-const HEIGHT_RANGES_INCHES = { PG:[72,76], SG:[75,79], SF:[77,81], PF:[80,83], C:[82,87] };
-const WEIGHT_RANGES_LBS    = { PG:[175,205], SG:[195,222], SF:[212,240], PF:[228,258], C:[245,290] };
-
-function generateHeightInches(position) {
-  const [min, max] = HEIGHT_RANGES_INCHES[position];
-  return Math.round(min + Math.random() * (max - min));
-}
-
-function generateWeightLbs(heightInches, position) {
-  const [hMin, hMax] = HEIGHT_RANGES_INCHES[position];
-  const [wMin, wMax] = WEIGHT_RANGES_LBS[position];
-  const heightFraction = (heightInches - hMin) / (hMax - hMin);
-  const base = wMin + heightFraction * (wMax - wMin);
-  return clamp(base + randomGaussian(0, 8), wMin - 15, wMax + 15);
-}
-
-function randomFrom(list) {
-  return list[Math.floor(Math.random() * list.length)];
-}
-
-const FIRST_NAMES = [
-  'James','Michael','Marcus','Anthony','Brandon','Tyler','Jordan','Isaiah',
-  'Malik','Andre','Devin','Carlos','Xavier','Elijah','Caleb','Dominic',
-  'Jalen','Trevor','Aaron','Nathaniel','Cameron','Julian','Mason','Eli',
-  'Tristan','Marco','Damon','Reggie','Theo','Quentin',
-];
-
-const LAST_NAMES = [
-  'Carter','Bennett','Walker','Reed','Foster','Coleman','Hayes','Sullivan',
-  'Mercer','Whitfield','Donovan','Pierce','Hawkins','Lawson','Vance','Mosley',
-  'Whitaker','Sterling','Marsh','Calloway','Beckett','Hollis','Sandoval',
-  'Pruitt','Thatcher','Galloway','Brewer','Stone','Nakamura','Okafor',
-];
-
-function generateName() {
-  return `${randomFrom(FIRST_NAMES)} ${randomFrom(LAST_NAMES)}`;
-}
-
-function generateAge() {
-  return clamp(randomGaussian(26, 4), 19, 39);
-}
-
-// ----------------------------------------------------------------------
-// 3. SKILL ATTRIBUTES & OVERALL RATING
-// ----------------------------------------------------------------------
-const ATTRIBUTE_KEYS = [
-  'threePoint','midRange','insideScoring','passing','ballHandling',
-  'perimeterDefense','postDefense','rebounding','speed','strength',
-];
-
-const OVERALL_WEIGHTS = {
-  PG: { threePoint:1,   midRange:1,   insideScoring:0.5, passing:2,   ballHandling:1.5, perimeterDefense:1,   postDefense:0.3, rebounding:0.4, speed:1.2, strength:0.5 },
-  SG: { threePoint:1.5, midRange:1.3, insideScoring:0.8, passing:1,   ballHandling:1.2, perimeterDefense:1,   postDefense:0.4, rebounding:0.5, speed:1,   strength:0.6 },
-  SF: { threePoint:1.1, midRange:1.1, insideScoring:1.1, passing:0.9, ballHandling:0.9, perimeterDefense:1,   postDefense:0.8, rebounding:0.9, speed:0.9, strength:0.9 },
-  PF: { threePoint:0.6, midRange:0.9, insideScoring:1.3, passing:0.6, ballHandling:0.5, perimeterDefense:0.7, postDefense:1.3, rebounding:1.4, speed:0.6, strength:1.2 },
-  C:  { threePoint:0.3, midRange:0.6, insideScoring:1.4, passing:0.5, ballHandling:0.3, perimeterDefense:0.5, postDefense:1.6, rebounding:1.7, speed:0.5, strength:1.4 },
-};
-
-function generateAttributes(baseTalent, position) {
-  const modifiers = POSITION_MODIFIERS[position];
-  const attributes = {};
-  for (const key of ATTRIBUTE_KEYS) {
-    const noise = randomGaussian(0, 9);
-    attributes[key] = clamp(baseTalent + modifiers[key] + noise, 25, 99);
-  }
-  return attributes;
-}
-
-function calculateOverall(attributes, position) {
-  const weights = OVERALL_WEIGHTS[position];
-  let weightedSum = 0;
-  let weightTotal = 0;
-  for (const key of ATTRIBUTE_KEYS) {
-    weightedSum += attributes[key] * weights[key];
-    weightTotal += weights[key];
-  }
-  return clamp(weightedSum / weightTotal, 25, 99);
-}
-
-function generatePotential(overall, age) {
-  const yearsOfUpside = Math.max(0, 27 - age);
-  const upside = randomGaussian(yearsOfUpside * 1.5, 4);
-  return clamp(overall + Math.max(0, upside), overall, 99);
-}
-
-// ----------------------------------------------------------------------
-// 4. PLAYER + ROSTER GENERATION
-// ----------------------------------------------------------------------
-function generateRosterPositions(rosterSize = ROSTER_SIZE) {
-  const perPosition = Math.floor(rosterSize / POSITIONS.length);
-  let remainder = rosterSize - perPosition * POSITIONS.length;
-  const positions = [];
-  for (const pos of POSITIONS) {
-    let count = perPosition;
-    if (remainder > 0) { count += 1; remainder -= 1; }
-    for (let i = 0; i < count; i++) positions.push(pos);
-  }
-  return positions;
-}
-
-function generatePlayer(teamId, position, archetypeId = null, savedGameId) {
-  const talentCurve = archetypeId
-    ? TeamArchetypeService.getTalentCurve(archetypeId)
-    : { mean: TALENT_MEAN, stdDev: TALENT_STDDEV };
-
-  const baseTalent = clamp(
-    randomGaussian(talentCurve.mean, talentCurve.stdDev),
-    TALENT_MIN, TALENT_MAX
-  );
-
-  let attributes = generateAttributes(baseTalent, position);
-  if (archetypeId) {
-    attributes = TeamArchetypeService.applyAttributeModifiers(position, attributes, archetypeId);
-  }
-
-  const overall = calculateOverall(attributes, position);
-
-  let age = generateAge();
-  const ageRange = archetypeId ? TeamArchetypeService.getAgeRange(archetypeId) : null;
-  if (ageRange) {
-    age = Math.round(ageRange[0] + Math.random() * (ageRange[1] - ageRange[0]));
-  }
-
-  const heightInches = generateHeightInches(position);
-  const heightMod    = archetypeId ? TeamArchetypeService.getHeightModifier(archetypeId) : 0;
-  const finalHeight  = Math.min(90, heightInches + heightMod);
-
-  let potential = generatePotential(overall, age);
-  const potentialBoost = archetypeId ? TeamArchetypeService.getPotentialBoost(archetypeId) : null;
-  if (potentialBoost) {
-    potential = clamp(potential + potentialBoost, overall, 99);
-  }
-
-  return {
-    teamId,
-    name: generateName(),
-    position,
-    age,
-    height: finalHeight,
-    weight: generateWeightLbs(finalHeight, position),
-    overall,
-    potential,
-    ...attributes,
-    savedGameId,
-  };
-}
-
-function generateRosterForTeam(teamId, rosterSize = ROSTER_SIZE, archetypeId = null, savedGameId) {
-  const positions = archetypeId
-    ? TeamArchetypeService.generatePositionDistribution(archetypeId, rosterSize)
-    : generateRosterPositions(rosterSize);
-  return positions.map(position => generatePlayer(teamId, position, archetypeId, savedGameId));
-}
-
-function toPlayerRow(player) {
-  const nameParts  = player.name.split(' ');
-  const firstName  = nameParts[0];
-  const lastName   = nameParts.slice(1).join(' ') || firstName;
-
-  return {
-    saved_game_id:    player.savedGameId,
-    team_id:          player.teamId,
-    first_name:       firstName,
-    last_name:        lastName,
-    position:         player.position,
-    age:              player.age,
-    height:           player.height,
-    weight:           player.weight,
-    overall_rating:   player.overall,
-    potential_rating: player.potential,
-    traits: {
-      three_point:        player.threePoint,
-      mid_range:          player.midRange,
-      inside_scoring:     player.insideScoring,
-      passing:            player.passing,
-      ball_handling:      player.ballHandling,
-      perimeter_defense:  player.perimeterDefense,
-      post_defense:       player.postDefense,
-      rebounding:         player.rebounding,
-      speed:              player.speed,
-      strength:           player.strength,
-    },
-  };
-}
-
-// ----------------------------------------------------------------------
-// 5. LEAGUE SERVICE
+// LEAGUE SERVICE
 // ----------------------------------------------------------------------
 class LeagueService {
   constructor(savedGameId) {
@@ -276,15 +53,24 @@ class LeagueService {
     return data;
   }
 
-  async createRosters(teams, season = 1, rosterSize = ROSTER_SIZE, teamArchetypes = {}) {
-    const rows = teams.flatMap(team => {
-      const archetypeId = teamArchetypes[team.name] || null;
-      return generateRosterForTeam(team.id, rosterSize, archetypeId, this.savedGameId)
-        .map(player => toPlayerRow(player));
-    });
-    const { data, error } = await supabaseAdmin.from('players').insert(rows).select();
-    if (error) throw new Error(`Failed to create players: ${error.message}`);
-    return data;
+  async createRosters(teams, season = 1) {
+    // Use the PlayerGenerator to generate all players
+    const generator = new PlayerGenerator(this.savedGameId, season);
+    const players = generator.generateLeague(teams); // returns array of DB‑ready player objects
+
+    // Insert in batches
+    const BATCH_SIZE = 100;
+    const allInserted = [];
+    for (let i = 0; i < players.length; i += BATCH_SIZE) {
+      const batch = players.slice(i, i + BATCH_SIZE);
+      const { data, error } = await supabaseAdmin
+        .from('players')
+        .insert(batch)
+        .select();
+      if (error) throw new Error(`Failed to create players: ${error.message}`);
+      allInserted.push(...data);
+    }
+    return allInserted;
   }
 
   async createSeason(seasonNumber) {
@@ -364,49 +150,55 @@ class LeagueService {
     await supabaseAdmin.from('teams').delete().eq('saved_game_id', this.savedGameId);
   }
 
-  async initializeLeague(season = 1, teamArchetypes = {}) {
+  async initializeLeague(season = 1, managedClubName = null) {
     const existingTeams = await this.getTeams();
     if (existingTeams.length > 0) {
       throw new Error(`League already initialized for saved game ${this.savedGameId}`);
     }
 
-    let teams, seasonRecord;
-    try {
-      teams        = await this.createTeams();
-      const players = await this.createRosters(teams, season, ROSTER_SIZE, teamArchetypes);
-      seasonRecord  = await this.createSeason(season);
-      await this.createSeasonStats(teams, seasonRecord.id);
-      const gamesCount = await this.generateSchedule(teams, seasonRecord.id);
+  let teams, seasonRecord;
+  try {
+    teams = await this.createTeams();
 
-      const currentState = (await this._getGameState()) || {};
-      await supabaseAdmin
-        .from('saved_games')
-        .update({
-          current_season: season,
-          game_state: {
-            ...currentState,
-            team_archetypes:  teamArchetypes,
-            initialized_at:   new Date().toISOString(),
-            season_id:        seasonRecord.id,
-            total_games:      gamesCount,
-          },
-        })
-        .eq('id', this.savedGameId);
+    // --- SAFE: determine managed team ID ---
+    let managedTeamId = null;
+    if (managedClubName && typeof managedClubName === 'string') {
+      const found = teams.find(t => t.name.toLowerCase() === managedClubName.toLowerCase());
+      managedTeamId = found ? found.id : teams[0]?.id;
+    } else {
+      // Fallback: first team
+      managedTeamId = teams[0]?.id;
+      console.warn('managedClubName is not a valid string, defaulting to first team:', managedClubName);
+    }
+    // ----------------------------------------
 
-      return {
-        season,
-        teamsCreated:     teams.length,
-        playersCreated:   players.length,
-        gamesCreated:     gamesCount,
-        archetypesUsed:   Object.keys(teamArchetypes).length,
-      };
-    } catch (err) {
-      if (teams)        await this.rollbackLeague();
-      if (seasonRecord) await supabaseAdmin.from('seasons').delete().eq('id', seasonRecord.id);
-      throw err;
+    const players = await this.createRosters(teams, season);
+    seasonRecord = await this.createSeason(season);
+    await this.createSeasonStats(teams, seasonRecord.id);
+    const gamesCount = await this.generateSchedule(teams, seasonRecord.id);
+
+    const currentState = (await this._getGameState()) || {};
+    await supabaseAdmin
+      .from('saved_games')
+      .update({
+        current_season: season,
+        managed_club_id: managedTeamId,
+        game_state: {
+          ...currentState,
+          initialized_at: new Date().toISOString(),
+          season_id: seasonRecord.id,
+          total_games: gamesCount,
+        },
+      })
+      .eq('id', this.savedGameId);
+
+    return { season, teamsCreated: teams.length, playersCreated: players.length, gamesCreated: gamesCount };
+  } catch (err) {
+        if (teams) await this.rollbackLeague();
+        if (seasonRecord) await supabaseAdmin.from('seasons').delete().eq('id', seasonRecord.id);
+        throw err;
     }
   }
-
   // ── Single-game simulation ────────────────────────────────────────────
 
   async simulateGame(gameId) {
@@ -911,9 +703,5 @@ class LeagueService {
     throw new Error('simulateSeason() is not implemented. Use simulateWeek() instead.');
   }
 }
-
-// Expose helpers for testing
-LeagueService.generatePlayer          = generatePlayer;
-LeagueService.generateRosterForTeam   = generateRosterForTeam;
 
 module.exports = LeagueService;

@@ -43,7 +43,10 @@ const NewGameForm: React.FC<NewGameFormProps> = ({ onClose, onGameCreated }) => 
         const savedGame = response.data.data;
 
         // 2. Initialize the league – now returns data directly (no .data.success)
-        await leagueAPI.initializeLeague(savedGame.id, { season: 1 });
+        await leagueAPI.initializeLeague(savedGame.id, { 
+            season: 1,
+            managedClub: formData.managed_club_id // team name like "Lakers"
+        });
 
         // 3. Pass the game to parent
         onGameCreated(savedGame);
@@ -57,7 +60,7 @@ const NewGameForm: React.FC<NewGameFormProps> = ({ onClose, onGameCreated }) => 
       setLoading(false);
     }
   };
-  
+
   return (
     <div className="new-game-form">
       <div className="form-header">

@@ -62,13 +62,13 @@ const leagueController = {
   async initializeLeague(req, res, next) {
     try {
       const { savedGameId }              = req.params;
-      const { season = 1, teamArchetypes = {} } = req.body;
+      const { season = 1, teamArchetypes = {}, managedClubName = null } = req.body;
 
       const game = await loadOwnedGame(savedGameId, req.user.id);
       if (!game) return res.status(404).json({ error: 'Game not found or unauthorized' });
 
       const leagueService = new LeagueService(savedGameId);
-      const result        = await leagueService.initializeLeague(season, teamArchetypes);
+      const result        = await leagueService.initializeLeague(season, teamArchetypes, managedClubName);
 
       res.json({ success: true, message: 'League initialized successfully', data: result });
     } catch (error) {
