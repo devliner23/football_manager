@@ -61,17 +61,22 @@ const leagueController = {
 
   async initializeLeague(req, res, next) {
     try {
-      const { savedGameId }              = req.params;
-      const { season = 1, teamArchetypes = {}, managedClubName = null } = req.body;
+        const { savedGameId } = req.params;
+        const { season = 1, managedClubName = null } = req.body;   // removed unused teamArchetypes
 
-      const game = await loadOwnedGame(savedGameId, req.user.id);
-      if (!game) return res.status(404).json({ error: 'Game not found or unauthorized' });
+        console.log('📦 Initialization body:', req.body);
+        console.log('🆔 managedClubName received:', managedClubName, typeof managedClubName);
 
-      const leagueService = new LeagueService(savedGameId);
-      const result        = await leagueService.initializeLeague(season, teamArchetypes, managedClubName);
+        const game = await loadOwnedGame(savedGameId, req.user.id);
+        if (!game) return res.status(404).json({ error: 'Game not found or unauthorized' });
 
-      res.json({ success: true, message: 'League initialized successfully', data: result });
-    } catch (error) {
+        const leagueService = new LeagueService(savedGameId);
+        
+        // FIXED: Pass only season and managedClubName
+        const result = await leagueService.initializeLeague(season, managedClubName);
+
+        res.json({ success: true, message: 'League initialized successfully', data: result });
+        } catch (error) {
       if (error.message.includes('already initialized')) {
         return res.status(409).json({ error: error.message });
       }

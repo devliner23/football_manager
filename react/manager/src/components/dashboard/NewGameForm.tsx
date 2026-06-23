@@ -42,10 +42,12 @@ const NewGameForm: React.FC<NewGameFormProps> = ({ onClose, onGameCreated }) => 
       if (response.data.success && response.data.data) {
         const savedGame = response.data.data;
 
+        console.log("Managed Club", formData.managed_club_id)
+
         // 2. Initialize the league – now returns data directly (no .data.success)
-        await leagueAPI.initializeLeague(savedGame.id, { 
+        await leagueAPI.initializeLeague(savedGame.id, {
             season: 1,
-            managedClub: formData.managed_club_id // team name like "Lakers"
+            managedClub: formData.managed_club_id
         });
 
         // 3. Pass the game to parent

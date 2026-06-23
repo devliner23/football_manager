@@ -86,14 +86,22 @@ export const leagueAPI = {
   },
 
   // ── League Management ──────────────────────────────────────
-  initializeLeague: async (savedGameId: string, options: { season?: number; managedClub?: string; teamArchetypes?: Record<string, string> }) => {
+initializeLeague: async (
+    savedGameId: string, 
+    options: { season?: number; managedClub: string }
+  ) => {
+    const { season = 1, managedClub } = options;
+
     const response = await api.post<ApiResponse<{ 
-      season: number; 
-      teamsCreated: number; 
-      playersCreated: number; 
-      gamesCreated: number; 
-      archetypesUsed: number 
-    }>>(`/api/league/${savedGameId}/initialize`, options);
+      season: number;
+      teamsCreated: number;
+      playersCreated: number;
+      gamesCreated: number;
+    }>>(`/api/league/${savedGameId}/initialize`, {
+      season,
+      managedClubName: managedClub   // ← Correct payload key
+    });
+
     return extractData(response);
   },
 

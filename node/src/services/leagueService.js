@@ -53,25 +53,44 @@ class LeagueService {
     return data;
   }
 
-  async createRosters(teams, season = 1) {
-    // Use the PlayerGenerator to generate all players
-    const generator = new PlayerGenerator(this.savedGameId, season);
-    const players = generator.generateLeague(teams); // returns array of DB‑ready player objects
+ async createRosters(teams, season = 1) {
+  console.log(`🎮 Starting roster creation for ${teams.length} teams...`);
 
-    // Insert in batches
-    const BATCH_SIZE = 100;
-    const allInserted = [];
+  const generator = new PlayerGenerator(this.savedGameId, season);
+  const players = generator.generateLeague(teams);
+
+  console.log(`✅ Generated ${players.length} players locally. Starting DB insert...`);
+
+  // Insert in batches
+  const BATCH_SIZE = 100;
+  const allInserted = [];
+
+  try {
     for (let i = 0; i < players.length; i += BATCH_SIZE) {
       const batch = players.slice(i, i + BATCH_SIZE);
+      console.log(`📦 Inserting batch ${i / BATCH_SIZE + 1} (${batch.length} players)...`);
+
       const { data, error } = await supabaseAdmin
         .from('players')
         .insert(batch)
         .select();
-      if (error) throw new Error(`Failed to create players: ${error.message}`);
+
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw new Error(`Failed to create players batch: ${error.message} | Details: ${JSON.stringify(error.details)}`);
+      }
+
       allInserted.push(...data);
     }
+
+    console.log(`✅ Successfully inserted ${allInserted.length} players`);
     return allInserted;
+
+  } catch (err) {
+    console.error('❌ Error during player insertion:', err);
+    throw new Error(`Failed to create players: ${err.message}`);
   }
+}
 
   async createSeason(seasonNumber) {
     const { data, error } = await supabaseAdmin

@@ -187,7 +187,9 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
 
             {!loading && activeTab === 'roster' && (
               <RosterTab
-                players={userTeamPlayers}
+                teams={teams}               // all teams
+                allPlayers={players}        // all players
+                userTeamId={userTeam?.id}   // optional – to highlight user’s team
                 onViewPlayer={(player) => setSelectedPlayer(player)}
               />
             )}
