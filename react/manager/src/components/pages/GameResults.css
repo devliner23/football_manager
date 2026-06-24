@@ -218,3 +218,40 @@
     background: var(--bg-secondary-dark, #1a1a1a);
   }
 }
+
+
+.next-game-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  text-align: center;
+}
+ 
+.next-game-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.45);
+  margin: 0 0 4px;
+}
+ 
+.next-game-matchup {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 2px;
+}
+ 
+.next-game-date {
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.65);
+  margin: 0 0 4px;
+}
+ 
+.next-game-preview {
+  font-size: 0.72rem;
+  color: #f59e0b;
+  margin: 0;
+}

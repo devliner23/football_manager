@@ -984,8 +984,6 @@
   margin: 0;
   font-size: 26px;
   font-weight: 700;
-  background: linear-gradient(135deg, #fff 60%, rgba(255, 255, 255, 0.6));
-  -webkit-text-fill-color: transparent;
   letter-spacing: -0.5px;
 }
 

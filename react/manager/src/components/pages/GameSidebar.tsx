@@ -1,6 +1,7 @@
 // src/components/SelectedGame/GameSidebar.tsx
 import React from 'react';
 import { UserGameInfo } from '../../api/leagueApi';
+import "./GameResults.css";
 
 
 interface GameSidebarProps {
