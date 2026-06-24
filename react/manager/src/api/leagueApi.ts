@@ -168,6 +168,11 @@ initializeLeague: async (
     );
     return extractData(response);
   },
+
+  simulateToDate: async (savedGameId: string, targetDate: string) => {
+    const { data } = await api.post(`/api/league/${savedGameId}/simulate-to-date`, { targetDate });
+    return data.data; // { seasonComplete, gamesSimulated, results }
+  },
 };
 
 export type { Team, Player, StandingsRow, SavedGame, GameResult, PlayerGameStats };

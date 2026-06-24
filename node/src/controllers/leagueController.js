@@ -327,6 +327,31 @@ const leagueController = {
       next(error);
     }
   },
+
+  async simulateToDate(req, res, next) {
+    try {
+        const { savedGameId } = req.params;
+        const { targetDate } = req.body;   // ISO string or date string
+
+        if (!targetDate) {
+        return res.status(400).json({ error: 'targetDate is required' });
+        }
+
+        // Ownership check
+        const game = await loadOwnedGame(savedGameId, req.user.id);
+        if (!game) {
+        return res.status(404).json({ error: 'Game not found or unauthorized' });
+        }
+
+        const leagueService = new LeagueService(savedGameId);
+        const result = await leagueService.simulateToDate(targetDate);
+
+        res.json({ success: true, data: result });
+    } catch (error) {
+        console.error('simulateToDate error:', error);
+        next(error);
+    }
+  },
 };
 
 module.exports = leagueController;

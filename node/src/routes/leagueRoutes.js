@@ -41,6 +41,7 @@ router.get ('/:savedGameId/players/:playerId',     leagueController.getPlayerSta
 // ── New date-aware simulation routes ─────────────────────────────────────────
 router.get ('/:savedGameId/next-user-game',        leagueController.getNextUserGame);
 router.post('/:savedGameId/simulate-to-next-game', leagueController.simulateToNextGame);
+router.post('/:savedGameId/simulate-to-date', leagueController.simulateToDate);
 // ─────────────────────────────────────────────────────────────────────────────
 
 router.post('/:savedGameId/simulate-week',         leagueController.simulateWeek);

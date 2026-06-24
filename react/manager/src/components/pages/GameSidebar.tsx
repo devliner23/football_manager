@@ -1,5 +1,5 @@
 // src/components/SelectedGame/GameSidebar.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { UserGameInfo } from '../../api/leagueApi';
 import "./GameResults.css";
 
@@ -18,6 +18,8 @@ interface GameSidebarProps {
   loading: boolean;
   nextUserGame?: UserGameInfo | null;
   leagueGamesBeforeCount?: number;
+  onSimulateToDate: (date: string) => void;   // new
+  lastSimulatedDate?: string | null;
 }
 
 const GameSidebar: React.FC<GameSidebarProps> = ({
@@ -34,7 +36,13 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
   loading,
   nextUserGame, 
   leagueGamesBeforeCount = 0,
+  lastSimulatedDate,
+  onSimulateToDate
 }) => {
+  const [simDate, setSimDate] = useState<string>(
+    new Date().toISOString().slice(0, 10) // today as YYYY-MM-DD
+  );
+
   return (
     <aside className="game-sidebar">
       <div className="game-sidebar-section">
@@ -64,49 +72,28 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
       </div>
 
       <div className="game-sidebar-section">
-        <h4>Actions</h4>
-{nextUserGame && !loading && (
-        <div className="next-game-card">
-          <p className="next-game-label">Next Game</p>
- 
-          <p className="next-game-matchup">
-            {nextUserGame.isHome
-              ? `${nextUserGame.home_team.abbreviation} vs ${nextUserGame.away_team.abbreviation}`
-              : `@ ${nextUserGame.home_team.abbreviation}`}
+        <h4>Simulate</h4>
+        {lastSimulatedDate && (
+          <p className="sidebar-date-info">
+            Last simulated: {new Date(lastSimulatedDate).toLocaleDateString()}
           </p>
- 
-          <p className="next-game-date">
-            {new Date(nextUserGame.game_date).toLocaleDateString(undefined, {
-              weekday: 'short',
-              month:   'short',
-              day:     'numeric',
-            })}
-          </p>
- 
-          {leagueGamesBeforeCount > 0 && (
-            <p className="next-game-preview">
-              {leagueGamesBeforeCount} league game{leagueGamesBeforeCount !== 1 ? 's' : ''} before yours
-            </p>
-          )}
+        )}
+        <div className="sim-date-input">
+          <label htmlFor="sim-date">Simulate to:</label>
+          <input
+            type="date"
+            id="sim-date"
+            value={simDate}
+            onChange={(e) => setSimDate(e.target.value)}
+            min={new Date().toISOString().slice(0, 10)} // optional: prevent past dates
+          />
         </div>
-      )}
- 
-      <button
-        className="continue-btn"
-        onClick={onContinue}
-        disabled={loading}
-      >
-        {loading
-          ? 'Simulating…'
-          : leagueGamesBeforeCount > 0
-            ? `Sim ${leagueGamesBeforeCount} game${leagueGamesBeforeCount !== 1 ? 's' : ''} → Next`
-            : 'Advance to Next Game'}
-      </button>
         <button
-          className="sidebar-action-btn info"
-          onClick={onViewStandings}
+          className="sidebar-action-btn"
+          onClick={() => onSimulateToDate(simDate)}
+          disabled={loading}
         >
-          📊 Standings
+          {loading ? 'Simulating…' : 'Simulate to Date'}
         </button>
       </div>
     </aside>

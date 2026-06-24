@@ -618,6 +618,73 @@ async generateSchedule(teams, seasonId) {
     };
   }
 
+  /**
+ * Simulate all scheduled games up to (and including) the given date.
+ * @param {string|Date} targetDate - ISO date string or Date object
+ * @returns {Object} { seasonComplete, gamesSimulated, results[] }
+ */
+  async simulateToDate(targetDate) {
+    const targetISO = new Date(targetDate).toISOString();
+    const seasonId = await this.getCurrentSeasonId();
+
+    // Check if season already finished
+    const { count: totalScheduled, error: countErr } = await supabaseAdmin
+        .from('games')
+        .select('id', { count: 'exact', head: true })
+        .eq('season_id', seasonId)
+        .eq('status', 'scheduled');
+
+    if (countErr) throw new Error(`Failed to count scheduled games: ${countErr.message}`);
+
+    if (totalScheduled === 0) {
+        // Mark season as finished if not already
+        await supabaseAdmin
+        .from('seasons')
+        .update({ status: 'finished', end_date: new Date().toISOString() })
+        .eq('id', seasonId);
+        return { seasonComplete: true, gamesSimulated: 0, results: [] };
+    }
+
+    // Fetch all scheduled games up to target date, ordered by game_date
+    const { data: gamesToSim, error: fetchErr } = await supabaseAdmin
+        .from('games')
+        .select('*')
+        .eq('season_id', seasonId)
+        .eq('status', 'scheduled')
+        .lte('game_date', targetISO)          // up to and including
+        .order('game_date', { ascending: true });
+
+    if (fetchErr) throw new Error(`Failed to fetch games: ${fetchErr.message}`);
+
+    // Nothing to simulate today / in the past
+    if (!gamesToSim?.length) {
+        return { seasonComplete: false, gamesSimulated: 0, results: [] };
+    }
+
+    // Bulk‑simulate all fetched games
+    const results = await this._bulkSimulateGames(gamesToSim, seasonId);
+
+    // Update game_state with the last simulated date
+    const currentState = await this._getGameState();
+    const lastSimDate = gamesToSim[gamesToSim.length - 1].game_date;
+    await supabaseAdmin
+        .from('saved_games')
+        .update({
+        game_state: {
+            ...currentState,
+            last_sim_to_date: lastSimDate,
+            last_simulated_at: new Date().toISOString(),
+        },
+        })
+        .eq('id', this.savedGameId);
+
+    return {
+        seasonComplete: false,
+        gamesSimulated: gamesToSim.length,
+        results,
+    };
+  }
+
   // ── PRIVATE: core bulk-simulation logic ──────────────────────────────────
   //
   // Accepts any array of game rows, simulates them all, persists every artefact

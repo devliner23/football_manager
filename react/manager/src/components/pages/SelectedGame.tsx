@@ -40,6 +40,8 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   const [refreshKey, setRefreshKey] = useState(0);
   const [nextUserGame, setNextUserGame] = useState<UserGameInfo | null>(null);
   const [leagueGamesBeforeCount, setLeagueGamesBeforeCount] = useState(0);
+  const [lastSimulatedDate, setLastSimulatedDate] = useState<string | null>(null);
+
 
   // Load all league data
   const loadLeagueData = async () => {
@@ -158,6 +160,26 @@ const userTeam = useMemo(() => {
     }
   };
 
+  const handleSimulateToDate = async (targetDate: string) => {
+    setLoading(true);
+    try {
+        const result = await leagueAPI.simulateToDate(game.id, targetDate);
+        setLastSimulatedDate(targetDate); // or store from response if needed
+        await loadLeagueData();
+        await loadNextUserGame(); // still useful to update the “next game” banner
+        if (result.seasonComplete) {
+        alert('🏆 Season complete!');
+        } else {
+        alert(`✅ Simulated ${result.gamesSimulated} game(s) up to ${new Date(targetDate).toLocaleDateString()}.`);
+        }
+    } catch (error) {
+        console.error('Date simulation failed:', error);
+        alert('Failed to simulate. Check console.');
+    } finally {
+        setLoading(false);
+    }
+  };
+
   return (
     <div className="selected-game-fullscreen">
       <GameHeader
@@ -201,6 +223,8 @@ const userTeam = useMemo(() => {
           loading={loading}
           nextUserGame={nextUserGame}
           leagueGamesBeforeCount={leagueGamesBeforeCount}
+          onSimulateToDate={handleSimulateToDate}
+          lastSimulatedDate={lastSimulatedDate}
         />
 
         <main className="game-main-content">
