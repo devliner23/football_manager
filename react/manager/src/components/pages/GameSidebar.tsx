@@ -1,5 +1,7 @@
 // src/components/SelectedGame/GameSidebar.tsx
 import React from 'react';
+import { UserGameInfo } from '../../api/leagueApi';
+
 
 interface GameSidebarProps {
   season: number;
@@ -13,6 +15,8 @@ interface GameSidebarProps {
   onSimulate: () => void;
   onViewStandings: () => void;
   loading: boolean;
+  nextUserGame?: UserGameInfo | null;
+  leagueGamesBeforeCount?: number;
 }
 
 const GameSidebar: React.FC<GameSidebarProps> = ({
@@ -27,6 +31,8 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
   onSimulate,
   onViewStandings,
   loading,
+  nextUserGame, 
+  leagueGamesBeforeCount = 0,
 }) => {
   return (
     <aside className="game-sidebar">
@@ -58,20 +64,43 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
 
       <div className="game-sidebar-section">
         <h4>Actions</h4>
-        <button
-          className="sidebar-action-btn primary"
-          onClick={onContinue}
-          disabled={loading}
-        >
-          ▶ Continue
-        </button>
-        <button
-          className="sidebar-action-btn success"
-          onClick={onSimulate}
-          disabled={loading}
-        >
-          ⚡ Simulate
-        </button>
+{nextUserGame && !loading && (
+        <div className="next-game-card">
+          <p className="next-game-label">Next Game</p>
+ 
+          <p className="next-game-matchup">
+            {nextUserGame.isHome
+              ? `${nextUserGame.home_team.abbreviation} vs ${nextUserGame.away_team.abbreviation}`
+              : `@ ${nextUserGame.home_team.abbreviation}`}
+          </p>
+ 
+          <p className="next-game-date">
+            {new Date(nextUserGame.game_date).toLocaleDateString(undefined, {
+              weekday: 'short',
+              month:   'short',
+              day:     'numeric',
+            })}
+          </p>
+ 
+          {leagueGamesBeforeCount > 0 && (
+            <p className="next-game-preview">
+              {leagueGamesBeforeCount} league game{leagueGamesBeforeCount !== 1 ? 's' : ''} before yours
+            </p>
+          )}
+        </div>
+      )}
+ 
+      <button
+        className="continue-btn"
+        onClick={onContinue}
+        disabled={loading}
+      >
+        {loading
+          ? 'Simulating…'
+          : leagueGamesBeforeCount > 0
+            ? `Sim ${leagueGamesBeforeCount} game${leagueGamesBeforeCount !== 1 ? 's' : ''} → Next`
+            : 'Advance to Next Game'}
+      </button>
         <button
           className="sidebar-action-btn info"
           onClick={onViewStandings}

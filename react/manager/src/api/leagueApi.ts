@@ -13,6 +13,38 @@ import api from './client';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
+export interface UserGameInfo {
+  id: string;
+  game_date: string; // "2026-06-24 14:20:38.475+00"
+  week: number;
+  isHome: boolean;
+  home_team_id: string;
+  away_team_id: string;
+  home_team: { id: string; name: string; abbreviation: string; city: string };
+  away_team: { id: string; name: string; abbreviation: string; city: string };
+}
+ 
+export interface NextUserGameResponse {
+  seasonComplete: boolean;
+  leagueGamesBeforeCount: number; // games that will auto-sim before the user's game
+  nextUserGame: UserGameInfo | null;
+}
+ 
+export interface SimulateToNextGameResponse {
+  seasonComplete: boolean;
+  gamesSimulated: number;
+  results: Array<{
+    gameId: string;
+    game_date: string;
+    homeTeamId: string;
+    awayTeamId: string;
+    homeScore: number;
+    awayScore: number;
+    overtime: boolean;
+  }>;
+  nextUserGame: UserGameInfo | null;
+}
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -121,7 +153,21 @@ initializeLeague: async (
   getSchedule: async (savedGameId: string) => {
     const response = await api.get<ApiResponse<Record<number, GameResult[]>>>(`/api/league/${savedGameId}/schedule`);
     return extractData(response);
-},
+  },
+
+    getNextUserGame: async (savedGameId: string): Promise<NextUserGameResponse> => {
+    const response = await api.get<ApiResponse<NextUserGameResponse>>(
+      `/api/league/${savedGameId}/next-user-game`
+    );
+    return extractData(response);
+  },
+ 
+  simulateToNextGame: async (savedGameId: string): Promise<SimulateToNextGameResponse> => {
+    const response = await api.post<ApiResponse<SimulateToNextGameResponse>>(
+      `/api/league/${savedGameId}/simulate-to-next-game`
+    );
+    return extractData(response);
+  },
 };
 
 export type { Team, Player, StandingsRow, SavedGame, GameResult, PlayerGameStats };

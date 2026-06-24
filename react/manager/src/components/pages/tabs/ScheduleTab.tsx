@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { GameResult } from '../../../api/leagueApi';
 import './styles/ScheduleTab.css';
 
@@ -7,15 +7,103 @@ interface ScheduleTabProps {
   teams: { id: string; name: string; abbreviation: string }[];
 }
 
-const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams }) => {
-  const weeks = Object.keys(schedule).sort((a, b) => Number(a) - Number(b));
+type ViewMode = 'calendar' | 'list';
 
-  const getTeamName = (teamId: string) => {
-    const team = teams.find(t => t.id === teamId);
-    return team?.abbreviation || team?.name || teamId;
+const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams }) => {
+  const [viewMode, setViewMode] = useState<ViewMode>('calendar');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  // Build a lookup for team abbreviations
+  const teamMap = useMemo(() => {
+    const map = new Map(teams.map(t => [t.id, t]));
+    return map;
+  }, [teams]);
+
+  // Flatten all games and group by date (YYYY-MM-DD)
+  const gamesByDate = useMemo(() => {
+    const map = new Map<string, GameResult[]>();
+    Object.values(schedule).forEach(weekGames => {
+      weekGames.forEach(game => {
+        const dateSource = game.game_date || game.played_at;
+        if (!dateSource) return;
+        const date = new Date(dateSource).toISOString().split('T')[0];
+        if (!map.has(date)) map.set(date, []);
+        map.get(date)!.push(game);
+      });
+    });
+    return map;
+  }, [schedule]);
+
+  // Generate all dates of the season (first game date to last)
+  const [seasonStart, seasonEnd] = useMemo(() => {
+    const dates = Array.from(gamesByDate.keys()).sort();
+    if (dates.length === 0) return [null, null];
+    return [dates[0], dates[dates.length - 1]];
+  }, [gamesByDate]);
+
+  // Calendar grid: months with days
+  const months = useMemo(() => {
+    if (!seasonStart || !seasonEnd) return [];
+    const start = new Date(seasonStart + 'T00:00:00');
+    const end = new Date(seasonEnd + 'T00:00:00');
+    const monthsArray: { name: string; weeks: Date[][] }[] = [];
+
+    const current = new Date(start.getFullYear(), start.getMonth(), 1);
+    while (current <= end) {
+      const monthName = current.toLocaleString('default', { month: 'long', year: 'numeric' });
+      const firstDay = new Date(current);
+      const lastDay = new Date(current.getFullYear(), current.getMonth() + 1, 0);
+      const weeks: Date[][] = [];
+      let week: Date[] = [];
+      const startDayOfWeek = firstDay.getDay(); // 0 = Sun
+      for (let i = 0; i < startDayOfWeek; i++) {
+        week.push(null!);
+      }
+      for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+        if (week.length === 7) {
+          weeks.push(week);
+          week = [];
+        }
+        week.push(new Date(d));
+      }
+      while (week.length < 7) {
+        week.push(null!);
+      }
+      if (week.length > 0) weeks.push(week);
+
+      monthsArray.push({ name: monthName, weeks });
+      current.setMonth(current.getMonth() + 1);
+    }
+    return monthsArray;
+  }, [seasonStart, seasonEnd]);
+
+  // Helper to get games for a given date object
+  const getGamesForDate = (date: Date | null) => {
+    if (!date) return [];
+    const key = date.toISOString().split('T')[0];
+    return gamesByDate.get(key) || [];
   };
 
-  if (weeks.length === 0) {
+  // Selected date games for the modal
+  const selectedDateGames = useMemo(() => {
+    return selectedDate ? getGamesForDate(selectedDate) : [];
+  }, [selectedDate, gamesByDate]);
+
+  // List view data (unchanged)
+  const allGamesFlat = useMemo(() => {
+    const games: GameResult[] = [];
+    Object.keys(schedule)
+      .sort((a, b) => Number(a) - Number(b))
+      .forEach(week => {
+        schedule[Number(week)].forEach(g => games.push(g));
+      });
+    return games;
+  }, [schedule]);
+
+  // Modal close handler
+  const closeModal = () => setSelectedDate(null);
+
+  if (!seasonStart) {
     return (
       <div className="schedule-tab">
         <h2>League Schedule</h2>
@@ -26,40 +114,154 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams }) => {
 
   return (
     <div className="schedule-tab">
-      <h2>League Schedule</h2>
-      {weeks.map(week => (
-        <div key={week} className="schedule-week">
-          <h3>Week {week}</h3>
-          <div className="schedule-games">
-            {schedule[Number(week)].map(game => (
-              <div key={game.id} className="schedule-game">
-                <div className="game-matchup">
-                    <span className="home-team">
-                    {getTeamName(game.home_team_id)}
-                    </span>
+      <div className="schedule-header">
+        <h2>League Schedule</h2>
+        <div className="view-toggle">
+          <button
+            className={viewMode === 'calendar' ? 'active' : ''}
+            onClick={() => setViewMode('calendar')}
+          >
+            📅 Calendar
+          </button>
+          <button
+            className={viewMode === 'list' ? 'active' : ''}
+            onClick={() => setViewMode('list')}
+          >
+            📋 List
+          </button>
+        </div>
+      </div>
 
-                    <span className="vs">VS</span>
-
-                    <span className="away-team">
-                    {getTeamName(game.away_team_id)}
-                    </span>
+      {viewMode === 'calendar' ? (
+        <>
+          <div className="calendar-container">
+            {months.map((month, idx) => (
+              <div key={idx} className="calendar-month">
+                <h3 className="month-name">{month.name}</h3>
+                <div className="weekday-header">
+                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                    <div key={d} className="weekday">{d}</div>
+                  ))}
                 </div>
-
-                <div className="game-result">
-                    {game.home_score} - {game.away_score}
-                </div>
-
-                <div className="game-meta">
-                    <span className="status-badge">Final</span>
-                    <span className="game-date">
-                    {new Date(game.played_at).toLocaleDateString()}
-                    </span>
-                </div>
-              </div>            
+                {month.weeks.map((week, wi) => (
+                  <div key={wi} className="calendar-week">
+                    {week.map((day, di) => {
+                      const games = getGamesForDate(day);
+                      const isToday = day && new Date().toDateString() === day.toDateString();
+                      const dayKey = day ? day.toISOString().split('T')[0] : '';
+                      return (
+                        <div
+                          key={di}
+                          className={`calendar-day ${day ? '' : 'empty'} ${games.length > 0 ? 'has-games' : ''} ${isToday ? 'today' : ''}`}
+                          onClick={day && games.length > 0 ? () => setSelectedDate(day) : undefined}
+                          title={day ? day.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) : ''}
+                        >
+                          {day && (
+                            <>
+                              <span className="day-number">{day.getDate()}</span>
+                              {games.length > 0 && (
+                                <span className="games-badge">
+                                  {games.length} {games.length === 1 ? 'game' : 'games'}
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
             ))}
           </div>
+
+          {/* Day Details Modal */}
+          {selectedDate && (
+            <div className="modal-backdrop" onClick={closeModal}>
+              <div className="day-modal" onClick={e => e.stopPropagation()}>
+                <div className="modal-header">
+                  <h3 className="modal-title">
+                    {selectedDate.toLocaleDateString(undefined, {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </h3>
+                  <button className="modal-close" onClick={closeModal}>
+                    ✕
+                  </button>
+                </div>
+                <div className="modal-games-list">
+                  {selectedDateGames.length === 0 ? (
+                    <p className="no-games">No games scheduled.</p>
+                  ) : (
+                    selectedDateGames.map(game => {
+                      const home = teamMap.get(game.home_team_id);
+                      const away = teamMap.get(game.away_team_id);
+                      const score =
+                        game.status === 'final' && game.home_score != null
+                          ? `${game.home_score} - ${game.away_score}`
+                          : '';
+                      return (
+                        <div key={game.id} className="modal-game-row">
+                          <div className="modal-teams">
+                            <span className="team-abbr home">{home?.abbreviation || 'TBD'}</span>
+                            <span className="vs">vs</span>
+                            <span className="team-abbr away">{away?.abbreviation || 'TBD'}</span>
+                          </div>
+                          <div className="modal-score">
+                            {score || <span className="status-badge status-scheduled">Scheduled</span>}
+                          </div>
+                          <div className="modal-meta">
+                            {game.week && <span>Week {game.week}</span>}
+                            {game.status === 'final' && (
+                              <span className="status-badge status-final">Final</span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="list-container">
+          <div className="list-header">
+            <span>Date</span>
+            <span>Week</span>
+            <span>Matchup</span>
+            <span>Score</span>
+            <span>Status</span>
+          </div>
+          {allGamesFlat.map(game => {
+            const home = teamMap.get(game.home_team_id);
+            const away = teamMap.get(game.away_team_id);
+            const dateSource = game.game_date || game.played_at;
+            const date = dateSource ? new Date(dateSource) : null;
+            return (
+              <div key={game.id} className="list-row">
+                <span className="list-date">{date ? date.toLocaleDateString() : '—'}</span>
+                <span className="list-week">Week {game.week}</span>
+                <span className="list-matchup">
+                  <span className="team-abbr home">{home?.abbreviation || 'TBD'}</span>
+                  <span className="vs">vs</span>
+                  <span className="team-abbr away">{away?.abbreviation || 'TBD'}</span>
+                </span>
+                <span className="list-score">
+                  {game.status === 'final' && game.home_score != null
+                    ? `${game.home_score} - ${game.away_score}`
+                    : '—'}
+                </span>
+                <span className={`list-status status-${game.status}`}>{game.status}</span>
+              </div>
+            );
+          })}
         </div>
-      ))}
+      )}
     </div>
   );
 };

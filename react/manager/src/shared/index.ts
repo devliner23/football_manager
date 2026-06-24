@@ -120,6 +120,7 @@ export interface GameResult {
   week: number;
   home_team?: Team;
   away_team?: Team;
+  game_date?: string | null; 
 }
 
 // ── Player Game Stats (box scores) ─────────────────────────

@@ -1,7 +1,7 @@
 // src/components/SelectedGame/SelectedGame.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { SavedGame } from '../../shared';
-import { leagueAPI, Team, Player, StandingsRow, GameResult } from '../../api/leagueApi';
+import { leagueAPI, Team, Player, StandingsRow, GameResult, UserGameInfo } from '../../api/leagueApi';
 import GameHeader from './GameHeader';
 import GameSidebar from './GameSidebar';
 import OverviewTab from './tabs/OverviewTab';
@@ -38,6 +38,8 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null);
   const [schedule, setSchedule] = useState<Record<number, GameResult[]>>({});
   const [refreshKey, setRefreshKey] = useState(0);
+  const [nextUserGame, setNextUserGame] = useState<UserGameInfo | null>(null);
+  const [leagueGamesBeforeCount, setLeagueGamesBeforeCount] = useState(0);
 
   // Load all league data
   const loadLeagueData = async () => {
@@ -60,8 +62,24 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     }
   };
 
+    const loadNextUserGame = async () => {
+    try {
+      const result = await leagueAPI.getNextUserGame(game.id);
+      if (result.seasonComplete || !result.nextUserGame) {
+        setNextUserGame(null);
+        setLeagueGamesBeforeCount(0);
+      } else {
+        setNextUserGame(result.nextUserGame);
+        setLeagueGamesBeforeCount(result.leagueGamesBeforeCount);
+      }
+    } catch (error) {
+      console.error('Failed to load next user game:', error);
+    }
+  };
+
   useEffect(() => {
     loadLeagueData();
+    loadNextUserGame();
   }, [game.id]);
 
   // Helper functions
@@ -69,9 +87,19 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   const getPlayersForTeam = (teamId: string) =>
     players.filter((p) => p.team_id === teamId);
 
-  const userTeam = teams.find(
-    (t) => t.team_id === game.managed_club_id || t.id === game.managed_club_id
-  );
+// Inside SelectedGame component...
+
+const userTeam = useMemo(() => {
+  if (!teams.length || !game.managed_club_id) return undefined;
+  const found = teams.find(t => t.id === game.managed_club_id);
+  if (!found) {
+    console.warn(
+      `⚠️ User team not found. managed_club_id: ${game.managed_club_id}. Available team IDs:`,
+      teams.map(t => t.id)
+    );
+  }
+  return found;
+}, [teams, game.managed_club_id]);
   const userTeamPlayers = userTeam ? getPlayersForTeam(userTeam.id) : [];
 
   const record = userTeam
@@ -86,18 +114,24 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   const handleContinue = async () => {
     setLoading(true);
     try {
-      const result = await leagueAPI.simulateWeek(game.id);
-      await loadLeagueData();
+      const result = await leagueAPI.simulateToNextGame(game.id);
+ 
+      // Refresh league table data and next-game banner in parallel
+      await Promise.all([loadLeagueData(), loadNextUserGame()]);
       setRefreshKey(prev => prev + 1);
-
+ 
       if (result.seasonComplete) {
-        alert('🏆 Season complete!');
+        alert('🏆 Season complete! No more games scheduled.');
+      } else if (result.gamesSimulated === 0) {
+        alert('⏭️ Your next game is up next — no league games before it.');
       } else {
-        const gameCount = result.games?.length || 0;
-        console.log(`Simulated ${gameCount} games for week ${result.week}`);
+        alert(
+          `✅ Simulated ${result.gamesSimulated} league game${result.gamesSimulated !== 1 ? 's' : ''}.\n` +
+          `Your next game is ready.`
+        );
       }
     } catch (error) {
-      console.error('Failed to simulate week:', error);
+      console.error('Failed to simulate to next game:', error);
       alert('Failed to simulate games. Check console.');
     } finally {
       setLoading(false);
@@ -165,6 +199,8 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
           onSimulate={handleSimulate}
           onViewStandings={() => setActiveTab('standings')}
           loading={loading}
+          nextUserGame={nextUserGame}
+          leagueGamesBeforeCount={leagueGamesBeforeCount}
         />
 
         <main className="game-main-content">

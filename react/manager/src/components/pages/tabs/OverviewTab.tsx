@@ -1,4 +1,3 @@
-// src/components/pages/tabs/OverviewTab.tsx
 import React from 'react';
 import { SavedGame, Team, Player } from '../../../shared/index';
 import GameResults from '../GameResults';
@@ -59,6 +58,16 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   };
   const avg = teamAverages();
 
+  if (!userTeam) {
+    return (
+      <div className="tab-panel overview-panel">
+        <div className="info-card full-width">
+          <p>Team data not available. Please ensure the league is initialised correctly.</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="tab-panel overview-panel">
       <div className="overview-grid">
@@ -74,15 +83,15 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           <h4>🏷️ Team Information</h4>
           <div className="info-row">
             <span className="info-label">Team</span>
-            <span className="info-value">{userTeam?.name || 'N/A'}</span>
+            <span className="info-value">{userTeam.name}</span>
           </div>
           <div className="info-row">
             <span className="info-label">Conference</span>
-            <span className="info-value">{userTeam?.conference || 'N/A'}</span>
+            <span className="info-value">{userTeam.conference || 'N/A'}</span>
           </div>
           <div className="info-row">
             <span className="info-label">Division</span>
-            <span className="info-value">{userTeam?.division || 'N/A'}</span>
+            <span className="info-value">{userTeam.division || 'N/A'}</span>
           </div>
           <div className="info-row">
             <span className="info-label">Season</span>
@@ -116,7 +125,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
               </div>
             </>
           ) : (
-            <div className="info-row">No players yet</div>
+            <div className="info-row">No players on roster yet</div>
           )}
         </div>
 
