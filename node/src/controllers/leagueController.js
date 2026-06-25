@@ -170,24 +170,88 @@ const leagueController = {
   async getPlayers(req, res, next) {
     try {
       const { savedGameId } = req.params;
-      const { data, error } = await supabaseAdmin
-        .from('players').select('*').eq('saved_game_id', savedGameId);
-      if (error) throw error;
-      res.json({ success: true, data });
+      const seasonId = await getCurrentSeasonId(savedGameId);
+ 
+      // Fetch players and their season stats in parallel
+      const [playersRes, statsRes] = await Promise.all([
+        supabaseAdmin
+          .from('players')
+          .select('*')
+          .eq('saved_game_id', savedGameId),
+        seasonId
+          ? supabaseAdmin
+              .from('player_season_stats')
+              .select(
+                'player_id, games_played, total_points, total_rebounds, ' +
+                'total_assists, total_steals, total_blocks, total_turnovers, ' +
+                'total_fga, total_fgm, total_fga_3, total_fgm_3, ' +
+                'total_fta, total_ftm, offensive_rebounds, defensive_rebounds, minutes'
+              )
+              .eq('saved_game_id', savedGameId)
+              .eq('season_id', seasonId)
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+ 
+      if (playersRes.error) throw playersRes.error;
+ 
+      // Build a lookup by player_id
+      const statsByPlayer = {};
+      (statsRes.data || []).forEach(s => { statsByPlayer[s.player_id] = s; });
+ 
+      const avg = (val, gp) => (gp > 0 ? parseFloat((val / gp).toFixed(1)) : 0);
+ 
+      const enriched = (playersRes.data || []).map(p => {
+        const s  = statsByPlayer[p.id];
+        const gp = s?.games_played || 0;
+        return {
+          ...p,
+          ...(p.traits || {}),          // spread traits so attributes are top-level
+          games_played: gp,
+          points:       avg(s?.total_points         || 0, gp),
+          rebounds:     avg(s?.total_rebounds        || 0, gp),
+          assists:      avg(s?.total_assists         || 0, gp),
+          steals:       avg(s?.total_steals          || 0, gp),
+          blocks:       avg(s?.total_blocks          || 0, gp),
+          turnovers:    avg(s?.total_turnovers       || 0, gp),
+          minutes_pg:   avg(s?.minutes              || 0, gp),
+          fg_pct:  s?.total_fga   > 0 ? parseFloat(((s.total_fgm   / s.total_fga)   * 100).toFixed(1)) : 0,
+          fg3_pct: s?.total_fga_3 > 0 ? parseFloat(((s.total_fgm_3 / s.total_fga_3) * 100).toFixed(1)) : 0,
+          ft_pct:  s?.total_fta   > 0 ? parseFloat(((s.total_ftm   / s.total_fta)   * 100).toFixed(1)) : 0,
+        };
+      });
+ 
+      res.json({ success: true, data: enriched });
     } catch (error) { next(error); }
   },
 
   async getStandings(req, res, next) {
     try {
       const { savedGameId } = req.params;
-      const { data: standings, error } = await supabaseAdmin
-        .from('v_standings')
-        .select('*')
+      const seasonId = await getCurrentSeasonId(savedGameId);
+      if (!seasonId) return res.json({ success: true, data: [] });
+ 
+      const { data, error } = await supabaseAdmin
+        .from('team_season_stats')
+        .select(
+          'team_id, wins, losses, points_for, points_against, ' +
+          'home_wins, home_losses, away_wins, away_losses, saved_game_id'
+        )
         .eq('saved_game_id', savedGameId)
-        .order('win_pct', { ascending: false })
-        .order('wins',    { ascending: false });
+        .eq('season_id', seasonId);
+ 
       if (error) throw error;
-      res.json({ success: true, data: standings });
+ 
+      // Compute win_pct and sort descending; StandingsTab uses wins + losses
+      const sorted = (data || [])
+        .map(row => ({
+          ...row,
+          win_pct: (row.wins + row.losses) > 0
+            ? row.wins / (row.wins + row.losses)
+            : 0,
+        }))
+        .sort((a, b) => b.win_pct - a.win_pct || b.wins - a.wins);
+ 
+      res.json({ success: true, data: sorted });
     } catch (error) { next(error); }
   },
 
@@ -234,6 +298,32 @@ const leagueController = {
         .limit(10);
       if (error) throw error;
       res.json({ success: true, data: players });
+    } catch (error) { next(error); }
+  },
+
+  async getRecentGames(req, res, next) {
+    try {
+      const { savedGameId } = req.params;
+      const limit    = Math.min(parseInt(req.query.limit) || 10, 50);
+      const seasonId = await getCurrentSeasonId(savedGameId);
+      if (!seasonId) return res.json({ success: true, data: [] });
+ 
+      const { data, error } = await supabaseAdmin
+        .from('games')
+        .select(`
+          id, game_date, played_at, week, status,
+          home_team_id, away_team_id,
+          home_score, away_score,
+          home_team:home_team_id ( id, name, abbreviation, city ),
+          away_team:away_team_id ( id, name, abbreviation, city )
+        `)
+        .eq('season_id', seasonId)
+        .eq('status', 'completed')
+        .order('played_at', { ascending: false })
+        .limit(limit);
+ 
+      if (error) throw error;
+      res.json({ success: true, data: data || [] });
     } catch (error) { next(error); }
   },
 

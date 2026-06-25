@@ -36,7 +36,6 @@ const RosterTab: React.FC<RosterTabProps> = ({
       <div className="roster-layout">
         {/* Left sidebar: team list */}
         <div className="team-list">
-          <h4>🏀 Teams</h4>
           <ul>
             {teams.map((team) => (
               <li

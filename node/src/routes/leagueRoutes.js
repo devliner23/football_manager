@@ -35,6 +35,7 @@ router.get ('/:savedGameId/teams',                 leagueController.getTeams);
 router.get ('/:savedGameId/players',               leagueController.getPlayers);
 router.get ('/:savedGameId/standings',             leagueController.getStandings);
 router.get ('/:savedGameId/schedule',              leagueController.getSchedule);
+router.get('/:savedGameId/games/recent',           leagueController.getRecentGames);
 router.get ('/:savedGameId/leaders/:stat',         leagueController.getLeagueLeaders);
 router.get ('/:savedGameId/players/:playerId',     leagueController.getPlayerStats);
 

@@ -35,16 +35,18 @@ export interface Player {
     speed: number;
     strength: number;
   };
-  
-  // Season stats (accumulated)
-  games_played: number;
-  points: number;
-  rebounds: number;
-  assists: number;
-  steals?: number;
-  blocks?: number;
-  turnovers?: number;
-  season: number;
+
+  games_played?: number;
+  points?:       number;   // PPG
+  rebounds?:     number;   // RPG
+  assists?:      number;   // APG
+  steals?:       number;   // SPG
+  blocks?:       number;   // BPG
+  turnovers?:    number;   // TOPG
+  minutes_pg?:   number;   // MPG
+  fg_pct?:       number;   // FG %
+  fg3_pct?:      number;   // 3P %
+  ft_pct?:       number;   // FT %
   
   created_at?: string;
   updated_at?: string;
@@ -75,16 +77,19 @@ export interface Team {
 // ── Standings (matches backend team_season_stats) ──────────
 
 export interface StandingsRow {
-  id: string;
-  saved_game_id: string;
-  team_id: string;
-  team?: Team;
-  season: number;
-  wins: number;
-  losses: number;
-  points_for?: number;
+  team_id:        string;
+  saved_game_id?: string;
+  wins:           number;
+  losses:         number;
+  win_pct?:       number;
+  points_for?:    number;
   points_against?: number;
+  home_wins?:     number;
+  home_losses?:   number;
+  away_wins?:     number;
+  away_losses?:   number;
 }
+ 
 
 // ── Saved Game ──────────────────────────────────────────────
 

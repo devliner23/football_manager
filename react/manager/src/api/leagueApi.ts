@@ -118,7 +118,7 @@ export const leagueAPI = {
   },
 
   // ── League Management ──────────────────────────────────────
-initializeLeague: async (
+  initializeLeague: async (
     savedGameId: string, 
     options: { season?: number; managedClub: string }
   ) => {
