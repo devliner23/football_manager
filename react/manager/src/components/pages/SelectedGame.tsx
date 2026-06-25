@@ -34,6 +34,37 @@ interface SelectedGameProps {
 
 type TabType = 'overview' | 'roster' | 'standings' | 'trade' | 'freeagents' | 'frontoffice' | 'schedule';
 
+const tabConfig = {
+  overview: {
+    label: 'Overview',
+    icon: <LayoutDashboard size={18} strokeWidth={2} />,
+  },
+  roster: {
+    label: 'Roster',
+    icon: <Users size={18} strokeWidth={2} />,
+  },
+  standings: {
+    label: 'Standings',
+    icon: <TrendingUp size={18} strokeWidth={2} />,
+  },
+  trade: {
+    label: 'Trade',
+    icon: <Repeat size={18} strokeWidth={2} />,
+  },
+  freeagents: {
+    label: 'Free Agents',
+    icon: <UserPlus size={18} strokeWidth={2} />,
+  },
+  frontoffice: {
+    label: 'Front Office',
+    icon: <Building2 size={18} strokeWidth={2} />,
+  },
+  schedule: {
+    label: 'Schedule',
+    icon: <Calendar size={18} strokeWidth={2} />,
+  },
+};
+
 const SelectedGame: React.FC<SelectedGameProps> = ({
   game,
   onBack,
@@ -201,32 +232,18 @@ const userTeam = useMemo(() => {
         onDelete={handleDelete}
       />
 
-        <nav className="game-global-nav">
-        {(['overview', 'roster', 'standings', 'trade', 'freeagents', 'frontoffice', 'schedule'] as TabType[]).map((tab) => (
+      <nav className="game-global-nav">
+        {(Object.keys(tabConfig) as TabType[]).map((tab) => (
             <button
             key={tab}
             className={`nav-btn ${activeTab === tab ? 'active' : ''}`}
             onClick={() => setActiveTab(tab)}
             >
-            {tab === 'overview' && <LayoutDashboard size={18} strokeWidth={2} />}
-            {tab === 'roster' && <Users size={18} strokeWidth={2} />}
-            {tab === 'standings' && <TrendingUp size={18} strokeWidth={2} />}
-            {tab === 'trade' && <Repeat size={18} strokeWidth={2} />}
-            {tab === 'freeagents' && <UserPlus size={18} strokeWidth={2} />}
-            {tab === 'frontoffice' && <Building2 size={18} strokeWidth={2} />}
-            {tab === 'schedule' && <Calendar size={18} strokeWidth={2} />}
-            <span>
-                {tab === 'overview' && 'Overview'}
-                {tab === 'roster' && 'Roster'}
-                {tab === 'standings' && 'Standings'}
-                {tab === 'trade' && 'Trade'}
-                {tab === 'freeagents' && 'Free Agents'}
-                {tab === 'frontoffice' && 'Front Office'}
-                {tab === 'schedule' && 'Schedule'}
-            </span>
+            {tabConfig[tab].icon}
+            <span>{tabConfig[tab].label}</span>
             </button>
         ))}
-        </nav>
+      </nav>
 
       <div className="game-fullscreen-content">
         <GameSidebar
