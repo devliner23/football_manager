@@ -14,6 +14,17 @@ import PlayerModal from './PlayerModal';
 import ScheduleTab from './tabs/ScheduleTab';
 import './SelectedGame.css';
 
+import {
+  LayoutDashboard,
+  Users,
+  TrendingUp,
+  Repeat,
+  UserPlus,
+  Building2,
+  Calendar
+} from 'lucide-react';
+
+
 interface SelectedGameProps {
   game: SavedGame;
   onBack: () => void;
@@ -190,23 +201,32 @@ const userTeam = useMemo(() => {
         onDelete={handleDelete}
       />
 
-      <nav className="game-global-nav">
+        <nav className="game-global-nav">
         {(['overview', 'roster', 'standings', 'trade', 'freeagents', 'frontoffice', 'schedule'] as TabType[]).map((tab) => (
-          <button
+            <button
             key={tab}
             className={`nav-btn ${activeTab === tab ? 'active' : ''}`}
             onClick={() => setActiveTab(tab)}
-          >
-            {tab === 'overview' && '📊 Dashboard'}
-            {tab === 'roster' && '👥 Rosters'}
-            {tab === 'standings' && '📈 Standings'}
-            {tab === 'trade' && '🔄 Trade Center'}
-            {tab === 'freeagents' && '📋 Free Agents'}
-            {tab === 'frontoffice' && '🏢 Front Office'}
-            {tab === 'schedule' && '📅 Schedule'}
-          </button>
+            >
+            {tab === 'overview' && <LayoutDashboard size={18} strokeWidth={2} />}
+            {tab === 'roster' && <Users size={18} strokeWidth={2} />}
+            {tab === 'standings' && <TrendingUp size={18} strokeWidth={2} />}
+            {tab === 'trade' && <Repeat size={18} strokeWidth={2} />}
+            {tab === 'freeagents' && <UserPlus size={18} strokeWidth={2} />}
+            {tab === 'frontoffice' && <Building2 size={18} strokeWidth={2} />}
+            {tab === 'schedule' && <Calendar size={18} strokeWidth={2} />}
+            <span>
+                {tab === 'overview' && 'Overview'}
+                {tab === 'roster' && 'Roster'}
+                {tab === 'standings' && 'Standings'}
+                {tab === 'trade' && 'Trade'}
+                {tab === 'freeagents' && 'Free Agents'}
+                {tab === 'frontoffice' && 'Front Office'}
+                {tab === 'schedule' && 'Schedule'}
+            </span>
+            </button>
         ))}
-      </nav>
+        </nav>
 
       <div className="game-fullscreen-content">
         <GameSidebar

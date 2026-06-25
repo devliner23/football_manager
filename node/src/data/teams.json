@@ -1,32 +1,242 @@
 [
-  { "city": "Atlanta", "name": "Hawks", "abbreviation": "ATL", "conference": "Eastern", "division": "Southeast" },
-  { "city": "Boston", "name": "Celtics", "abbreviation": "BOS", "conference": "Eastern", "division": "Atlantic" },
-  { "city": "Brooklyn", "name": "Nets", "abbreviation": "BKN", "conference": "Eastern", "division": "Atlantic" },
-  { "city": "Charlotte", "name": "Hornets", "abbreviation": "CHA", "conference": "Eastern", "division": "Southeast" },
-  { "city": "Chicago", "name": "Bulls", "abbreviation": "CHI", "conference": "Eastern", "division": "Central" },
-  { "city": "Cleveland", "name": "Cavaliers", "abbreviation": "CLE", "conference": "Eastern", "division": "Central" },
-  { "city": "Dallas", "name": "Mavericks", "abbreviation": "DAL", "conference": "Western", "division": "Southwest" },
-  { "city": "Denver", "name": "Nuggets", "abbreviation": "DEN", "conference": "Western", "division": "Northwest" },
-  { "city": "Detroit", "name": "Pistons", "abbreviation": "DET", "conference": "Eastern", "division": "Central" },
-  { "city": "Golden State", "name": "Warriors", "abbreviation": "GSW", "conference": "Western", "division": "Pacific" },
-  { "city": "Houston", "name": "Rockets", "abbreviation": "HOU", "conference": "Western", "division": "Southwest" },
-  { "city": "Indiana", "name": "Pacers", "abbreviation": "IND", "conference": "Eastern", "division": "Central" },
-  { "city": "Los Angeles", "name": "Clippers", "abbreviation": "LAC", "conference": "Western", "division": "Pacific" },
-  { "city": "Los Angeles", "name": "Lakers", "abbreviation": "LAL", "conference": "Western", "division": "Pacific" },
-  { "city": "Memphis", "name": "Grizzlies", "abbreviation": "MEM", "conference": "Western", "division": "Southwest" },
-  { "city": "Miami", "name": "Heat", "abbreviation": "MIA", "conference": "Eastern", "division": "Southeast" },
-  { "city": "Milwaukee", "name": "Bucks", "abbreviation": "MIL", "conference": "Eastern", "division": "Central" },
-  { "city": "Minnesota", "name": "Timberwolves", "abbreviation": "MIN", "conference": "Western", "division": "Northwest" },
-  { "city": "New Orleans", "name": "Pelicans", "abbreviation": "NOP", "conference": "Western", "division": "Southwest" },
-  { "city": "New York", "name": "Knicks", "abbreviation": "NYK", "conference": "Eastern", "division": "Atlantic" },
-  { "city": "Oklahoma City", "name": "Thunder", "abbreviation": "OKC", "conference": "Western", "division": "Northwest" },
-  { "city": "Orlando", "name": "Magic", "abbreviation": "ORL", "conference": "Eastern", "division": "Southeast" },
-  { "city": "Philadelphia", "name": "76ers", "abbreviation": "PHI", "conference": "Eastern", "division": "Atlantic" },
-  { "city": "Phoenix", "name": "Suns", "abbreviation": "PHX", "conference": "Western", "division": "Pacific" },
-  { "city": "Portland", "name": "Trail Blazers", "abbreviation": "POR", "conference": "Western", "division": "Northwest" },
-  { "city": "Sacramento", "name": "Kings", "abbreviation": "SAC", "conference": "Western", "division": "Pacific" },
-  { "city": "San Antonio", "name": "Spurs", "abbreviation": "SAS", "conference": "Western", "division": "Southwest" },
-  { "city": "Toronto", "name": "Raptors", "abbreviation": "TOR", "conference": "Eastern", "division": "Atlantic" },
-  { "city": "Utah", "name": "Jazz", "abbreviation": "UTA", "conference": "Western", "division": "Northwest" },
-  { "city": "Washington", "name": "Wizards", "abbreviation": "WAS", "conference": "Eastern", "division": "Southeast" }
+  {
+    "city": "Atlanta",
+    "name": "Embers",
+    "abbreviation": "ATL",
+    "conference": "Eastern",
+    "division": "Southeast",
+    "description": "Born from the ashes of a city that literally rebuilt itself from ruin, the Embers carry the eternal flame of resurrection. They do not burn wildly — they glow with latent heat, patient and inexorable. On the court, this is a team that never stays down, always smoldering beneath the surface until the moment they ignite in a fourth-quarter blaze that leaves opponents gasping in the smoke. They embody the phoenix myth without ever speaking its name, a quiet reminder that destruction is merely the prelude to a more beautiful creation."
+  },
+  {
+    "city": "Boston",
+    "name": "Sentinels",
+    "abbreviation": "BOS",
+    "conference": "Eastern",
+    "division": "Atlantic",
+    "description": "A sentinel stands guard at the gates of freedom, and Boston is the cradle of American liberty. These players are not merely athletes; they are vigilant protectors of a legacy, ever watchful, never sleeping. Their defense is a fortress of discipline, their offense a measured volley of precise strikes. The Sentinels remind us that true power is not in aggression but in unwavering presence — the lantern in the steeple, the watchman on the wall, the steady heartbeat of a city that has always understood that some things are worth guarding with your life."
+  },
+  {
+    "city": "Brooklyn",
+    "name": "Anchors",
+    "abbreviation": "BKN",
+    "conference": "Eastern",
+    "division": "Atlantic",
+    "description": "Before it was a borough of trendsetters, Brooklyn was a maritime powerhouse, its waterfront the anchor of New York's commerce. The Anchors are rooted deep, immovable against any storm. Their game is grounding — when the pace gets frantic, they drop their weight and slow the world to their rhythm. They are the heavy keel that keeps the ship from capsizing in the playoffs' roughest waters. In a league of flash and speed, the Anchors hold firm, drawing strength from the bedrock of a community that has weathered every tide of history."
+  },
+  {
+    "city": "Charlotte",
+    "name": "Sovereigns",
+    "abbreviation": "CHA",
+    "conference": "Eastern",
+    "division": "Southeast",
+    "description": "Named for Queen Charlotte, the city's namesake, the Sovereigns play with the divine right of royalty. They do not scramble for power — they assume it. Their presence on the court is a coronation every night, a reminder that true leadership is a birthright earned through grace under pressure. The Sovereigns' offense flows with regal generosity, the ball moving like a scepter passed among nobles, while their defense is a velvet-gloved iron fist. To face them is to kneel before an authority older than the game itself."
+  },
+  {
+    "city": "Chicago",
+    "name": "Gales",
+    "abbreviation": "CHI",
+    "conference": "Eastern",
+    "division": "Central",
+    "description": "The Windy City's true element is not the lake breeze but the relentless, sculpting force of the gale that has carved its skyline and tested its soul. The Gales are a team of invisible pressure — you don't see the wind, you only feel its effect as your shot goes astray and your legs grow heavy. They play with a constant, wearing motion, a full-court current that never relents. Like the prairie winds that shaped the Midwest, the Gales reshape opponents through sheer, persistent force, leaving them bent and exhausted by the final buzzer."
+  },
+  {
+    "city": "Cleveland",
+    "name": "Anvils",
+    "abbreviation": "CLE",
+    "conference": "Eastern",
+    "division": "Central",
+    "description": "In the heart of America's industrial forge, the Anvils represent the unbreakable foundation upon which greatness is hammered into being. They are not flashy; they are the immovable object against which all momentum shatters. Every rebound is a hammer strike, every screen a blow that shapes the game. The Anvils absorb punishment and remain whole, their resilience a testament to a city that has taken every hit history could throw and stood back up, asking for more. When you play Cleveland, you strike the anvil — and it is your own bones that feel the ring."
+  },
+  {
+    "city": "Dallas",
+    "name": "Wranglers",
+    "abbreviation": "DAL",
+    "conference": "Western",
+    "division": "Southwest",
+    "description": "The Wranglers channel the spirit of the great cattle drives and the untamed frontier. They are masters of control, guiding chaos with a steady hand and a coiled rope. On the court, they corral loose balls, rein in fast breaks, and lasso momentum with a flick of a pass. There is a rugged independence to their style — each player a lone rider capable of taming the wildest defensive sets. The Wranglers remind us that the West was won not by force but by the skill of those who knew how to direct power without breaking it."
+  },
+  {
+    "city": "Denver",
+    "name": "Apex",
+    "abbreviation": "DEN",
+    "conference": "Western",
+    "division": "Northwest",
+    "description": "At the highest point of elevation in North American professional sports, the Apex play where the air thins and lesser lungs burn. Their power is vertiginous — they pull opponents into their rarefied atmosphere and watch them gasp. The name signifies not just physical altitude but the pinnacle of achievement, the summit where clarity and vision are absolute. The Apex sees the entire court with mountain-top perspective, running an offense as clean and breathtaking as a Rocky Mountain sunrise over timberline."
+  },
+  {
+    "city": "Detroit",
+    "name": "Forge",
+    "abbreviation": "DET",
+    "conference": "Eastern",
+    "division": "Central",
+    "description": "Fire, iron, and the will to shape both — that is the Forge. Detroit built the machines that moved the world, and this team builds its victories with the same molten intensity. They are a crucible that melts down finesse teams, reforging the game into something raw and industrial. Their defense is a blast furnace, their offense the hammer and tongs. In the Forge, there is no room for the delicate; only what is strong survives, and what emerges is steel — tempered, edged, and gleaming with the sweat of creation."
+  },
+  {
+    "city": "Golden State",
+    "name": "Prospectors",
+    "abbreviation": "GSW",
+    "conference": "Western",
+    "division": "Pacific",
+    "description": "Before the tech gold rush, there was the literal one — men and women who sifted the rivers for fortune, driven by an irrational, beautiful hope. The Prospectors play with that same panning patience and explosive discovery. They dig deep into their rotations, finding hidden gems, turning overlooked players into pure gold. Their offense is a constant search for the mother lode — the perfect shot, the unseen seam in the defense — and when they strike it, the whole arena glitters. They are fortune seekers, and on any given night, they are rich beyond measure."
+  },
+  {
+    "city": "Houston",
+    "name": "Orbit",
+    "abbreviation": "HOU",
+    "conference": "Western",
+    "division": "Southwest",
+    "description": "Space City's team does not run — it revolves. The Orbit plays with celestial mechanics, a system of gravitational pulls and perfectly calculated trajectories. The ball moves like a satellite in a geodesic arc, always finding its target as if drawn by an invisible force. Their defense is a gravity well, pulling offenses into traps and turnovers. The Orbit reminds us that the most powerful forces are not chaotic but ordered — clockwork, cosmic, and utterly inevitable. They don't beat you; they eclipse you."
+  },
+  {
+    "city": "Indiana",
+    "name": "Chariots",
+    "abbreviation": "IND",
+    "conference": "Eastern",
+    "division": "Central",
+    "description": "In the heartland of basketball, where the game is practically a religion, the Chariots evoke the ancient roots of speed and competition — the Roman circus, Ben-Hur's thunderous race, the fusion of human will and engineered velocity. The Chariots play a breakneck pace, horses loosed from the gate, wheels barely touching the hardwood. But a chariot requires a steady hand and nerves of iron; this team balances reckless speed with the precise control of a driver who knows that one false move means catastrophe. They race not just to the rim but into legend."
+  },
+  {
+    "city": "Los Angeles",
+    "name": "Waves",
+    "abbreviation": "LAC",
+    "conference": "Western",
+    "division": "Pacific",
+    "description": "The Pacific is not a backdrop to LA — it is its subconscious, the rhythmic pulse beneath the freeway hum. The Waves play with an oceanic inevitability, rolling in sets of defensive stops and offensive surges. There is a hypnotic quality to their ball movement — the tide coming in, receding, then crashing with doubled force. You can try to stand against a wave, but the ocean has nothing but time. The Waves erode even the hardest defenses, grain by grain, until the shoreline is theirs."
+  },
+  {
+    "city": "Los Angeles",
+    "name": "Luminaries",
+    "abbreviation": "LAL",
+    "conference": "Western",
+    "division": "Pacific",
+    "description": "The city of angels, of stars both celestial and cinematic, fields a team of pure luminance. The Luminaries do not merely play basketball — they radiate. Their style is incandescent, every pass a flash of brilliance, every shot a supernova. They attract all eyes, all attention, and they thrive in that gravity of expectation. To be a Luminary is to understand that light reveals truth; their motion offense exposes every crack in the defense, and by the fourth quarter, opponents are not just beaten — they are revealed, blinking in the glare."
+  },
+  {
+    "city": "Memphis",
+    "name": "Pharaohs",
+    "abbreviation": "MEM",
+    "conference": "Western",
+    "division": "Southwest",
+    "description": "Memphis, Tennessee shares its name with the ancient capital of Egypt, and the Pharaohs claim that lineage of absolute rule. They play with the weight of dynastic inevitability — the calm, unhurried confidence of those who believe themselves chosen by the sun god. Their defense is a pyramid: layered, enduring, built to last millennia. Their offense is a royal procession, methodical and majestic. To face the Pharaohs is to stand before a monument of power and realize that you are but a passing season in their eternal reign."
+  },
+  {
+    "city": "Miami",
+    "name": "Tempest",
+    "abbreviation": "MIA",
+    "conference": "Eastern",
+    "division": "Southeast",
+    "description": "Where the warm Gulf meets the volatile atmosphere, the Tempest is born. Miami's team is the hurricane made manifest — calm, deceptive eye, then winds that tear the roof off the building. They play in spiraling bursts of defensive intensity, full-court pressure that spins opponents into turnovers like palm fronds in a gale. The Tempest is beautiful and terrifying, a force of nature that cannot be reasoned with, only survived. When the barometer drops and the first raindrops of a steal fall, you know the storm is already upon you."
+  },
+  {
+    "city": "Milwaukee",
+    "name": "Masons",
+    "abbreviation": "MIL",
+    "conference": "Eastern",
+    "division": "Central",
+    "description": "In a city built of Cream City brick by the hands of craftsmen, the Masons represent the ancient and honorable art of building something that lasts. They are not an assembly of stars but a lodge of builders, each brick a perfectly placed screen, each trowel-swipe a bounce pass that sets the foundation for a basket. Their game is methodical and true, leveled and plumbed. The Masons take pride in the work, not the glory, and by the end of the night, they have constructed a victory that stands solid long after the final buzzer."
+  },
+  {
+    "city": "Minnesota",
+    "name": "Voyageurs",
+    "abbreviation": "MIN",
+    "conference": "Western",
+    "division": "Northwest",
+    "description": "Long before the skylines, the voyageurs paddled the boundary waters, singing their chansons, carrying trade and civilization through the northern wilds. The Voyageurs play with that same enduring, rhythm-driven spirit — a team of travelers who move the ball like a canoe on a chain of lakes, portaging through defensive pressure with effortless teamwork. They are explorers of the court's uncharted spaces, finding routes where none seemed to exist. Their power is endurance and song, the steady paddle-song that carries them across the deepest water while others founder."
+  },
+  {
+    "city": "New Orleans",
+    "name": "Krewe",
+    "abbreviation": "NOP",
+    "conference": "Western",
+    "division": "Southwest",
+    "description": "Mardi Gras is not a party — it is a mystery, a masked ritual of collective joy and ancient tradition. A krewe is the secret society that plans the parade, builds the floats, and bestows magic upon the streets. The Krewe plays basketball as a celebration, a second line of dazzling passes and rhythmic shots. They are anonymous and collective; no single player needs the spotlight because the entire team is a moving spectacle. Their power is in the mask — you never know who will strike next, only that the float keeps rolling and the beads keep flying."
+  },
+  {
+    "city": "New York",
+    "name": "Skyliners",
+    "abbreviation": "NYK",
+    "conference": "Eastern",
+    "division": "Atlantic",
+    "description": "The skyline of New York is a declaration to the heavens: we are here, we are immense, we will not be ignored. The Skyliners play with that vertical audacity — a team of spires and setbacks, rising above the pack. Their game is architectural, built on the cantilevers of ball movement and the steel frames of defensive stands. They see the court from the observation deck, surveying all possibilities. To play the Skyliners is to feel small at street level, craning your neck upward at something you can never quite reach."
+  },
+  {
+    "city": "Oklahoma City",
+    "name": "Twisters",
+    "abbreviation": "OKC",
+    "conference": "Western",
+    "division": "Northwest",
+    "description": "The plains breed tornadoes — spiraling columns of impossible energy that touch down with devastating precision. The Twisters are not a team of sustained pressure; they are a sudden, swirling chaos that drops out of nowhere and changes the landscape in seconds. Their defense is a funnel cloud, sucking up the ball and spitting out debris in the form of fast-break points. They are unpredictable, awesome, and leave opponents surveying the damage afterward, wondering how something so beautiful could be so ruinous."
+  },
+  {
+    "city": "Orlando",
+    "name": "Spells",
+    "abbreviation": "ORL",
+    "conference": "Eastern",
+    "division": "Southeast",
+    "description": "In the shadow of castles and fairy tales, the Spells weave a game of enchantment. They are not just shooters; they are magicians whose words and gestures bend the game's normal rules. A no-look pass is an incantation; a step-back three is a vanishing act. The Spells put opponents under a trance of ball movement, until the defense is waving at phantoms while the real magic happens elsewhere. To break the spell, you must believe it isn't real — but by then, the rabbit is already out of the hat and the scoreboard is an illusion you can't undo."
+  },
+  {
+    "city": "Philadelphia",
+    "name": "Bellringers",
+    "abbreviation": "PHI",
+    "conference": "Eastern",
+    "division": "Atlantic",
+    "description": "The Liberty Bell, cracked but resonant, has called across centuries with its inscription: 'Proclaim LIBERTY throughout all the land.' The Bellringers play with that same clarion purpose. Every dunk is a tolling, every block a peal that echoes through the arena. Their power is in resonance — they set a frequency of physical play that vibrates through opponents until they crack along their own fault lines. The Bellringers do not merely win; they sound a note of freedom that cannot be unheard, a declaration that this game, this night, belongs to the city of brotherly love."
+  },
+  {
+    "city": "Phoenix",
+    "name": "Solar Flares",
+    "abbreviation": "PHX",
+    "conference": "Western",
+    "division": "Pacific",
+    "description": "The sun is not a gentle star — it is an ongoing nuclear explosion that occasionally lashes out with tendrils of plasma that can reshape worlds. The Solar Flares are those eruptions. They score in magnetic bursts, sudden and violent, electromagnetic pulses that disrupt the opposing team's entire system. Their energy is coronal, super-heated, and when they enter an active phase, no defense's atmosphere can contain them. The Flares remind the Valley of the Sun that the light that gives life can also, in a moment, overwhelm everything in its path."
+  },
+  {
+    "city": "Portland",
+    "name": "Cascades",
+    "abbreviation": "POR",
+    "conference": "Western",
+    "division": "Northwest",
+    "description": "Waterfalls are not just water falling — they are the point where a river decides to become a roar, a mist, a rainbow. The Cascades play with that liquid relentlessness, a constant flow of cuts and passes that wears away stone. Their offense is the steady current of the Willamette, and when the defense breaks, it does so like the edge of a precipice — suddenly, violently, with a thunder that shakes the ground. The Cascades are the sound of inevitability, the beauty of surrender to a force that was going to find its way down regardless of what stood in it."
+  },
+  {
+    "city": "Sacramento",
+    "name": "Miners",
+    "abbreviation": "SAC",
+    "conference": "Western",
+    "division": "Pacific",
+    "description": "Before the Kings, there were the forty-niners, panning the American River for destiny. The Miners are a team of relentless excavation — they dig for stops, they chip away at leads, they tunnel into the paint with headlamps on, looking for the vein of gold that will break the game open. They are not glamorous; they are gritty, dust-caked, swinging their picks with the patient fury of those who know the mountain will yield if you just keep striking. The Miners' treasure is hidden in the box score — points in the paint, second-chance efforts, the hard-won nuggets."
+  },
+  {
+    "city": "San Antonio",
+    "name": "Toros",
+    "abbreviation": "SAS",
+    "conference": "Western",
+    "division": "Southwest",
+    "description": "Deep in the heart of Texas, where the Spanish legacy runs like a river, the Toros embody the power and pride of the bull — not the matador's victim, but the sacred animal of Iberian myth, full of life force and indomitable will. The Toros charge with horns low, playing a pounding, inside-out game that gores soft defenses. They are not cruel; they are honest, direct, and immensely powerful. When the Toros lock eyes with a defender, there is a primal moment of truth: move, or be moved."
+  },
+  {
+    "city": "Toronto",
+    "name": "Aurora",
+    "abbreviation": "TOR",
+    "conference": "Eastern",
+    "division": "Atlantic",
+    "description": "The Northern Lights are the city's cosmic gift — curtains of charged particles dancing across the Canadian Shield, silent and overwhelming. The Aurora play with that same ethereal beauty, a choreography of swirling colors and shifting shapes that leaves opponents standing still, staring. Their ball movement is spectral, their shooting a palette of green and violet arcs. They win not by force but by wonder; you are so captivated by the dance that you don't realize the game has slipped away into the northern night."
+  },
+  {
+    "city": "Utah",
+    "name": "Monoliths",
+    "abbreviation": "UTA",
+    "conference": "Western",
+    "division": "Northwest",
+    "description": "From the red rock spires of Monument Valley to the silent stone sentinels of Bryce Canyon, Utah is a land of vertical mystery. The Monoliths are a team of geological time — patient, ancient, formed by eons of pressure into shapes that cannot be ignored. Their defense is rock: stratified, immovable, carved by wind but never toppled. Their offense is a slow uplift, tectonic, creating mountains of points over quarters. They do not hurry, because stone has no need for clocks. They endure, and in endurance, they conquer."
+  },
+  {
+    "city": "Washington",
+    "name": "Monuments",
+    "abbreviation": "WAS",
+    "conference": "Eastern",
+    "division": "Southeast",
+    "description": "The capital's skyline is a skyline of memory — obelisks, domes, marble figures frozen in bronze. The Monuments play with the solemn weight of history. Every game is a dedication, every victory a memorial to the principles the city enshrines. They are not flashy; they are permanent, playing fundamental basketball that will be studied by future generations. The Monuments do not need to shout; they rise quietly above the fray, and when the game ends, they are the ones still standing, tall and white against the sky."
+  }
 ]
