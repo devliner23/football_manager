@@ -1,5 +1,5 @@
 // src/components/SelectedGame/GameSidebar.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserGameInfo } from '../../api/leagueApi';
 import "./GameResults.css";
 
@@ -39,10 +39,18 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
   lastSimulatedDate,
   onSimulateToDate
 }) => {
-  const [simDate, setSimDate] = useState<string>(
-    new Date().toISOString().slice(0, 10) // today as YYYY-MM-DD
-  );
+  const [simDate, setSimDate] = useState<string>("");
 
+  // Sync with latest simulated date whenever it changes
+  useEffect(() => {
+    if (lastSimulatedDate) {
+      const formatted = new Date(lastSimulatedDate).toISOString().slice(0, 10);
+      setSimDate(formatted);
+    } else {
+      setSimDate(new Date().toISOString().slice(0, 10));
+    }
+  }, [lastSimulatedDate]);
+  
   return (
     <aside className="game-sidebar">
       <div className="game-sidebar-section">

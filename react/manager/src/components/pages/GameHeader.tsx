@@ -44,10 +44,10 @@ const GameHeader: React.FC<GameHeaderProps> = ({
         </div>
         
         <div className="game-global-header-right">
-          <div className="game-status">
+          {/* <div className="game-status">
             <Circle size={12} fill="#4ade80" stroke="none" className="pulse-dot" />
             <span>LIVE</span>
-          </div>
+          </div> */}
           
           <div className="game-record-wrapper">
             <div className="game-record" style={{ borderColor: `${winColor}40` }}>

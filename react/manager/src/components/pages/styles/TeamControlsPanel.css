@@ -1,0 +1,130 @@
+/* src/components/SelectedGame/styles/TeamControlsPanel.css */
+
+/* Shared glass surface */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* ==========================
+   TEAM CONTROLS PANEL
+   ========================== */
+.team-controls-panel {
+  margin-top: 12px;
+  overflow: hidden;
+}
+
+/* Accordion trigger */
+.accordion-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  background: transparent;
+  border: none;
+  color: rgba(232, 237, 248, 0.7);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: color 0.25s ease, background 0.25s ease;
+}
+
+.accordion-trigger:hover {
+  color: #e8edf8;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.trigger-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chevron {
+  transition: transform 0.3s ease;
+  opacity: 0.6;
+}
+
+.chevron.rotated {
+  transform: rotate(180deg);
+}
+
+/* Content area – height animation */
+.accordion-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, padding 0.35s ease;
+}
+
+.accordion-content.open {
+  max-height: 400px; /* enough to show buttons */
+}
+
+/* Buttons grid */
+.controls-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+  padding: 0 18px 14px;
+}
+
+.control-btn {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  color: rgba(232, 237, 248, 0.6);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.25s ease;
+}
+
+.control-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e8edf8;
+  transform: translateX(2px);
+}
+
+.control-btn:active {
+  transform: scale(0.98);
+}
+
+/* Responsive – same as left column */
+@media (max-width: 900px) {
+  .accordion-content.open {
+    max-height: 500px;
+  }
+}
+
+@media (max-width: 600px) {
+  .accordion-trigger {
+    padding: 12px 14px;
+    font-size: 0.85rem;
+  }
+
+  .controls-grid {
+    padding: 0 14px 12px;
+    gap: 4px;
+  }
+
+  .control-btn {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+}

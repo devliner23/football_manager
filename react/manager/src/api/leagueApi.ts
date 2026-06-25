@@ -155,7 +155,7 @@ export const leagueAPI = {
     return extractData(response);
   },
 
-    getNextUserGame: async (savedGameId: string): Promise<NextUserGameResponse> => {
+  getNextUserGame: async (savedGameId: string): Promise<NextUserGameResponse> => {
     const response = await api.get<ApiResponse<NextUserGameResponse>>(
       `/api/league/${savedGameId}/next-user-game`
     );

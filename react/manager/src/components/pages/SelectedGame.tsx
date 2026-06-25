@@ -1,9 +1,11 @@
 // src/components/SelectedGame/SelectedGame.tsx
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SavedGame } from '../../shared';
 import { leagueAPI, Team, Player, StandingsRow, GameResult, UserGameInfo } from '../../api/leagueApi';
+import { gameAPI } from '../../api/client';
 import GameHeader from './GameHeader';
 import GameSidebar from './GameSidebar';
+import TeamControlsPanel from './TeamControlsPanel';
 import OverviewTab from './tabs/OverviewTab';
 import RosterTab from './tabs/RosterTab';
 import StandingsTab from './tabs/StandingsTab';
@@ -13,6 +15,8 @@ import FrontOfficeTab from './tabs/FrontOfficeTab';
 import PlayerModal from './PlayerModal';
 import ScheduleTab from './tabs/ScheduleTab';
 import './SelectedGame.css';
+
+import { RingLoader } from "react-spinners";
 
 import {
   LayoutDashboard,
@@ -82,8 +86,8 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   const [refreshKey, setRefreshKey] = useState(0);
   const [nextUserGame, setNextUserGame] = useState<UserGameInfo | null>(null);
   const [leagueGamesBeforeCount, setLeagueGamesBeforeCount] = useState(0);
-  const [lastSimulatedDate, setLastSimulatedDate] = useState<string | null>(null);
-
+  const [simProgress, setSimProgress] = useState<string | null>(null);
+  const [localDate, setLocalDate] = useState<string | null>("");
 
   // Load all league data
   const loadLeagueData = async () => {
@@ -106,7 +110,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     }
   };
 
-    const loadNextUserGame = async () => {
+  const loadNextUserGame = async () => {
     try {
       const result = await leagueAPI.getNextUserGame(game.id);
       if (result.seasonComplete || !result.nextUserGame) {
@@ -121,10 +125,44 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     }
   };
 
+  const refreshAllData = useCallback(async () => {
+    try {
+        const [teamsData, playersData, standingsData, scheduleData, nextGameData, freshGameData] =
+        await Promise.all([
+            leagueAPI.getTeams(game.id).catch(...),
+            leagueAPI.getPlayers(game.id).catch(...),
+            leagueAPI.getStandings(game.id).catch(...),
+            leagueAPI.getSchedule(game.id).catch(...),
+            leagueAPI.getNextUserGame(game.id).catch(...),
+            gameAPI.getGame(game.id).catch(...),
+        ]);
+
+        // Existing updates...
+        if (teamsData) setTeams(teamsData);
+        if (playersData) setPlayers(playersData);
+        if (standingsData) setStandings(standingsData);
+        if (scheduleData) setSchedule(scheduleData);
+
+        if (nextGameData?.seasonComplete) {
+        setNextUserGame(null);
+        setLeagueGamesBeforeCount(0);
+        } else if (nextGameData?.nextUserGame) {
+        setNextUserGame(nextGameData.nextUserGame);
+        setLeagueGamesBeforeCount(nextGameData.leagueGamesBeforeCount ?? 0);
+        }
+
+        if (freshGameData) {
+            setLocalDate(freshGameData.)
+        }
+    } catch (err) {
+        console.error('refreshAllData failed:', err);
+    }
+  }, [game.id, game.managed_club_id]);
+
   useEffect(() => {
-    loadLeagueData();
-    loadNextUserGame();
-  }, [game.id]);
+    setLoading(true);
+    refreshAllData().finally(() => setLoading(false));
+  }, [game.id, refreshAllData]);
 
   // Helper functions
   const getTeamById = (teamId: string) => teams.find((t) => t.id === teamId);
@@ -134,16 +172,17 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
 // Inside SelectedGame component...
 
 const userTeam = useMemo(() => {
-  if (!teams.length || !game.managed_club_id) return undefined;
-  const found = teams.find(t => t.id === game.managed_club_id);
-  if (!found) {
-    console.warn(
-      `⚠️ User team not found. managed_club_id: ${game.managed_club_id}. Available team IDs:`,
-      teams.map(t => t.id)
-    );
-  }
-  return found;
+    if (!teams.length || !game.managed_club_id) return undefined;
+    const found = teams.find(t => t.id === game.managed_club_id);
+    if (!found) {
+        console.warn(
+        `⚠️ User team not found. managed_club_id: ${game.managed_club_id}. Available team IDs:`,
+        teams.map(t => t.id)
+        );
+    }
+    return found;
 }, [teams, game.managed_club_id]);
+
   const userTeamPlayers = userTeam ? getPlayersForTeam(userTeam.id) : [];
 
   const record = userTeam
@@ -158,26 +197,12 @@ const userTeam = useMemo(() => {
   const handleContinue = async () => {
     setLoading(true);
     try {
-      const result = await leagueAPI.simulateToNextGame(game.id);
- 
-      // Refresh league table data and next-game banner in parallel
-      await Promise.all([loadLeagueData(), loadNextUserGame()]);
-      setRefreshKey(prev => prev + 1);
- 
-      if (result.seasonComplete) {
-        alert('🏆 Season complete! No more games scheduled.');
-      } else if (result.gamesSimulated === 0) {
-        alert('⏭️ Your next game is up next — no league games before it.');
-      } else {
-        alert(
-          `✅ Simulated ${result.gamesSimulated} league game${result.gamesSimulated !== 1 ? 's' : ''}.\n` +
-          `Your next game is ready.`
-        );
-      }
-    } catch (error) {
-      console.error('Failed to simulate to next game:', error);
-      alert('Failed to simulate games. Check console.');
+      await leagueAPI.simulateToNextGame(game.id);
+    } catch (err) {
+      console.error('simulateToNextGame error:', err);
     } finally {
+      // Always refresh — the DB was written even if the response errored
+      await refreshAllData();
       setLoading(false);
     }
   };
@@ -204,21 +229,30 @@ const userTeam = useMemo(() => {
 
   const handleSimulateToDate = async (targetDate: string) => {
     setLoading(true);
+ 
     try {
+      let complete       = false;
+      let totalSimulated = 0;
+ 
+      while (!complete) {
         const result = await leagueAPI.simulateToDate(game.id, targetDate);
-        setLastSimulatedDate(targetDate); // or store from response if needed
-        await loadLeagueData();
-        await loadNextUserGame(); // still useful to update the “next game” banner
-        if (result.seasonComplete) {
-        alert('🏆 Season complete!');
-        } else {
-        alert(`✅ Simulated ${result.gamesSimulated} game(s) up to ${new Date(targetDate).toLocaleDateString()}.`);
-        }
-    } catch (error) {
-        console.error('Date simulation failed:', error);
-        alert('Failed to simulate. Check console.');
+ 
+        totalSimulated += result.gamesSimulated ?? 0;
+        complete        = result.complete ?? true;
+ 
+ 
+        // Brief pause between chunks so we don't saturate the DB connection
+        if (!complete) await new Promise(r => setTimeout(r, 200));
+      }
+    } catch (err) {
+      // Log but do not alert — the DB may be partially (or fully) written.
+      // refreshAllData() below will pull whatever the DB currently holds.
+      console.error('Simulation chunk error:', err);
     } finally {
-        setLoading(false);
+      // This block always runs: clears the spinner AND fetches fresh data.
+      await refreshAllData();
+      setLoading(false);
+      setSimProgress(null);
     }
   };
 
@@ -245,29 +279,42 @@ const userTeam = useMemo(() => {
         ))}
       </nav>
 
+      
       <div className="game-fullscreen-content">
-        <GameSidebar
-          season={game.current_season}
-          wins={userTeam?.wins ?? 0}
-          losses={userTeam?.losses ?? 0}
-          winPct={winPct}
-          playerCount={userTeamPlayers.length}
-          ppg="N/A"
-          oppg="N/A"
-          onContinue={handleContinue}
-          onSimulate={handleSimulate}
-          onViewStandings={() => setActiveTab('standings')}
-          loading={loading}
-          nextUserGame={nextUserGame}
-          leagueGamesBeforeCount={leagueGamesBeforeCount}
-          onSimulateToDate={handleSimulateToDate}
-          lastSimulatedDate={lastSimulatedDate}
-        />
+        <div className="game-left-column">
+            <GameSidebar
+            season={game.current_season}
+            wins={userTeam?.wins ?? 0}
+            losses={userTeam?.losses ?? 0}
+            winPct={winPct}
+            playerCount={userTeamPlayers.length}
+            ppg="N/A"
+            oppg="N/A"
+            onContinue={handleContinue}
+            onSimulate={handleSimulate}
+            onViewStandings={() => setActiveTab('standings')}
+            loading={loading}
+            nextUserGame={nextUserGame}
+            leagueGamesBeforeCount={leagueGamesBeforeCount}
+            onSimulateToDate={handleSimulateToDate}
+            lastSimulatedDate={currentDate}
+            />
+            <TeamControlsPanel />
+        </div>
 
         <main className="game-main-content">
           <div className="tab-content">
-            {loading && <div className="loading-spinner">Loading...</div>}
-
+            {loading && (
+            <div style={{
+                position: 'absolute',
+                top: 0, left: 0, right: 0, bottom: 0,
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}>
+                <RingLoader color="#36d7b7" size={120} />
+            </div>
+            )}
             {!loading && activeTab === 'overview' && (
               <OverviewTab
                 game={game}
