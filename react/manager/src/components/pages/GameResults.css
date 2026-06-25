@@ -1,5 +1,5 @@
 /* --------------------------------------
-   Glass‑morphism theme – modern & sleek
+   Glass-morphism theme – square card grid
    -------------------------------------- */
 .game-results {
   background: rgba(255, 255, 255, 0.07);
@@ -9,20 +9,19 @@
   border-radius: 16px;
   padding: 1.5rem;
   color: #f0f4ff;
-  max-width: 900px;
+  max-width: 1200px; /* wider for 5 columns */
   margin: 0 auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
-  transition: all 0.2s ease;
 }
 
-/* Header */
+/* Header stays the same */
 .game-results-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   padding-bottom: 0.75rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .header-left {
@@ -59,145 +58,145 @@
   font-style: italic;
 }
 
-/* Game list */
-.game-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+/* -------- Game Grid ---------- */
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+  align-items: start; /* cards align to top */
 }
 
 /* Individual game card */
-.game-item {
+.game-card {
   background: rgba(255, 255, 255, 0.04);
-  border-radius: 12px;
+  border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.06);
-  padding: 1rem 1.25rem;
-  cursor: pointer;
   transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* keeps rounded corners */
 }
 
-.game-item:hover {
+.game-card:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.15);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.game-item.expanded {
+.game-card.expanded {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-/* Summary row */
-.game-summary {
+/* Square summary area – always visible, maintains aspect ratio */
+.game-summary-square {
+  aspect-ratio: 1 / 1;  /* square */
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 1rem 0.8rem 0.8rem;
+  position: relative;
+}
+
+/* Stack teams vertically */
+.team-stack {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+}
+
+.team-row {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem 1rem;
-}
-
-.game-teams {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.team {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.team-name {
+  font-size: 0.95rem;
   font-weight: 500;
-  font-size: 1rem;
+  padding: 0.2rem 0;
+}
+
+.team-abbrev {
+  color: #f1f5f9;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .team-score {
-  font-weight: 600;
+  font-weight: 700;
   font-size: 1.1rem;
-  min-width: 1.8rem;
-  text-align: center;
+  min-width: 2rem;
+  text-align: right;
+  color: #e2e8f0;
 }
 
-.team-score.winner {
+.team-row.winner .team-abbrev,
+.team-row.winner .team-score {
   color: #4ade80;
 }
 
-.team-score.loser {
-  color: #f87171;
-}
-
-.game-vs {
+.vs-divider {
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
   color: #64748b;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
+  letter-spacing: 1px;
+  margin: 0.2rem 0;
 }
 
-.game-meta {
+.game-footer {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   color: #94a3b8;
+  margin-top: auto;
 }
 
 .game-week {
-  background: rgba(255, 255, 255, 0.06);
-  padding: 0.15rem 0.6rem;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.1rem 0.5rem;
+  border-radius: 8px;
 }
 
 .game-date {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.2rem;
 }
 
-.meta-icon {
-  color: #64748b;
-}
-
-.game-result-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  background: rgba(255, 255, 255, 0.06);
-  padding: 0.15rem 0.7rem;
-  border-radius: 12px;
-  color: #cbd5e1;
-}
-
-.badge-icon {
-  color: #fbbf24;
-}
-
-.expand-icon {
-  margin-left: 0.3rem;
+.expand-indicator {
+  position: absolute;
+  bottom: 0.5rem;
+  right: 0.5rem;
   color: #64748b;
   transition: transform 0.2s;
 }
 
-.game-item.expanded .expand-icon {
+.game-card.expanded .expand-indicator {
   transform: rotate(180deg);
 }
 
-/* Expanded details */
+/* Expanded details (box score) */
 .game-details {
-  margin-top: 1.25rem;
-  padding-top: 1rem;
+  padding: 0 0.8rem 1rem;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.15);
+  overflow-y: auto;
+  max-height: 300px;  /* scroll if too tall */
 }
 
 .box-score h4 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 500;
-  margin: 0 0 0.75rem 0;
+  margin: 0.75rem 0 0.5rem;
   color: #e2e8f0;
 }
 
@@ -207,21 +206,21 @@
 
 .box-score-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
 }
 
 .player-stat {
-  background: rgba(255, 255, 255, 0.04);
-  border-radius: 10px;
-  padding: 0.6rem 0.8rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .player-name {
   font-weight: 500;
-  font-size: 0.9rem;
-  margin-bottom: 0.3rem;
+  font-size: 0.8rem;
+  margin-bottom: 0.2rem;
   color: #f1f5f9;
 }
 
@@ -229,8 +228,8 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.6rem;
-  font-size: 0.8rem;
+  gap: 0.4rem;
+  font-size: 0.75rem;
   color: #cbd5e1;
 }
 
@@ -247,28 +246,21 @@
 .shot-stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1rem;
+  gap: 0.4rem 0.8rem;
   margin-top: 0.25rem;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: #94a3b8;
 }
 
-/* Responsive tweaks */
-@media (max-width: 640px) {
-  .game-results {
-    padding: 1rem;
+/* Responsive: fall back to fewer columns */
+@media (max-width: 800px) {
+  .game-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
-  .game-summary {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .game-teams {
-    justify-content: space-between;
-  }
-  .game-meta {
-    justify-content: space-between;
-  }
-  .box-score-grid {
-    grid-template-columns: 1fr;
+}
+
+@media (max-width: 500px) {
+  .game-grid {
+    grid-template-columns: 1fr 1fr;
   }
 }

@@ -5,6 +5,7 @@ import SavedGames from './SavedGames';
 import NewGameForm from './NewGameForm';
 import SelectedGame from '../pages/SelectedGame';
 import { SavedGame } from '../../shared';
+import { RingLoader } from 'react-spinners'; // ← new import
 import './Dashboard.css';
 
 const Dashboard: React.FC = () => {
@@ -73,7 +74,6 @@ const Dashboard: React.FC = () => {
     setSelectedGame(null);
   };
 
-  // Get the most recently updated game
   const getLatestGame = (): SavedGame | null => {
     if (savedGames.length === 0) return null;
     return savedGames.reduce((latest, current) => {
@@ -90,7 +90,6 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // Start new season: delete current save (if any) then open new game form
   const handleStartNewSeason = async (): Promise<void> => {
     const latest = getLatestGame();
     if (latest) {
@@ -100,10 +99,19 @@ const Dashboard: React.FC = () => {
       if (!confirmDelete) return;
       await handleGameDeleted(latest.id);
     }
-    // After deletion (or if no game existed), open the new game form
     setShowNewGameForm(true);
   };
 
+  // ── Loading spinner while initial data is being fetched ──
+  if (loading) {
+    return (
+      <div className="loading-overlay">
+        <RingLoader color="#4A90D9" loading={loading} size={120} />
+      </div>
+    );
+  }
+
+  // ── Selected game view ──
   if (selectedGame) {
     return (
       <SelectedGame
@@ -118,6 +126,7 @@ const Dashboard: React.FC = () => {
   const latestGame = getLatestGame();
   const hasGames = savedGames.length > 0;
 
+  // ── Main dashboard ──
   return (
     <div className="dashboard">
       <header className="dashboard-header">
@@ -141,7 +150,6 @@ const Dashboard: React.FC = () => {
         <div className="dashboard-main">
           <div className="panel-card full-width">
             {hasGames && latestGame ? (
-              // Two‑button layout for existing games
               <>
                 <span className="icon">▶️</span>
                 <h2>Continue Season</h2>
@@ -166,7 +174,6 @@ const Dashboard: React.FC = () => {
                 </div>
               </>
             ) : (
-              // No games – single button
               <>
                 <span className="icon">🏆</span>
                 <h2>Start Your First Season</h2>

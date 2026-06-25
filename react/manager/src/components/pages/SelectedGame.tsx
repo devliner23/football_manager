@@ -92,8 +92,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     );
   const [currentSeason, setCurrentSeason] = useState(game.current_season);
 
-
-  const currentDate = lastSimulatedDate;
+  const currentDate = lastSimulatedDate
 
   // Load all league data
   const loadLeagueData = async () => {
@@ -166,9 +165,10 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
         console.log(fullGameData)
         // **Update the last simulated date from the fresh game object**
         if (fullGameData?.data?.game_state?.last_simulated_at) {
-        setLastSimulatedDate(fullGameData.data.game_state.last_simulated_to);
-        // optional: also update currentSeason if it can change
-        setCurrentSeason(fullGameData.data.current_season);
+            setLastSimulatedDate(fullGameData.data.game_state.last_simulated_to);
+            setCurrentSeason(fullGameData.data.current_season);
+        } else {
+            console.log("BIG ERROR, NOT WORKING")
         }
     } catch (err) {
         console.error('refreshAllData failed:', err);
@@ -187,7 +187,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
 
 // Inside SelectedGame component...
 
-const userTeam = useMemo(() => {
+  const userTeam = useMemo(() => {
     if (!teams.length || !game.managed_club_id) return undefined;
     const found = teams.find(t => t.id === game.managed_club_id);
     if (!found) {

@@ -301,30 +301,85 @@ const leagueController = {
     } catch (error) { next(error); }
   },
 
+// backend controller – improved getRecentGames
+
   async getRecentGames(req, res, next) {
     try {
-      const { savedGameId } = req.params;
-      const limit    = Math.min(parseInt(req.query.limit) || 10, 50);
-      const seasonId = await getCurrentSeasonId(savedGameId);
-      if (!seasonId) return res.json({ success: true, data: [] });
- 
-      const { data, error } = await supabaseAdmin
+        const { savedGameId } = req.params;
+        const seasonId = await getCurrentSeasonId(savedGameId);
+        if (!seasonId) return res.json({ success: true, data: [] });
+
+        // 1. Find the latest simulation date (most recent played_at of completed games)
+        const { data: latestDateRow, error: dateError } = await supabaseAdmin
         .from('games')
-        .select(`
-          id, game_date, played_at, week, status,
-          home_team_id, away_team_id,
-          home_score, away_score,
-          home_team:home_team_id ( id, name, abbreviation, city ),
-          away_team:away_team_id ( id, name, abbreviation, city )
-        `)
+        .select('played_at')
         .eq('season_id', seasonId)
         .eq('status', 'completed')
         .order('played_at', { ascending: false })
-        .limit(limit);
- 
-      if (error) throw error;
-      res.json({ success: true, data: data || [] });
-    } catch (error) { next(error); }
+        .limit(1)
+        .single();
+
+        if (dateError || !latestDateRow) {
+        return res.json({ success: true, data: [] });
+        }
+
+        const latestDate = latestDateRow.played_at;
+
+        // 2. Fetch all completed games from that exact simulation date
+        const { data: games, error: gamesError } = await supabaseAdmin
+        .from('games')
+        .select(`
+            id, game_date, played_at, week, status,
+            home_team_id, away_team_id,
+            home_score, away_score,
+            home_team:home_team_id ( id, name, abbreviation, city ),
+            away_team:away_team_id ( id, name, abbreviation, city )
+        `)
+        .eq('season_id', seasonId)
+        .eq('status', 'completed')
+        .eq('played_at', latestDate)           // only the latest sim date
+        .order('id', { ascending: true });     // optional ordering
+
+        if (gamesError) throw gamesError;
+        if (!games || games.length === 0) {
+        return res.json({ success: true, data: [] });
+        }
+
+        // 3. Collect all game IDs to fetch box scores in one query
+        const gameIds = games.map(g => g.id);
+
+        const { data: allStats, error: statsError } = await supabaseAdmin
+        .from('game_stats')                          // adjust table name if needed
+        .select(`
+            game_id,
+            player_id,
+            points, rebounds, assists, steals, blocks, turnovers,
+            fgm, fga, fgm_3, fga_3, ftm, fta,
+            player:player_id ( first_name, last_name )
+        `)
+        .in('game_id', gameIds);
+
+        if (statsError) throw statsError;
+
+        // 4. Group stats by game_id
+        const statsByGame = {};
+        (allStats || []).forEach(stat => {
+        if (!statsByGame[stat.game_id]) {
+            statsByGame[stat.game_id] = [];
+        }
+        statsByGame[stat.game_id].push(stat);
+        });
+
+        // 5. Attach boxScores to each game object
+        const enrichedGames = games.map(game => ({
+        ...game,
+        boxScores: statsByGame[game.id] || []
+        }));
+
+        res.json({ success: true, data: enrichedGames });
+    } catch (error) {
+        next(error);
+    }
   },
 
   async getPlayerStats(req, res, next) {

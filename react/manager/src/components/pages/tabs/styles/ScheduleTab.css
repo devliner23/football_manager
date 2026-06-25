@@ -210,33 +210,47 @@
   box-shadow: var(--glass-shadow);
 }
 
-.list-header {
-  display: grid;
-  grid-template-columns: 1fr 0.7fr 1.5fr 1fr 0.8fr;
-  padding: 0.9rem 1.5rem;
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--text-muted);
-  font-weight: 700;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+/* Adjust grid to add Time column */
+.list-header,
+.list-row {
+  grid-template-columns: 0.9fr 0.6fr 0.6fr 2fr 0.9fr 0.7fr;
 }
 
 .list-row {
-  display: grid;
-  grid-template-columns: 1fr 0.7fr 1.5fr 1fr 0.8fr;
-  padding: 0.85rem 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-  align-items: center;
-  transition: background 0.15s;
-}
-
-.list-row:last-child {
-  border-bottom: none;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
 }
 
 .list-row:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(4px);
+}
+
+.list-row:active {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+/* Make team names visible (only on wider screens) */
+.team-full {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  display: none;               /* hidden by default */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 80px;
+}
+
+@media (min-width: 900px) {
+  .team-full {
+    display: inline-block;
+  }
+}
+
+.list-time {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
 
 .list-date,
@@ -327,7 +341,7 @@
 
 .day-modal {
   width: 90%;
-  max-width: 520px;
+  max-width: 620px;
   max-height: 85vh;
   background: rgba(15, 23, 42, 0.9);
   backdrop-filter: blur(var(--glass-blur));
@@ -397,81 +411,105 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
+  padding: 1rem;
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: var(--radius-xs);
-  transition: background 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.5rem;
+  gap: 1.5rem;
 }
 
 .modal-game-row:hover {
   background: rgba(255, 255, 255, 0.07);
 }
 
-.modal-teams {
+.modal-game-teams {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-weight: 600;
+  gap: 1rem;
+  flex: 1;
+  min-width: 0;
 }
 
-.modal-teams .team-abbr.home {
+.modal-team {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.modal-team.home {
+  text-align: right;
+}
+
+.modal-team.away {
+  text-align: left;
+}
+
+.team-abbr-full {
+  font-weight: 800;
+  font-size: 1.1rem;
   color: var(--text-primary);
 }
 
-.modal-teams .vs {
+.team-name {
+  font-size: 0.7rem;
   color: var(--text-muted);
-  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
 }
 
-.modal-teams .team-abbr.away {
-  color: var(--text-secondary);
-}
-
-.modal-score {
+.modal-vs {
   font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+
+/* Score & info column */
+.modal-game-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.modal-score-big {
+  font-size: 1.4rem;
+  font-weight: 800;
   color: var(--text-primary);
-  min-width: 60px;
-  text-align: center;
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.4rem 1.2rem;
+  border-radius: var(--radius-sm);
+  letter-spacing: 2px;
 }
 
 .modal-meta {
   display: flex;
-  gap: 0.75rem;
-  align-items: center;
+  gap: 0.8rem;
   font-size: 0.75rem;
   color: var(--text-muted);
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
+/* status badges inside modal */
 .modal-meta .status-badge {
-  text-transform: capitalize;
-  font-weight: 600;
-  padding: 0.15rem 0.5rem;
+  padding: 0.15rem 0.6rem;
   border-radius: 100px;
   font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-/* ---------- Responsive ---------- */
-@media (max-width: 768px) {
-  .schedule-tab {
-    padding: 1rem;
-  }
-
-  .schedule-header {
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: flex-start;
-  }
-
-  .calendar-day {
-    min-height: 60px;
-    padding: 4px 6px;
-  }
-
-  .list-header,
-  .list-row {
-    grid-template-columns: 1fr 0.5fr 1.2fr 0.8fr 0.7fr;
-    padding: 0.7rem 0.8rem;
-    font-size: 0.7rem;
-  }
+.status-badge.status-scheduled {
+  background: var(--status-scheduled-bg);
+  color: var(--status-scheduled-text);
+}
+.status-badge.status-final {
+  background: var(--status-final-bg);
+  color: var(--status-final-text);
 }

@@ -740,6 +740,20 @@ async generateSchedule(teams, seasonId) {
       )
     );
 
+    const maxSimDate = games.reduce((max, g) => g.game_date > max ? g.game_date : max, '');
+
+    const currentState = await this._getGameState();
+    await supabaseAdmin
+        .from('saved_games')
+        .update({
+        game_state: {
+            ...currentState,
+            last_simulated_to: maxSimDate,          // date up to which we've simulated
+            last_simulated_at: new Date().toISOString(),
+        },
+        })
+        .eq('id', this.savedGameId);
+
     // 5. Upsert team season stats
     await this._upsertTeamStats(simResults, seasonId);
 

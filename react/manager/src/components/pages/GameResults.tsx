@@ -1,8 +1,7 @@
+// GameResults.tsx
 import React, { useState, useEffect } from 'react';
 import {
   List,
-  Home,
-  Plane,
   Trophy,
   Calendar,
   BarChart3,
@@ -11,7 +10,6 @@ import {
   Ban,
   AlertTriangle,
   ChevronDown,
-  ChevronUp,
 } from 'lucide-react';
 import { leagueAPI, GameResult } from '../../api/leagueApi';
 import './GameResults.css';
@@ -92,62 +90,55 @@ const GameResults: React.FC<GameResultsProps> = ({ savedGameId, onGameClick }) =
         <span className="game-count">{games.length} games</span>
       </div>
 
-      <div className="game-list">
+      <div className="game-grid">
         {games.map((game) => {
           const isHomeWin = game.home_score > game.away_score;
-          const winner = isHomeWin ? game.home_team : game.away_team;
-          const loser = isHomeWin ? game.away_team : game.home_team;
           const isExpanded = expandedGame === game.id;
 
           return (
             <div
               key={game.id}
-              className={`game-item ${isExpanded ? 'expanded' : ''}`}
-              onClick={() => handleGameClick(game.id)}
+              className={`game-card ${isExpanded ? 'expanded' : ''}`}
             >
-              <div className="game-summary">
-                <div className="game-teams">
-                  <div className="team home">
-                    <span className="team-name">
-                      {game.home_team?.abbreviation || game.home_team?.name}
-                    </span>
-                    <span className={`team-score ${isHomeWin ? 'winner' : 'loser'}`}>
-                      {game.home_score}
-                    </span>
-                  </div>
-                  <div className="game-vs">vs</div>
-                  <div className="team away">
-                    <span className="team-name">
+              {/* Square summary area – always visible */}
+              <div
+                className="game-summary-square"
+                onClick={() => handleGameClick(game.id)}
+              >
+                <div className="team-stack">
+                  {/* Away team on top */}
+                  <div className={`team-row ${!isHomeWin ? 'winner' : ''}`}>
+                    <span className="team-abbrev">
                       {game.away_team?.abbreviation || game.away_team?.name}
                     </span>
-                    <span className={`team-score ${!isHomeWin ? 'winner' : 'loser'}`}>
-                      {game.away_score}
+                    <span className="team-score">{game.away_score}</span>
+                  </div>
+
+                  <div className="vs-divider">VS</div>
+
+                  {/* Home team below */}
+                  <div className={`team-row ${isHomeWin ? 'winner' : ''}`}>
+                    <span className="team-abbrev">
+                      {game.home_team?.abbreviation || game.home_team?.name}
                     </span>
+                    <span className="team-score">{game.home_score}</span>
                   </div>
                 </div>
 
-                <div className="game-meta">
+                <div className="game-footer">
                   <span className="game-week">Week {game.week}</span>
                   <span className="game-date">
-                    <Calendar size={14} className="meta-icon" />
+                    <Calendar size={12} />
                     {formatDate(game.played_at)}
                   </span>
-                  <span className="game-result-badge">
-                    {isHomeWin ? (
-                      <Home size={14} className="badge-icon" />
-                    ) : (
-                      <Plane size={14} className="badge-icon" />
-                    )}
-                    {winner?.abbreviation} wins!
-                  </span>
-                  {isExpanded ? (
-                    <ChevronUp size={18} className="expand-icon" />
-                  ) : (
-                    <ChevronDown size={18} className="expand-icon" />
-                  )}
+                </div>
+
+                <div className="expand-indicator">
+                  <ChevronDown size={18} />
                 </div>
               </div>
 
+              {/* Expandable box score area */}
               {isExpanded && boxScores && (
                 <div className="game-details">
                   <div className="box-score">

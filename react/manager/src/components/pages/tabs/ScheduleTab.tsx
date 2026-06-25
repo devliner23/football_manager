@@ -197,30 +197,44 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams }) => {
                     <p className="no-games">No games scheduled.</p>
                   ) : (
                     selectedDateGames.map(game => {
-                      const home = teamMap.get(game.home_team_id);
-                      const away = teamMap.get(game.away_team_id);
-                      const score =
-                        game.status === 'final' && game.home_score != null
-                          ? `${game.home_score} - ${game.away_score}`
-                          : '';
-                      return (
+                    const home = teamMap.get(game.home_team_id);
+                    const away = teamMap.get(game.away_team_id);
+                    const isFinal = game.status === 'final' && game.home_score != null;
+                    // const gameTime = game.start_time
+                    //     ? new Date(`1970-01-01T${game.start_time}`).toLocaleTimeString([], {
+                    //         hour: '2-digit',
+                    //         minute: '2-digit',
+                    //     })
+                    //     : null;
+
+                    return (
                         <div key={game.id} className="modal-game-row">
-                          <div className="modal-teams">
-                            <span className="team-abbr home">{home?.abbreviation || 'TBD'}</span>
-                            <span className="vs">vs</span>
-                            <span className="team-abbr away">{away?.abbreviation || 'TBD'}</span>
-                          </div>
-                          <div className="modal-score">
-                            {score || <span className="status-badge status-scheduled">Scheduled</span>}
-                          </div>
-                          <div className="modal-meta">
-                            {game.week && <span>Week {game.week}</span>}
-                            {game.status === 'final' && (
-                              <span className="status-badge status-final">Final</span>
-                            )}
-                          </div>
+                        <div className="modal-game-teams">
+                            <div className="modal-team home">
+                            <span className="team-abbr-full">{home?.abbreviation || 'TBD'}</span>
+                            <span className="team-name">{home?.name || ''}</span>
+                            </div>
+                            <div className="modal-vs">VS</div>
+                            <div className="modal-team away">
+                            <span className="team-abbr-full">{away?.abbreviation || 'TBD'}</span>
+                            <span className="team-name">{away?.name || ''}</span>
+                            </div>
                         </div>
-                      );
+
+                        <div className="modal-game-info">
+                            <div className="modal-score-big">
+                            {isFinal ? `${game.home_score} - ${game.away_score}` : <span className="status-badge status-scheduled">SCHEDULED</span>}
+                            </div>
+
+                            <div className="modal-meta">
+                            {game.week && <span>Week {game.week}</span>}
+                            {/* {gameTime && <span>{gameTime}</span>} */}
+                            {/* {game.venue && <span>{game.venue}</span>} */}
+                            {isFinal && <span className="status-badge status-final">FINAL</span>}
+                            </div>
+                        </div>
+                        </div>
+                    );
                     })
                   )}
                 </div>
@@ -232,34 +246,56 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams }) => {
         <div className="list-container">
           <div className="list-header">
             <span>Date</span>
+            <span>Time</span>
             <span>Week</span>
             <span>Matchup</span>
             <span>Score</span>
             <span>Status</span>
           </div>
-          {allGamesFlat.map(game => {
-            const home = teamMap.get(game.home_team_id);
-            const away = teamMap.get(game.away_team_id);
-            const dateSource = game.game_date || game.played_at;
-            const date = dateSource ? new Date(dateSource) : null;
-            return (
-              <div key={game.id} className="list-row">
-                <span className="list-date">{date ? date.toLocaleDateString() : '—'}</span>
-                <span className="list-week">Week {game.week}</span>
-                <span className="list-matchup">
-                  <span className="team-abbr home">{home?.abbreviation || 'TBD'}</span>
-                  <span className="vs">vs</span>
-                  <span className="team-abbr away">{away?.abbreviation || 'TBD'}</span>
-                </span>
-                <span className="list-score">
-                  {game.status === 'final' && game.home_score != null
-                    ? `${game.home_score} - ${game.away_score}`
-                    : '—'}
-                </span>
-                <span className={`list-status status-${game.status}`}>{game.status}</span>
-              </div>
-            );
-          })}
+        {allGamesFlat.map(game => {
+        const home = teamMap.get(game.home_team_id);
+        const away = teamMap.get(game.away_team_id);
+        const dateSource = game.game_date || game.played_at;
+        const date = dateSource ? new Date(dateSource) : null;
+        // const gameTime = game.start_time
+        //     ? new Date(`1970-01-01T${game.start_time}`).toLocaleTimeString([], {
+        //         hour: '2-digit',
+        //         minute: '2-digit',
+        //     })
+        //     : null;
+
+        const handleRowClick = () => {
+            if (date) setSelectedDate(date); // open modal for that day
+        };
+
+        return (
+            <div
+            key={game.id}
+            className="list-row"
+            onClick={handleRowClick}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && handleRowClick()}
+            >
+            <span className="list-date">{date ? date.toLocaleDateString() : '—'}</span>
+            {/* <span className="list-time">{gameTime || '—'}</span> */}
+            <span className="list-week">Week {game.week}</span>
+            <span className="list-matchup">
+                <span className="team-abbr home">{home?.abbreviation || 'TBD'}</span>
+                <span className="team-full">{home?.name || ''}</span>
+                <span className="vs">vs</span>
+                <span className="team-abbr away">{away?.abbreviation || 'TBD'}</span>
+                <span className="team-full">{away?.name || ''}</span>
+            </span>
+            <span className="list-score">
+                {game.status === 'final' && game.home_score != null
+                ? `${game.home_score} - ${game.away_score}`
+                : '—'}
+            </span>
+            <span className={`list-status status-${game.status}`}>{game.status}</span>
+            </div>
+        );
+        })}
         </div>
       )}
     </div>
