@@ -103,7 +103,7 @@ class PlayerGenerator {
 
     for (const team of teams) {
       // Each team gets a random base strength (40–90, but we clamp later)
-      const teamBase = 50 + Math.random() * 35; // 50–85
+      const teamBase = 60 + Math.random() * 20; // 50–85
       const roster = this.generateTeamRoster(team, teamBase);
       allPlayers.push(...roster);
     }
@@ -147,7 +147,7 @@ class PlayerGenerator {
     const [minVar, maxVar] = this.ratingAdjustments.randomVariation;
     rating += minVar + Math.floor(Math.random() * (maxVar - minVar + 1));
 
-    return Math.min(99, Math.max(40, Math.floor(rating)));
+    return Math.min(99, Math.max(60, Math.floor(rating)));
   }
 
   // ---------- physical attributes ----------

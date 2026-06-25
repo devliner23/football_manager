@@ -9,10 +9,8 @@ interface NewGameFormProps {
   onGameCreated: (game: SavedGame) => void;
 }
 
-
 const NewGameForm: React.FC<NewGameFormProps> = ({ onClose, onGameCreated }) => {
   const [formData, setFormData] = useState({
-    name: '',
     managed_club_id: '',
     difficulty: 'pro' as 'rookie' | 'pro' | 'all_star' | 'hall_of_fame',
   });
@@ -30,24 +28,30 @@ const NewGameForm: React.FC<NewGameFormProps> = ({ onClose, onGameCreated }) => 
     e.preventDefault();
     setError('');
 
-    if (!formData.name || !formData.managed_club_id) {
-      setError('Please fill in all fields');
+    if (!formData.managed_club_id) {
+      setError('Please select your team');
       return;
     }
 
     setLoading(true);
     try {
-      // 1. Create the saved game (original logic)
-      const response = await gameAPI.createGame(formData);
+      // Game name is automatically set to the selected team name
+      const gameName = formData.managed_club_id;
+
+      // 1. Create the saved game with auto‑generated name
+      const response = await gameAPI.createGame({
+        name: gameName,
+        managed_club_id: formData.managed_club_id,
+        difficulty: formData.difficulty,
+      });
+
       if (response.data.success && response.data.data) {
         const savedGame = response.data.data;
 
-        console.log("Managed Club", formData.managed_club_id)
-
-        // 2. Initialize the league – now returns data directly (no .data.success)
+        // 2. Initialize the league
         await leagueAPI.initializeLeague(savedGame.id, {
-            season: 1,
-            managedClub: formData.managed_club_id
+          season: 1,
+          managedClub: formData.managed_club_id,
         });
 
         // 3. Pass the game to parent
@@ -71,23 +75,7 @@ const NewGameForm: React.FC<NewGameFormProps> = ({ onClose, onGameCreated }) => 
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* Game Name */}
-        <div className="form-group">
-          <label htmlFor="game-name">Game Name</label>
-          <div className="input-wrapper">
-            <span className="input-icon">🏷️</span>
-            <input
-              id="game-name"
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g., Championship Quest"
-              disabled={loading}
-            />
-          </div>
-        </div>
-
-        {/* Team Selection */}
+        {/* Team Selection (required) */}
         <div className="form-group">
           <label htmlFor="team">Your Team</label>
           <div className="input-wrapper">
@@ -97,6 +85,7 @@ const NewGameForm: React.FC<NewGameFormProps> = ({ onClose, onGameCreated }) => 
               value={formData.managed_club_id}
               onChange={(e) => setFormData({ ...formData, managed_club_id: e.target.value })}
               disabled={loading}
+              required
             >
               <option value="">Choose your franchise</option>
               {teams.map(team => (

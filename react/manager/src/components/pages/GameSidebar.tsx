@@ -79,14 +79,14 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
           </p>
         )}
         <div className="sim-date-input">
-          <label htmlFor="sim-date">Simulate to:</label>
-          <input
-            type="date"
-            id="sim-date"
-            value={simDate}
-            onChange={(e) => setSimDate(e.target.value)}
-            min={new Date().toISOString().slice(0, 10)} // optional: prevent past dates
-          />
+          <div className="sim-date-picker-card">
+            <input
+              type="date"
+              id="sim-date"
+              value={simDate}
+              onChange={(e) => setSimDate(e.target.value)}
+            />
+          </div>
         </div>
         <button
           className="sidebar-action-btn"

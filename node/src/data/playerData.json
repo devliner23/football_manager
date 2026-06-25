@@ -54,10 +54,10 @@
   },
   "weightRange": [180, 240],
   "ratingAdjustments": {
-    "starter": [5, 10],
-    "bench": [-10, -5],
-    "star": [8, 15],
-    "randomVariation": [-3, 3]
+    "starter": [5, 15],
+    "bench": [-5, 5],
+    "star": [5, 15],
+    "randomVariation": [-5, 5]
   },
   "numTraitsByRating": {
     "90": [6, 8],

@@ -1,5 +1,6 @@
 // src/components/SelectedGame/GameHeader.tsx
 import React from 'react';
+import "./styles/GameHeader.css";
 
 interface GameHeaderProps {
   gameName: string;

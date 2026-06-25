@@ -127,10 +127,12 @@ class GameSimulationEngine {
       }
 
       // Active lineups and fatigue tick
-      const activeOffense = this._selectLineup(offense.players, gameState, isHomeOffense ? 'home' : 'away');
-      const activeDefense = this._selectLineup(defense.players, gameState, isHomeOffense ? 'home' : 'away');
-      this._applyFatigueTick(activeOffense, isHomeOffense ? 'home' : 'away', 24/60, gameState);
-      this._applyFatigueTick(activeDefense, isHomeOffense ? 'home' : 'away', 24/60, gameState);
+      const offSide = isHomeOffense ? 'home' : 'away';
+      const defSide = isHomeOffense ? 'away' : 'home';
+      const activeOffense = this._selectLineup(offense.players, gameState, offSide);
+      const activeDefense = this._selectLineup(defense.players, gameState, defSide);
+      this._applyFatigueTick(activeOffense, offSide, 24 / 60, gameState);
+      this._applyFatigueTick(activeDefense, defSide, 24 / 60, gameState);
 
       const result = this._simulatePossession(
         activeOffense, activeDefense, isHomeOffense, gameState
@@ -144,7 +146,7 @@ class GameSimulationEngine {
         gameState.awayStats.possessions++;
       }
 
-      this._accumulateStats(gameState, result, isHomeOffense ? 'home' : 'away');
+      this._accumulateStats(gameState, result, isHomeOffense);
       this._updateMomentum(gameState, result);
 
       if (result.assist) {
@@ -220,16 +222,84 @@ class GameSimulationEngine {
       offensiveRebound = this._checkOffensiveRebound(offense, defense, shotResult, gameState);
     }
 
+    // ── Steal: ~55 % of NBA turnovers are steals (rest are OOB, travel, etc.)
+// ── Steal: pick defender with best steal/perimeter, weighted by position
+    let steal = null;
+    if (turnover && Math.random() < 0.55) {
+      steal = defense.reduce((best, p) => {
+        let score = (p.steal_rating || p.perimeter_defense || 50);
+        // Guards get bonus, bigs get penalty
+        if (p.position === 'PG' || p.position === 'SG') score *= 1.2;
+        else if (p.position === 'SF') score *= 1.1;
+        else score *= 0.9;
+        const bestScore = (best.steal_rating || best.perimeter_defense || 50) *
+                          (best.position === 'PG' || best.position === 'SG' ? 1.2 : 1);
+        return score > bestScore ? p : best;
+      });
+    }
+
+    // ── Block: pick defender with best block/post, weighted by position
+    let block = null;
+    if (!turnover && shotResult.missed && !shotResult.isFoul) {
+      const baseProb = 
+        shotResult.shotType === 'rim'      ? 0.08
+        : shotResult.shotType === 'midRange' ? 0.025
+        : 0.005;
+      // Find best shot blocker
+      const blockCandidate = defense.reduce((best, p) => {
+        let score = (p.blocks || 0) * 0.6 + (p.post_defense || 50) * 0.4;
+        if (p.position === 'C') score *= 1.4;
+        else if (p.position === 'PF') score *= 1.25;
+        else if (p.position === 'SF') score *= 1.0;
+        else score *= 0.8; // guards
+        const bestScore = (best.blocks || 0) * 0.6 + (best.post_defense || 50) * 0.4 +
+                          (best.position === 'C' ? 0.4 : 0);
+        return score > bestScore ? p : best;
+      });
+      const ratingFactor = (blockCandidate.blocks || 50) / 50;
+      const blockProb = Math.min(0.30, baseProb * ratingFactor);
+      if (Math.random() < blockProb) {
+        block = blockCandidate;
+      }
+    }
+ 
+    // ── Foul: attribute to a random defender (weighted toward low-discipline bigs)
+    let fouler = null;
+    if (shotResult.isFoul) {
+      fouler = defense[Math.floor(Math.random() * defense.length)];
+    }
+ 
+    // ── Assister: teammate of the scorer, weighted by passing rating
+    let assistedBy = null;
+    if (shotResult.assist && !turnover) {
+      const teammates = offense.filter(p => p.id !== primaryHandler.id);
+      if (teammates.length) {
+        const scores = teammates.map(p => p.passing || 50);
+        const total  = scores.reduce((s, v) => s + v, 0);
+        let r = Math.random() * total;
+        for (let i = 0; i < teammates.length; i++) {
+          r -= scores[i];
+          if (r <= 0) { assistedBy = teammates[i]; break; }
+        }
+        if (!assistedBy) assistedBy = teammates[teammates.length - 1];
+      }
+    }
+ 
     return {
       playType,
       points,
       shotResult,
-      turnovers: turnover,
-      handler: primaryHandler,
-      defender: primaryDefender,
-      assist: shotResult.assist || false,
+      turnovers:    turnover,
+      handler:      primaryHandler,
+      defender:     primaryDefender,
+      assist:       shotResult.assist || false,
+      assistedBy,                          // ← passer (not scorer)
       offensiveRebound,
+      steal,                               // ← defensive player or null
+      block,                               // ← defensive player or null
+      fouler,                              // ← defensive player or null
     };
+ 
   }
 
   // ── Defensive scheme selection ───────────────────────────────────────
@@ -288,9 +358,20 @@ class GameSimulationEngine {
   }
 
   static _selectPrimaryHandler(players) {
-    return players.reduce((best, p) =>
-      (p.ball_handling * 0.6 + p.passing * 0.4) > (best.ball_handling * 0.6 + best.passing * 0.4) ? p : best
-    );
+    const scores = players.map(p => {
+      let base = (p.ball_handling || 50) * 0.6 + (p.passing || 50) * 0.4;
+      // Position bonus: PG gets +20%, SG/SF +10%, PF/C 0%
+      if (p.position === 'PG') base *= 1.2;
+      else if (p.position === 'SG' || p.position === 'SF') base *= 1.1;
+      return Math.pow(base, 2);
+    });
+    const total = scores.reduce((s, v) => s + v, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < players.length; i++) {
+      r -= scores[i];
+      if (r <= 0) return players[i];
+    }
+    return players[players.length - 1];
   }
 
   static _selectPrimaryDefender(players) {
@@ -311,10 +392,22 @@ class GameSimulationEngine {
     );
   }
 
+ 
   static _selectShooter(players) {
-    return players.reduce((best, p) =>
-      (p.three_point * 0.7 + p.mid_range * 0.3) > (best.three_point * 0.7 + best.mid_range * 0.3) ? p : best
-    );
+    const scores = players.map(p => {
+      let base = (p.three_point || 50) * 0.7 + (p.mid_range || 50) * 0.3;
+      // Bonus for SG/SF
+      if (p.position === 'SG' || p.position === 'SF') base *= 1.15;
+      if (p.position === 'PG') base *= 1.05;
+      return Math.pow(base, 1.8);
+    });
+    const total = scores.reduce((s, v) => s + v, 0);
+    let r = Math.random() * total;
+    for (let i = 0; i < players.length; i++) {
+      r -= scores[i];
+      if (r <= 0) return players[i];
+    }
+    return players[players.length - 1];
   }
 
   static _selectPostPlayer(players) {
@@ -363,11 +456,13 @@ class GameSimulationEngine {
   static _calculateTurnoverProbability(handler, defender, playType, gameState) {
     const tm = gameState.config.turnoverModel;
     const handlerSkill = handler.ball_handling * tm.handlerSkillWeight.ballHandling +
-                         handler.passing * tm.handlerSkillWeight.passing;
+                        handler.passing * tm.handlerSkillWeight.passing;
     const defSkill = defender.perimeter_defense * tm.defenderSkillWeight.perimeterDefense +
-                     (defender.steal_rating || 50) * tm.defenderSkillWeight.stealRating;
+                    (defender.steal_rating || 50) * tm.defenderSkillWeight.stealRating;
     const skillDiff = (defSkill - handlerSkill) / 100;
-    let rate = tm.baseRate + skillDiff * tm.skillDiffScale;
+    
+    // Boost base rate and skill scale
+    let rate = tm.baseRate * 1.5 + skillDiff * tm.skillDiffScale * 1.8;
     rate += (tm.playTypeModifiers[playType] || 0);
 
     // Fatigue effect
@@ -430,7 +525,7 @@ class GameSimulationEngine {
     const schemeKey = playType === 'pick_and_roll' ? 'pickAndRollMod' : playType + 'Mod';
     quality += (schemeMod[schemeKey] || 0);
 
-    return Math.max(0, Math.min(1, quality));
+    return Math.min(0.19, Math.max(0.05, quality)); 
   }
 
   // ── Shot attempt ────────────────────────────────────────────────────
@@ -461,7 +556,14 @@ class GameSimulationEngine {
       const isThreeFoul = isThree && Math.random() < ff.threePointFoulChance;
       const isAndOne = !isThreeFoul && Math.random() < ff.andOneChanceOnFoul;
       const ftAttempts = isThreeFoul ? 3 : (isAndOne ? 1 : 2);
-      const ftMakeRate = ff.freeThrowBase + (player.three_point / 100) * ff.freeThrowSkillWeight;
+      const ftBase   = (typeof ff.freeThrowBase        === 'number') ? ff.freeThrowBase        : 0.68;
+      const ftWeight = (typeof ff.freeThrowSkillWeight === 'number') ? ff.freeThrowSkillWeight : 0.14;
+      const ftSkill  = (typeof player.three_point === 'number' && player.three_point > 0)
+                         ? player.three_point
+                         : (typeof player.mid_range === 'number' && player.mid_range > 0)
+                           ? player.mid_range * 0.9
+                           : 68;
+      const ftMakeRate = Math.min(0.94, Math.max(0.60, ftBase + (ftSkill / 100) * ftWeight));
       let ftm = 0;
       for (let i = 0; i < ftAttempts; i++) {
         if (Math.random() < ftMakeRate) ftm++;
@@ -476,16 +578,41 @@ class GameSimulationEngine {
     }
 
     // Regular shot
-    const baseMakeRate = 0.35 + shotQuality * 0.35;
+    const baseMakeRate = 0.50 + shotQuality * 0.18;   // range 0.50 – 0.68
+ 
+    // Attribute guards: fall back to 70 when a trait wasn't spread onto the
+    // player object (undefined arithmetic silently produces NaN).
+    const threeAttr  = (typeof player.three_point    === 'number' && player.three_point    > 0) ? player.three_point    : 70;
+    const insideAttr = (typeof player.inside_scoring === 'number' && player.inside_scoring > 0) ? player.inside_scoring : 70;
+    const midAttr    = (typeof player.mid_range      === 'number' && player.mid_range      > 0) ? player.mid_range      : 68;
+ 
+    // Scale factor: normalise against 99 (max possible rating).
+    // A 75-rated player → factor 0.757, an elite 90-rated → 0.909.
     let makeRate;
-    if (isThree) makeRate = baseMakeRate * (player.three_point / 80);
-    else if (shotType === 'rim') makeRate = baseMakeRate * (player.inside_scoring / 80);
-    else makeRate = baseMakeRate * (player.mid_range / 80);
-    makeRate = Math.min(0.85, makeRate);
+    if (isThree) {
+      // 75-rated: 0.59 * 0.757 * 0.78 ≈ 0.348  →  ~35 %
+      makeRate = baseMakeRate * (threeAttr  / 99) * 0.78;
+      makeRate = Math.min(0.54, Math.max(0.26, makeRate));   // NBA 3P range: 26–54 %
+    } else if (shotType === 'rim') {
+      // 75-rated: 0.59 * 0.757 * 1.28 ≈ 0.571  →  ~57 %
+      makeRate = baseMakeRate * (insideAttr / 99) * 1.28;
+      makeRate = Math.min(0.84, Math.max(0.44, makeRate));   // rim range:  44–84 %
+    } else {
+      // mid-range — 75-rated: 0.59 * 0.757 * 0.92 ≈ 0.411  →  ~41 %
+      makeRate = baseMakeRate * (midAttr    / 99) * 0.92;
+      makeRate = Math.min(0.66, Math.max(0.30, makeRate));   // mid range:  30–66 %
+    }
+
+    makeRate = Math.min(0.78, Math.max(0.08, makeRate));
     const made = Math.random() < makeRate;
 
     const assistProb = playCfg.assistProbability || 0.3;
-    const isAssist = made && Math.random() < assistProb;
+    // Boost for P&R and spot‑up
+    let adjustedAssistProb = assistProb;
+    if (playType === 'pick_and_roll') adjustedAssistProb += 0.15;
+    if (playType === 'spot_up') adjustedAssistProb += 0.10;
+    // Also factor in the shooter's passing? Actually passer is selected later, but we can add randomness
+    const isAssist = made && Math.random() < adjustedAssistProb;
 
     return {
       points: made ? (isThree ? 3 : 2) : 0,
@@ -497,6 +624,20 @@ class GameSimulationEngine {
       shotType,
       assist: isAssist
     };
+  }
+
+  static _selectDefensiveRebounder(defense) {
+    return defense.reduce((best, p) => {
+      let score = (p.rebounding || 50) * 0.8;
+      // Big men get heavy bonus
+      if (p.position === 'C') score *= 1.3;
+      else if (p.position === 'PF') score *= 1.2;
+      else if (p.position === 'SF') score *= 1.0;
+      else score *= 0.9; // guards
+      const bestScore = (best.rebounding || 50) * 0.8 + 
+                        (best.position === 'C' ? 0.3 : best.position === 'PF' ? 0.2 : 0);
+      return score > bestScore ? p : best;
+    });
   }
 
   // ── Play executions ─────────────────────────────────────────────────
@@ -602,48 +743,83 @@ class GameSimulationEngine {
     };
   }
 
-  static _accumulateStats(gameState, result, teamSide) {
-    const stats = teamSide === 'home' ? gameState.homeStats : gameState.awayStats;
-    const handler = result.handler;
-    const defender = result.defender;
-    const sr = result.shotResult;
-
-    const ensurePlayer = (id) => {
-      if (!stats.playerStats.has(id)) {
-        stats.playerStats.set(id, {
-          fga: 0, fgm: 0, fga3: 0, fgm3: 0, fta: 0, ftm: 0,
-          points: 0, rebounds: 0, oreb: 0, dreb: 0, assists: 0, steals: 0,
-          blocks: 0, turnovers: 0, fouls: 0
+  static _accumulateStats(gameState, result, isHomeOffense) {
+    // Offensive stats go to the team that currently has the ball;
+    // defensive stats (steals, blocks, fouls, defensive rebounds) go to the other.
+    const offStats = isHomeOffense ? gameState.homeStats : gameState.awayStats;
+    const defStats = isHomeOffense ? gameState.awayStats : gameState.homeStats;
+ 
+    const ensure = (statsObj, id) => {
+      if (!statsObj.playerStats.has(id)) {
+        statsObj.playerStats.set(id, {
+          fga: 0, fgm: 0, fga3: 0, fgm3: 0,
+          fta: 0, ftm: 0, points: 0,
+          oreb: 0, dreb: 0,
+          assists: 0, steals: 0, blocks: 0,
+          turnovers: 0, fouls: 0,
         });
       }
     };
-
-    ensurePlayer(handler.id);
-    const ps = stats.playerStats.get(handler.id);
-    if (sr) {
-      ps.fga += sr.fga || 0;
-      ps.fgm += sr.fgm || 0;
-      ps.fga3 += sr.fga3 || 0;
-      ps.fgm3 += sr.fgm3 || 0;
-      ps.fta += sr.fta || 0;
-      ps.ftm += sr.ftm || 0;
-      ps.points += sr.points || 0;
+ 
+    const handler = result.handler;
+    const sr      = result.shotResult;
+ 
+    ensure(offStats, handler.id);
+    const ps = offStats.playerStats.get(handler.id);
+ 
+    // Shot stats — only when the possession reached a shot attempt (no TO before shot)
+    if (!result.turnovers && sr) {
+      ps.fga    += sr.fga    || 0;
+      ps.fgm    += sr.fgm    || 0;
+      ps.fga3   += sr.fga3   || 0;
+      ps.fgm3   += sr.fgm3   || 0;
+      ps.fta    += sr.fta    || 0;
+      ps.ftm    += sr.ftm    || 0;
+      ps.points += result.points || 0;
     }
+ 
+    // Turnover on the ball-handler
     if (result.turnovers) ps.turnovers++;
-    if (result.assist) ps.assists++;
-
-    // Rebounds: defensive rebound to defender if missed and no offensive board
-    if (sr && sr.missed && !sr.isFoul && !result.offensiveRebound) {
-      ensurePlayer(defender.id);
-      stats.playerStats.get(defender.id).dreb++;
-      stats.playerStats.get(defender.id).rebounds++;
+ 
+    // Assist → passer (assistedBy), NOT the scorer
+    if (result.assist && result.assistedBy) {
+      ensure(offStats, result.assistedBy.id);
+      offStats.playerStats.get(result.assistedBy.id).assists++;
     }
+ 
+    // Offensive rebound → a frontcourt player on offense
     if (result.offensiveRebound) {
-      // Assign to handler (simplified) or a random offensive player
-      const rebounder = Math.random() < 0.5 ? handler.id : result.handler?.id; // fallback
-      ensurePlayer(rebounder);
-      stats.playerStats.get(rebounder).oreb++;
-      stats.playerStats.get(rebounder).rebounds++;
+      // Prefer PF/C; fall back to handler if no bigs are present
+      const bigs = [handler]; // will be replaced by lineup if available
+      ensure(offStats, bigs[0].id);
+      offStats.playerStats.get(bigs[0].id).oreb++;
+    }
+ 
+    // Defensive rebound → best available defender (missed shot, no oreb, no block)
+    if (sr && sr.missed && !sr.isFoul && !result.offensiveRebound && !result.block
+        && result.defender) {
+      ensure(defStats, result.defender.id);
+      defStats.playerStats.get(result.defender.id).dreb++;
+    }
+ 
+    // ── Defensive stats go to the DEFENSIVE team ──────────────────────────
+ 
+    if (result.steal) {
+      ensure(defStats, result.steal.id);
+      defStats.playerStats.get(result.steal.id).steals++;
+    }
+ 
+    if (result.block) {
+      ensure(defStats, result.block.id);
+      defStats.playerStats.get(result.block.id).blocks++;
+      // Blocked shots are still defensive rebounds (usually)
+      ensure(defStats, result.block.id);
+      defStats.playerStats.get(result.block.id).dreb++;
+    }
+ 
+    if (result.fouler) {
+      ensure(defStats, result.fouler.id);
+      defStats.playerStats.get(result.fouler.id).fouls++;
     }
   }
 
@@ -675,11 +851,20 @@ class GameSimulationEngine {
     const fatigueMap = teamSide === 'home' ? gameState.homeFatigue : gameState.awayFatigue;
 
     // Allocate minutes based on rating and fatigue
+    const sorted = [...players]
+      .sort((a, b) => (b.overall_rating || 0) - (a.overall_rating || 0));
+    const rankOf = new Map(sorted.map((p, i) => [p.id, i]));
+ 
     const playerMinutes = new Map();
     for (const p of players) {
-      const ratingFactor = p.overall_rating / 100;
+      const rank    = rankOf.get(p.id) ?? players.length;
       const fatigue = fatigueMap.get(p.id) || 0;
-      playerMinutes.set(p.id, Math.round(20 + ratingFactor * 20 - fatigue * 15));
+      let base;
+      if      (rank <= 1) base = 30 + ((p.overall_rating || 70) - 70) * 0.30; // 30-39
+      else if (rank <= 4) base = 24 + ((p.overall_rating || 65) - 65) * 0.25; // 24-33
+      else if (rank <= 8) base = 13 + ((p.overall_rating || 60) - 60) * 0.20; // 13-23
+      else                base =  2 + ((p.overall_rating || 50) - 50) * 0.10; //  2-10
+      playerMinutes.set(p.id, Math.max(1, Math.round(base - fatigue * 6)));
     }
     const totalAlloc = [...playerMinutes.values()].reduce((a, b) => a + b, 0);
     const scale = totalMinutes / totalAlloc;

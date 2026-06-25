@@ -5,9 +5,6 @@ import SavedGames from './SavedGames';
 import NewGameForm from './NewGameForm';
 import SelectedGame from '../pages/SelectedGame';
 import { SavedGame } from '../../shared';
-
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import './Dashboard.css';
 
 const Dashboard: React.FC = () => {
@@ -19,7 +16,6 @@ const Dashboard: React.FC = () => {
   const [selectedGame, setSelectedGame] = useState<SavedGame | null>(null);
   const [isCreatingGame, setIsCreatingGame] = useState<boolean>(false);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => {
     loadSavedGames();
@@ -94,6 +90,20 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  // Start new season: delete current save (if any) then open new game form
+  const handleStartNewSeason = async (): Promise<void> => {
+    const latest = getLatestGame();
+    if (latest) {
+      const confirmDelete = window.confirm(
+        'Starting a new season will delete your current saved game. Are you sure?'
+      );
+      if (!confirmDelete) return;
+      await handleGameDeleted(latest.id);
+    }
+    // After deletion (or if no game existed), open the new game form
+    setShowNewGameForm(true);
+  };
+
   if (selectedGame) {
     return (
       <SelectedGame
@@ -128,70 +138,47 @@ const Dashboard: React.FC = () => {
       </header>
 
       <div className="dashboard-content">
-        <button
-          className={`sidebar-toggle ${!sidebarOpen ? 'collapsed' : ''}`}
-          onClick={() => setSidebarOpen(!sidebarOpen)}
-        >
-          {sidebarOpen ? <ArrowForwardIosIcon /> : <ArrowBackIosNewIcon />}
-        </button>
-
-        <div className={`dashboard-sidebar ${sidebarOpen ? 'open' : 'collapsed'}`}>
-
-          <div className="game-list">
-            <h3>Your Saved Games</h3>
-            {loading ? (
-              <div className="loading">Loading your games...</div>
-            ) : error ? (
-              <div className="error">{error}</div>
-            ) : savedGames.length === 0 ? (
-              <div className="no-games">
-                <p>No saved games yet</p>
-                <p className="hint">Start your first season!</p>
-              </div>
-            ) : (
-              <SavedGames
-                games={savedGames}
-                onSelect={handleGameSelect}
-                onDelete={handleGameDeleted}
-                selectedId={null}
-              />
-            )}
-          </div>
-        </div>
-
         <div className="dashboard-main">
-          <div className="split-panel">
-            {/* Continue Last Save Panel - Only show if there are games */}
-            {hasGames && latestGame && (
-              <div className="panel-card continue-panel">
+          <div className="panel-card full-width">
+            {hasGames && latestGame ? (
+              // Two‑button layout for existing games
+              <>
                 <span className="icon">▶️</span>
-                <h2>Continue Last Save</h2>
+                <h2>Continue Season</h2>
                 <p>Pick up where you left off in your most recent season.</p>
+                <div className="panel-actions">
+                  <button 
+                    className="panel-button continue"
+                    onClick={handleContinueLatest}
+                  >
+                    Continue Game
+                  </button>
+                  <button 
+                    className="panel-button new-season"
+                    onClick={handleStartNewSeason}
+                  >
+                    Start New Season
+                  </button>
+                </div>
+                <div className="game-info">
+                  Last saved: {new Date(latestGame.updated_at || latestGame.created_at).toLocaleString()} <br />
+                  Save Name: {latestGame.name}
+                </div>
+              </>
+            ) : (
+              // No games – single button
+              <>
+                <span className="icon">🏆</span>
+                <h2>Start Your First Season</h2>
+                <p>No saved games found. Create your first basketball season now!</p>
                 <button 
-                  className="panel-button" 
-                  onClick={handleContinueLatest}
+                  className="panel-button new-season"
+                  onClick={() => setShowNewGameForm(true)}
                 >
-                  Continue Game
+                  Get Started
                 </button>
-              </div>
+              </>
             )}
-
-            {/* Create New Season Panel - Always shown */}
-            <div className={`panel-card new-panel ${!hasGames ? 'full-width' : ''}`}>
-              <span className="icon">🏆</span>
-              <h2>{hasGames ? 'Create New Season' : 'Start Your First Season'}</h2>
-              <p>
-                {hasGames 
-                  ? 'Start a fresh basketball season with a new team and roster.'
-                  : 'No saved games found. Create your first basketball season now!'}
-              </p>
-              <button 
-                className="panel-button" 
-                onClick={() => setShowNewGameForm(true)}
-              >
-                {hasGames ? 'New Season' : 'Get Started'}
-              </button>
-            </div>
           </div>
         </div>
       </div>
