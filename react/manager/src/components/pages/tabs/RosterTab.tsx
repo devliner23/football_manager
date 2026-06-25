@@ -11,24 +11,26 @@ import {
   Activity,
   BarChart3
 } from 'lucide-react';
+import PlayerViewModal from './tabComponents/PlayerViewModal';
 import "./styles/RosterTab.css";
 
 interface RosterTabProps {
   teams: Team[];
   allPlayers: Player[];
   userTeamId?: string;
-  onViewPlayer: (player: Player) => void;
+  onViewPlayer: (player: Player) => void; // can be kept for compatibility
 }
 
 const RosterTab: React.FC<RosterTabProps> = ({
   teams,
   allPlayers,
   userTeamId,
-  onViewPlayer,
+  onViewPlayer, // still accepted but not used for modal
 }) => {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(
     userTeamId || (teams.length > 0 ? teams[0].id : null)
   );
+  const [viewingPlayer, setViewingPlayer] = useState<Player | null>(null);
 
   const selectedTeamPlayers = allPlayers.filter(
     (p) => p.team_id === selectedTeamId
@@ -175,7 +177,7 @@ const RosterTab: React.FC<RosterTabProps> = ({
                         <td>
                           <button
                             className="view-player-btn"
-                            onClick={() => onViewPlayer(player)}
+                            onClick={() => setViewingPlayer(player)} // opens modal
                           >
                             <Eye size={16} strokeWidth={2} />
                             <span>View</span>
@@ -203,6 +205,17 @@ const RosterTab: React.FC<RosterTabProps> = ({
           )}
         </div>
       </div>
+
+      {/* Player View Modal */}
+      {viewingPlayer && (
+        <PlayerViewModal
+          player={viewingPlayer}
+          teamName={selectedTeam?.name}
+          teamWins={selectedTeam?.wins}
+          teamLosses={selectedTeam?.losses}
+          onClose={() => setViewingPlayer(null)}
+        />
+      )}
     </div>
   );
 };
