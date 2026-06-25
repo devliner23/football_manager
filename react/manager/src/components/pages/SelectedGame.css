@@ -8,7 +8,7 @@
   flex-direction: column;
   position: relative;
   padding: 20px;
-  /* background: var(--bg-primary); */
+  overflow: hidden; /* ADD THIS */
 }
 
 .game-status {
@@ -29,6 +29,16 @@
   font-weight: 600;
   color: var(--text-primary);
   font-size: 14px;
+}
+
+.game-left-column {
+  overflow-y: auto; /* ADD THIS */
+  /* optional: padding-right to avoid scrollbar overlapping content */
+  padding-right: 6px;
+}
+
+.game-sidebar {
+  height: auto; /* or remove the fit-content inline */
 }
 
 .delete-game-btn {
@@ -322,6 +332,7 @@
   grid-template-columns: 280px 1fr;
   gap: 20px;
   min-height: 0;
+  overflow: hidden; 
 }
 
 /* ============================================
@@ -469,15 +480,13 @@
    ============================================ */
 
 .game-main-content {
-  /* backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur); */
-  /* border: 1px solid var(--glass-border); */
-  border-radius: 16px;
-  padding: 20px;
-  /* box-shadow: var(--glass-shadow); */
+  height: 100%;           /* fill the grid cell */
+  overflow: hidden;       /* clip overflow */
   display: flex;
   flex-direction: column;
-  min-height: 500px;
+  border-radius: 16px;
+  padding: 20px;
+  /* remove min-height: 500px; */
 }
 
 .tab-content {

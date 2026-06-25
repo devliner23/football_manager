@@ -1,4 +1,18 @@
 import React, { useState, useEffect } from 'react';
+import {
+  List,
+  Home,
+  Plane,
+  Trophy,
+  Calendar,
+  BarChart3,
+  Target,
+  Hand,
+  Ban,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import { leagueAPI, GameResult } from '../../api/leagueApi';
 import './GameResults.css';
 
@@ -48,11 +62,11 @@ const GameResults: React.FC<GameResultsProps> = ({ savedGameId, onGameClick }) =
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -71,10 +85,13 @@ const GameResults: React.FC<GameResultsProps> = ({ savedGameId, onGameClick }) =
   return (
     <div className="game-results">
       <div className="game-results-header">
-        <h3>📋 Recent Games</h3>
+        <div className="header-left">
+          <List size={20} className="header-icon" />
+          <h3>Recent Games</h3>
+        </div>
         <span className="game-count">{games.length} games</span>
       </div>
-      
+
       <div className="game-list">
         {games.map((game) => {
           const isHomeWin = game.home_score > game.away_score;
@@ -83,40 +100,61 @@ const GameResults: React.FC<GameResultsProps> = ({ savedGameId, onGameClick }) =
           const isExpanded = expandedGame === game.id;
 
           return (
-            <div 
-              key={game.id} 
+            <div
+              key={game.id}
               className={`game-item ${isExpanded ? 'expanded' : ''}`}
               onClick={() => handleGameClick(game.id)}
             >
               <div className="game-summary">
                 <div className="game-teams">
                   <div className="team home">
-                    <span className="team-name">{game.home_team?.abbreviation || game.home_team?.name}</span>
+                    <span className="team-name">
+                      {game.home_team?.abbreviation || game.home_team?.name}
+                    </span>
                     <span className={`team-score ${isHomeWin ? 'winner' : 'loser'}`}>
                       {game.home_score}
                     </span>
                   </div>
                   <div className="game-vs">vs</div>
                   <div className="team away">
-                    <span className="team-name">{game.away_team?.abbreviation || game.away_team?.name}</span>
+                    <span className="team-name">
+                      {game.away_team?.abbreviation || game.away_team?.name}
+                    </span>
                     <span className={`team-score ${!isHomeWin ? 'winner' : 'loser'}`}>
                       {game.away_score}
                     </span>
                   </div>
                 </div>
+
                 <div className="game-meta">
                   <span className="game-week">Week {game.week}</span>
-                  <span className="game-date">{formatDate(game.played_at)}</span>
-                  <span className="game-result-badge">
-                    {isHomeWin ? '🏠' : '✈️'} {winner?.abbreviation} wins!
+                  <span className="game-date">
+                    <Calendar size={14} className="meta-icon" />
+                    {formatDate(game.played_at)}
                   </span>
+                  <span className="game-result-badge">
+                    {isHomeWin ? (
+                      <Home size={14} className="badge-icon" />
+                    ) : (
+                      <Plane size={14} className="badge-icon" />
+                    )}
+                    {winner?.abbreviation} wins!
+                  </span>
+                  {isExpanded ? (
+                    <ChevronUp size={18} className="expand-icon" />
+                  ) : (
+                    <ChevronDown size={18} className="expand-icon" />
+                  )}
                 </div>
               </div>
 
               {isExpanded && boxScores && (
                 <div className="game-details">
                   <div className="box-score">
-                    <h4>Box Score</h4>
+                    <h4>
+                      <Trophy size={16} className="section-icon" />
+                      Box Score
+                    </h4>
                     <div className="box-score-grid">
                       {boxScores.map((stat: any) => (
                         <div key={stat.player_id} className="player-stat">
@@ -125,11 +163,26 @@ const GameResults: React.FC<GameResultsProps> = ({ savedGameId, onGameClick }) =
                           </div>
                           <div className="stat-line">
                             <span title="Points">{stat.points}</span>
-                            <span title="Rebounds">📊{stat.rebounds}</span>
-                            <span title="Assists">🎯{stat.assists}</span>
-                            <span title="Steals">👆{stat.steals}</span>
-                            <span title="Blocks">🚫{stat.blocks}</span>
-                            <span title="Turnovers">⚠️{stat.turnovers}</span>
+                            <span title="Rebounds">
+                              <BarChart3 size={14} className="stat-icon" />
+                              {stat.rebounds}
+                            </span>
+                            <span title="Assists">
+                              <Target size={14} className="stat-icon" />
+                              {stat.assists}
+                            </span>
+                            <span title="Steals">
+                              <Hand size={14} className="stat-icon" />
+                              {stat.steals}
+                            </span>
+                            <span title="Blocks">
+                              <Ban size={14} className="stat-icon" />
+                              {stat.blocks}
+                            </span>
+                            <span title="Turnovers">
+                              <AlertTriangle size={14} className="stat-icon" />
+                              {stat.turnovers}
+                            </span>
                           </div>
                           <div className="shot-stats">
                             <span>FG: {stat.fgm}/{stat.fga}</span>

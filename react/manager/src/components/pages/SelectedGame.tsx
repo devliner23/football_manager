@@ -87,7 +87,13 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   const [nextUserGame, setNextUserGame] = useState<UserGameInfo | null>(null);
   const [leagueGamesBeforeCount, setLeagueGamesBeforeCount] = useState(0);
   const [simProgress, setSimProgress] = useState<string | null>(null);
-  const [localDate, setLocalDate] = useState<string | null>("");
+  const [lastSimulatedDate, setLastSimulatedDate] = useState<string | null>(
+    game.game_state?.last_simulated_at ?? null
+    );
+  const [currentSeason, setCurrentSeason] = useState(game.current_season);
+
+
+  const currentDate = lastSimulatedDate;
 
   // Load all league data
   const loadLeagueData = async () => {
@@ -127,22 +133,28 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
 
   const refreshAllData = useCallback(async () => {
     try {
-        const [teamsData, playersData, standingsData, scheduleData, nextGameData, freshGameData] =
-        await Promise.all([
-            leagueAPI.getTeams(game.id).catch(...),
-            leagueAPI.getPlayers(game.id).catch(...),
-            leagueAPI.getStandings(game.id).catch(...),
-            leagueAPI.getSchedule(game.id).catch(...),
-            leagueAPI.getNextUserGame(game.id).catch(...),
-            gameAPI.getGame(game.id).catch(...),
+        const [
+        teamsData,
+        playersData,
+        standingsData,
+        scheduleData,
+        nextGameData,
+        fullGameData       // <-- add this
+        ] = await Promise.all([
+        leagueAPI.getTeams(game.id),
+        leagueAPI.getPlayers(game.id),
+        leagueAPI.getStandings(game.id),
+        leagueAPI.getSchedule(game.id),
+        leagueAPI.getNextUserGame(game.id),
+        gameAPI.getGame(game.id)   // <-- correct API call
         ]);
 
-        // Existing updates...
         if (teamsData) setTeams(teamsData);
         if (playersData) setPlayers(playersData);
         if (standingsData) setStandings(standingsData);
         if (scheduleData) setSchedule(scheduleData);
 
+        // Update next user game logic
         if (nextGameData?.seasonComplete) {
         setNextUserGame(null);
         setLeagueGamesBeforeCount(0);
@@ -151,13 +163,17 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
         setLeagueGamesBeforeCount(nextGameData.leagueGamesBeforeCount ?? 0);
         }
 
-        if (freshGameData) {
-            setLocalDate(freshGameData.)
+        console.log(fullGameData)
+        // **Update the last simulated date from the fresh game object**
+        if (fullGameData?.data?.game_state?.last_simulated_at) {
+        setLastSimulatedDate(fullGameData.data.game_state.last_simulated_to);
+        // optional: also update currentSeason if it can change
+        setCurrentSeason(fullGameData.data.current_season);
         }
     } catch (err) {
         console.error('refreshAllData failed:', err);
     }
-  }, [game.id, game.managed_club_id]);
+  }, [game.id]);
 
   useEffect(() => {
     setLoading(true);
