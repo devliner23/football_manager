@@ -137,16 +137,16 @@ class GameSimulationEngine {
     setSide('away');
   }
 
-  // ── Period simulation ────────────────────────────────────────────────
+  // ── Period simulation (revised with realistic possession times) ──────
   static _simulatePeriod(gameState, periodName, minutes, isOvertime) {
     const g = gameState.config.global;
-    gameState.periodClock = minutes * 60;
+    gameState.periodClock = minutes * 60; // seconds remaining
     const possessionsTotal = Math.floor(minutes * g.possessionsPerMinute * 2);
     const periodLog = [];
 
     this._setPeriodLineups(gameState, periodName);
 
-    // Clutch detection
+    // Initial clutch detection
     if (gameState.periodClock <= g.clutchThresholdSeconds &&
         Math.abs(gameState.homeScore - gameState.awayScore) <= g.clutchScoreDiff) {
       gameState.clutchActive = true;
@@ -156,18 +156,20 @@ class GameSimulationEngine {
 
     let offense = gameState.homeTeam;
     let defense = gameState.awayTeam;
-    let isHomeOffense = true;
-    if (Math.random() > 0.5) {
-      offense = gameState.awayTeam;
-      defense = gameState.homeTeam;
-      isHomeOffense = false;
-    }
+    let isHomeOffense = Math.random() > 0.5 ? false : true;
 
     for (let i = 0; i < possessionsTotal; i++) {
-      gameState.periodClock -= 24;
-      gameState.totalGameSeconds += 24;       // track elapsed game time
+      // Realistic possession duration (~14.5 sec avg)
+      const possessionDuration = Math.min(
+        24.0,
+        Math.max(6.0, this._randomNormal(14.5, 3.5))
+      );
+      gameState.periodClock -= possessionDuration;
+      gameState.totalGameSeconds += possessionDuration;
+
       if (gameState.periodClock <= 0) break;
 
+      // Update clutch if crossing threshold during this possession
       if (!gameState.clutchActive &&
           gameState.periodClock <= g.clutchThresholdSeconds &&
           Math.abs(gameState.homeScore - gameState.awayScore) <= g.clutchScoreDiff) {
@@ -186,8 +188,9 @@ class GameSimulationEngine {
         ? gameState.awayTeam.players.filter(p => activeDefenseIds.includes(p.id))
         : gameState.homeTeam.players.filter(p => activeDefenseIds.includes(p.id));
 
-      this._applyFatigueTick(activeOffense, offSide, 24 / 60, gameState);
-      this._applyFatigueTick(activeDefense, defSide, 24 / 60, gameState);
+      // Fatigue based on actual time on floor
+      this._applyFatigueTick(activeOffense, offSide, possessionDuration / 60, gameState);
+      this._applyFatigueTick(activeDefense, defSide, possessionDuration / 60, gameState);
 
       const result = this._simulatePossession(activeOffense, activeDefense, isHomeOffense, gameState);
 
@@ -218,10 +221,10 @@ class GameSimulationEngine {
         this._checkCriticalMoment(gameState, isHomeOffense, result);
       }
 
-      // Perform substitutions based on current fatigue
-      this._performSubstitutions(gameState, isHomeOffense, periodLog, periodName);
-
+      // Perform substitutions for both teams only on change of possession
       if (!result.offensiveRebound) {
+        this._performSubstitutions(gameState, 'home', periodLog, periodName);
+        this._performSubstitutions(gameState, 'away', periodLog, periodName);
         isHomeOffense = !isHomeOffense;
         [offense, defense] = [defense, offense];
       }
@@ -230,10 +233,9 @@ class GameSimulationEngine {
     gameState.gameLog.push(periodLog);
   }
 
-  // ── Substitution logic ───────────────────────────────────────────────
-  static _performSubstitutions(gameState, isHomePossession, periodLog, periodName) {
+  // ── Substitution logic (called for a specific team) ──────────────────
+  static _performSubstitutions(gameState, teamSide, periodLog, periodName) {
     const subConfig = gameState.config.substitutions || {};
-    const teamSide = isHomePossession ? 'home' : 'away';
     const now = gameState.totalGameSeconds;
     const lastSubTime = teamSide === 'home' ? gameState.lastHomeSubTime : gameState.lastAwaySubTime;
     const cooldown = subConfig.subCooldownSeconds || 120;
@@ -243,7 +245,7 @@ class GameSimulationEngine {
     const activeIds = gameState[teamSide + 'ActiveIds'];
     const benchIds = gameState[teamSide + 'BenchIds'];
     const fatigueMap = gameState[teamSide + 'Fatigue'];
-    const threshold = subConfig.fatigueThreshold || 0.65;
+    const threshold = subConfig.fatigueThreshold || 0.68;
 
     let subOutId = null;
     let maxFatigue = 0;
@@ -276,7 +278,6 @@ class GameSimulationEngine {
     if (teamSide === 'home') gameState.lastHomeSubTime = now;
     else gameState.lastAwaySubTime = now;
 
-    // Log substitution within the period log for accurate timeline
     periodLog.push({
       type: 'substitution',
       team: teamSide,
@@ -287,7 +288,7 @@ class GameSimulationEngine {
     });
   }
 
-  // ── Possession simulation (unchanged except for minor clarifications) ──
+  // ── Possession simulation (revised with new play types & helpers) ────
   static _simulatePossession(offense, defense, isHomePossession, gameState) {
     const config = gameState.config;
     const primaryHandler = this._selectPrimaryHandler(offense);
@@ -308,7 +309,7 @@ class GameSimulationEngine {
       }
       case 'spot_up': {
         const shooter = this._selectShooter(offense);
-        const defender = this._selectClosestDefender(defense, shooter);
+        const defender = this._selectClosestDefender(defense);
         shotResult = this._executeSpotUp(shooter, defender, defenseScheme, gameState);
         break;
       }
@@ -320,6 +321,9 @@ class GameSimulationEngine {
       }
       case 'transition':
         shotResult = this._executeTransition(offense, defense, defenseScheme, gameState);
+        break;
+      case 'cut':
+        shotResult = this._executeCut(offense, defense, defenseScheme, gameState);
         break;
       default:
         shotResult = this._executeIsolation(primaryHandler, primaryDefender, defenseScheme, gameState);
@@ -352,7 +356,7 @@ class GameSimulationEngine {
     if (!turnover && shotResult.missed && !shotResult.isFoul) {
       const baseProb =
         shotResult.shotType === 'rim' ? 0.08
-        : shotResult.shotType === 'midRange' ? 0.025
+        : shotResult.shotType === 'midRange' ? 0.03
         : 0.005;
       const blockCandidate = defense.reduce((best, p) => {
         let score = (p.blocks || 0) * 0.6 + (p.post_defense || 50) * 0.4;
@@ -407,7 +411,7 @@ class GameSimulationEngine {
     };
   }
 
-  // ── Defensive scheme selection ───────────────────────────────────────
+  // ── Defensive scheme selection (unchanged) ──────────────────────────
   static _selectDefensiveScheme(defense) {
     const avgPerimeter = defense.reduce((s, p) => s + p.perimeter_defense, 0) / defense.length;
     const avgPost = defense.reduce((s, p) => s + p.post_defense, 0) / defense.length;
@@ -417,32 +421,35 @@ class GameSimulationEngine {
     return 'manToMan';
   }
 
-  // ── Offensive rebound check ──────────────────────────────────────────
+  // ── Offensive rebound check (revised – crash model) ──────────────────
   static _checkOffensiveRebound(offense, defense, shotResult, gameState) {
-    const reb = gameState.config.rebounds;
     const shotType = shotResult.shotType || 'midRange';
-    const offRebMod = reb.shotTypeOffReboundModifier[shotType] || 0.25;
-    const baseOffRate = reb.offensiveReboundRateBase * offRebMod;
+    const baseORebByType = {
+      rim:       0.28,
+      midRange:  0.22,
+      threePoint:0.17,
+    };
+    let baseChance = baseORebByType[shotType] || 0.22;
 
-    const selectRebounder = (players) =>
-      players.reduce((best, p) => {
-        const score = p.rebounding * reb.rebounderRatingWeight +
-                      (reb.positionReboundAdjustment[p.position] || 0.1);
-        const bestScore = best.rebounding * reb.rebounderRatingWeight +
-                          (reb.positionReboundAdjustment[best.position] || 0.1);
-        return score > bestScore ? p : best;
-      });
+    const offensiveBigs = offense.filter(p => ['C','PF','SF'].includes(p.position)).length;
+    const defensiveBigs = defense.filter(p => ['C','PF','SF'].includes(p.position)).length;
+    const sizeAdvantage = Math.max(0, offensiveBigs - defensiveBigs) * 0.04;
+    baseChance += sizeAdvantage;
 
-    const offRebounder = selectRebounder(offense);
-    const defRebounder = selectRebounder(defense);
+    const bestOffReb = Math.max(...offense.map(p => p.rebounding || 50));
+    const bestDefReb = Math.max(...defense.map(p => p.rebounding || 50));
+    const rebDiff = (bestOffReb - bestDefReb) / 50 * 0.10;
+    baseChance += rebDiff;
 
-    const offRate = baseOffRate * (offRebounder.rebounding / 80);
-    const defRate = (1 - baseOffRate) * (defRebounder.rebounding / 80);
-    const total = offRate + defRate;
-    return total > 0 && Math.random() < offRate / total;
+    const avgFatigue = offense.reduce((s, p) => 
+      s + (gameState.homeFatigue.get(p.id) || gameState.awayFatigue.get(p.id) || 0), 0) / offense.length;
+    baseChance -= avgFatigue * 0.06;
+
+    baseChance = Math.min(0.42, Math.max(0.08, baseChance));
+    return Math.random() < baseChance;
   }
 
-  // ── Player selection helpers (unused _selectLineup kept for compatibility) ──
+  // ── Player selection helpers (unchanged) ────────────────────────────
   static _selectLineup(players, gameState, teamSide) {
     const fatigueMap = teamSide === 'home' ? gameState.homeFatigue : gameState.awayFatigue;
     const sorted = [...players].sort((a, b) => b.overall_rating - a.overall_rating);
@@ -524,24 +531,39 @@ class GameSimulationEngine {
     );
   }
 
-  // ── Play type selection ─────────────────────────────────────────────
+  // ── Play type selection (revised with realistic NBA frequencies) ─────
   static _selectPlayType(offense, defense, gameState) {
     const threeAvg = offense.reduce((s, p) => s + p.three_point, 0) / offense.length;
     const insideAvg = offense.reduce((s, p) => s + p.inside_scoring, 0) / offense.length;
-    const passAvg = offense.reduce((s, p) => s + p.passing, 0) / offense.length;
+    const passAvg   = offense.reduce((s, p) => s + p.passing, 0) / offense.length;
+    const speedAvg  = offense.reduce((s, p) => s + p.speed, 0) / offense.length;
 
     const weights = {
-      isolation: 20 + (gameState.isOvertime ? 20 : 0),
-      pick_and_roll: 30 + (passAvg > 80 ? 15 : 0),
-      spot_up: 25 + (threeAvg > 80 ? 15 : 0),
-      post_up: 20 + (insideAvg > 80 ? 15 : 0),
-      transition: 5,
+      isolation:      10,
+      pick_and_roll:  25,
+      spot_up:        22,
+      post_up:         8,
+      transition:     18,
+      cut:            17,
     };
-    if (gameState.isOvertime) weights.pick_and_roll -= 10;
 
+    if (threeAvg > 80)  { weights.spot_up += 8; weights.cut -= 4; }
+    if (insideAvg > 80) { weights.post_up += 6; weights.isolation += 3; weights.cut += 3; }
+    if (passAvg > 80)   { weights.pick_and_roll += 5; weights.cut += 5; }
+    if (speedAvg > 80)  { weights.transition += 5; weights.cut += 2; }
+
+    if (gameState.clutchActive) {
+      weights.isolation += 8;
+      weights.pick_and_roll -= 4;
+      weights.transition -= 2;
+    }
     if (gameState.momentum > 0.3) {
-      weights.transition += 5;
+      weights.transition += 4;
+      weights.isolation += 2;
+    }
+    if (gameState.isOvertime) {
       weights.isolation += 5;
+      weights.pick_and_roll -= 3;
     }
 
     const total = Object.values(weights).reduce((a, b) => a + b, 0);
@@ -553,26 +575,34 @@ class GameSimulationEngine {
     return 'isolation';
   }
 
-  // ── Turnover probability ────────────────────────────────────────────
+  // ── Turnover probability (revised with realistic base & scaling) ─────
   static _calculateTurnoverProbability(handler, defender, playType, gameState) {
-    const tm = gameState.config.turnoverModel;
-    const handlerSkill = handler.ball_handling * tm.handlerSkillWeight.ballHandling +
-                        handler.passing * tm.handlerSkillWeight.passing;
-    const defSkill = defender.perimeter_defense * tm.defenderSkillWeight.perimeterDefense +
-                    (defender.steal_rating || 50) * tm.defenderSkillWeight.stealRating;
-    const skillDiff = (defSkill - handlerSkill) / 100;
-    
-    let rate = tm.baseRate * 1.5 + skillDiff * tm.skillDiffScale * 1.8;
-    rate += (tm.playTypeModifiers[playType] || 0);
+    const baseRate = 0.130; // league‑average TOV%
+
+    const offSkill = (handler.ball_handling || 50) * 0.65 +
+                     (handler.passing || 50) * 0.35;
+    const defSkill = (defender.steal_rating || defender.perimeter_defense || 50) * 0.7 +
+                     (defender.perimeter_defense || 50) * 0.3;
+    const skillDiff = (defSkill - offSkill) / 100;
+
+    const playMod = {
+      isolation:      0.01,
+      pick_and_roll:  0.005,
+      spot_up:       -0.015,
+      post_up:        0.005,
+      transition:     0.03,
+      cut:           -0.01,
+    }[playType] || 0;
 
     const fatigue = gameState.homeFatigue.get(handler.id) || gameState.awayFatigue.get(handler.id) || 0;
-    rate += fatigue * gameState.config.fatigue.fatigueEffectOnTurnoverRate;
-    rate -= gameState.momentum * Math.abs(gameState.config.momentumSystem.momentumEffectOnTurnoverRate);
+    const fatigueFactor = 0.12 * fatigue;
+    const momentumFactor = -gameState.momentum * 0.04;
 
-    return Math.min(tm.maxRate, Math.max(tm.minRate, rate));
+    let rate = baseRate + skillDiff * 0.10 + playMod + fatigueFactor + momentumFactor;
+    return Math.min(0.24, Math.max(0.04, rate));
   }
 
-  // ── Shot quality calculation (FIXED: cap removed) ──────────────────
+  // ── Shot quality calculation (revised – centred at 0.5, realistic scaling) ──
   static _calculateShotQuality(player, defender, playType, gameState, defenseScheme = 'manToMan') {
     const sqc = gameState.config.shotQualityCalculation;
     const mapAttr = (camel) => camel.replace(/([A-Z])/g, '_$1').toLowerCase();
@@ -589,76 +619,65 @@ class GameSimulationEngine {
     const offWeights = getOffWeights();
     let offSkill = 0;
     for (const [skill, w] of Object.entries(offWeights)) {
-      const attr = mapAttr(skill);
-      offSkill += (player[attr] || 0) * w;
+      offSkill += (player[mapAttr(skill)] || 50) * w;
     }
 
     const defWeights = getDefWeights();
     let defSkill = 0;
     for (const [skill, w] of Object.entries(defWeights)) {
-      const attr = mapAttr(skill);
-      defSkill += (defender[attr] || 0) * w;
+      defSkill += (defender[mapAttr(skill)] || 50) * w;
     }
 
-    let posFactor = 1;
+    let posFactor = 1.0;
     if (player.position && defender.position && sqc.positionAdvantageMatrix) {
-      posFactor = sqc.positionAdvantageMatrix[player.position]?.[defender.position] || 1;
+      posFactor = sqc.positionAdvantageMatrix[player.position]?.[defender.position] || 1.0;
     }
 
-    let quality = (offSkill / 100) * 0.7 - (defSkill / 100) * 0.3;
-    quality = Math.max(0, Math.min(1, quality + sqc.baseQualityOffset)) * posFactor;
-    quality += (Math.random() - 0.5) * sqc.randomnessFactor;
+    let quality = (offSkill - defSkill) / 100;
+    quality = quality * 0.35;
+    quality += 0.5;
+    quality *= posFactor;
+
+    quality += (Math.random() - 0.5) * (sqc.randomnessFactor || 0.12);
 
     const chemistry = gameState.homeChemistry || gameState.awayChemistry;
     quality += chemistry * gameState.config.chemistry.chemistryEffectOnShotQuality;
     quality += gameState.momentum * gameState.config.momentumSystem.momentumEffectOnSuccess;
 
     const fatigue = gameState.homeFatigue.get(player.id) || gameState.awayFatigue.get(player.id) || 0;
-    quality += fatigue * gameState.config.fatigue.fatigueEffectOnShotQuality;
+    quality -= fatigue * 0.12;
 
     const schemeMod = gameState.config.defensiveSchemes[defenseScheme] || {};
     const schemeKey = playType === 'pick_and_roll' ? 'pickAndRollMod' : playType + 'Mod';
     quality += (schemeMod[schemeKey] || 0);
 
-    // Clamp to [0, 1] to prevent extremes; no artificial ceiling at 0.19
-    return Math.min(1.0, Math.max(0.0, quality));
+    return Math.min(0.95, Math.max(0.05, quality));
   }
 
-  // ── Shot attempt (with improved baseMakeRate) ───────────────────────
+  // ── Shot attempt (revised – realistic per‑zone make rates, foul model) ──
   static _attemptShot(player, defender, shotQuality, playType, gameState) {
     const config = gameState.config;
     const ff = config.foulAndFreeThrow;
     const playCfg = config.plays[playType] || {};
 
-    const dist = playCfg.shotDistribution || { midRange: 0.5, threePoint: 0.3, rim: 0.2 };
+    const dist = playCfg.shotDistribution || this._defaultShotDistribution(playType);
     const rand = Math.random();
     let shotType, isThree;
     if (rand < (dist.threePoint || 0)) {
-      shotType = 'threePoint';
-      isThree = true;
+      shotType = 'threePoint'; isThree = true;
     } else if (rand < (dist.threePoint || 0) + (dist.midRange || 0)) {
-      shotType = 'midRange';
-      isThree = false;
+      shotType = 'midRange'; isThree = false;
     } else {
-      shotType = 'rim';
-      isThree = false;
+      shotType = 'rim'; isThree = false;
     }
 
-    // Foul
-    const foulBase = ff.foulPerPlayType[playType] || ff.baseFoulProbability;
-    const foulProb = foulBase + (1 - defender.perimeter_defense / 100) * ff.defenderDisciplineFactor;
+    const foulProb = this._calculateFoulProbability(player, defender, playType, shotType, gameState);
+
     if (Math.random() < foulProb) {
-      const isThreeFoul = isThree && Math.random() < ff.threePointFoulChance;
-      const isAndOne = !isThreeFoul && Math.random() < ff.andOneChanceOnFoul;
+      const isThreeFoul = isThree && Math.random() < (ff.threePointFoulChance || 0.15);
+      const isAndOne = !isThreeFoul && Math.random() < (ff.andOneChanceOnFoul || 0.12);
       const ftAttempts = isThreeFoul ? 3 : (isAndOne ? 1 : 2);
-      const ftBase   = (typeof ff.freeThrowBase        === 'number') ? ff.freeThrowBase        : 0.68;
-      const ftWeight = (typeof ff.freeThrowSkillWeight === 'number') ? ff.freeThrowSkillWeight : 0.14;
-      const ftSkill  = (typeof player.three_point === 'number' && player.three_point > 0)
-                         ? player.three_point
-                         : (typeof player.mid_range === 'number' && player.mid_range > 0)
-                           ? player.mid_range * 0.9
-                           : 68;
-      const ftMakeRate = Math.min(0.94, Math.max(0.60, ftBase + (ftSkill / 100) * ftWeight));
+      const ftMakeRate = this._freeThrowPercentage(player);
       let ftm = 0;
       for (let i = 0; i < ftAttempts; i++) {
         if (Math.random() < ftMakeRate) ftm++;
@@ -672,33 +691,44 @@ class GameSimulationEngine {
       };
     }
 
-    // Regular shot – baseMakeRate uses larger coefficient for realistic percentages
-    const baseMakeRate = 0.50 + shotQuality * 0.22;   // range ~0.50–0.72
+    // Base make rates by zone (NBA averages)
+    const baseMakes = {
+      rim:       0.640,
+      midRange:  0.420,
+      threePoint:0.355,
+    };
+    let baseMake = baseMakes[shotType] || 0.50;
+    const qualityMultiplier = 0.8 + (shotQuality * 0.8);
+    baseMake *= qualityMultiplier;
 
-    const threeAttr  = (typeof player.three_point    === 'number' && player.three_point    > 0) ? player.three_point    : 70;
-    const insideAttr = (typeof player.inside_scoring === 'number' && player.inside_scoring > 0) ? player.inside_scoring : 70;
-    const midAttr    = (typeof player.mid_range      === 'number' && player.mid_range      > 0) ? player.mid_range      : 68;
-
-    let makeRate;
+    let playerSkill = 70;
     if (isThree) {
-      makeRate = baseMakeRate * (threeAttr / 99) * 0.78;
-      makeRate = Math.min(0.54, Math.max(0.26, makeRate));
+      playerSkill = player.three_point || 70;
+      baseMake *= playerSkill / 70;
     } else if (shotType === 'rim') {
-      makeRate = baseMakeRate * (insideAttr / 99) * 1.28;
-      makeRate = Math.min(0.84, Math.max(0.44, makeRate));
+      playerSkill = player.inside_scoring || 70;
+      baseMake *= playerSkill / 70;
     } else {
-      makeRate = baseMakeRate * (midAttr / 99) * 0.92;
-      makeRate = Math.min(0.66, Math.max(0.30, makeRate));
+      playerSkill = player.mid_range || 70;
+      baseMake *= playerSkill / 70;
     }
 
-    makeRate = Math.min(0.78, Math.max(0.08, makeRate));
-    const made = Math.random() < makeRate;
+    let defImpact = 1.0;
+    if (shotType === 'threePoint' || shotType === 'midRange') {
+      defImpact = 1.0 - 0.25 * ((defender.perimeter_defense || 70) / 100);
+    } else {
+      defImpact = 1.0 - 0.40 * ((defender.post_defense || 70) / 100);
+    }
+    baseMake *= defImpact;
 
-    const assistProb = playCfg.assistProbability || 0.3;
-    let adjustedAssistProb = assistProb;
-    if (playType === 'pick_and_roll') adjustedAssistProb += 0.15;
-    if (playType === 'spot_up') adjustedAssistProb += 0.10;
-    const isAssist = made && Math.random() < adjustedAssistProb;
+    const fatigue = gameState.homeFatigue.get(player.id) || gameState.awayFatigue.get(player.id) || 0;
+    baseMake -= fatigue * 0.05;
+
+    baseMake = Math.min(0.85, Math.max(0.10, baseMake));
+    const made = Math.random() < baseMake;
+
+    const assistProb = playCfg.assistProbability || this._defaultAssistProb(playType);
+    const isAssist = made && Math.random() < assistProb;
 
     return {
       points: made ? (isThree ? 3 : 2) : 0,
@@ -712,20 +742,73 @@ class GameSimulationEngine {
     };
   }
 
-  static _selectDefensiveRebounder(defense) {
-    return defense.reduce((best, p) => {
-      let score = (p.rebounding || 50) * 0.8;
-      if (p.position === 'C') score *= 1.3;
-      else if (p.position === 'PF') score *= 1.2;
-      else if (p.position === 'SF') score *= 1.0;
-      else score *= 0.9;
-      const bestScore = (best.rebounding || 50) * 0.8 + 
-                        (best.position === 'C' ? 0.3 : best.position === 'PF' ? 0.2 : 0);
-      return score > bestScore ? p : best;
-    });
+  // ── New helper methods for realism ───────────────────────────────────
+
+  /** Default shot zone distribution per play type (NBA average) */
+  static _defaultShotDistribution(playType) {
+    const map = {
+      isolation:      { threePoint: 0.30, midRange: 0.38, rim: 0.32 },
+      pick_and_roll:  { threePoint: 0.35, midRange: 0.25, rim: 0.40 },
+      spot_up:        { threePoint: 0.55, midRange: 0.25, rim: 0.20 },
+      post_up:        { threePoint: 0.05, midRange: 0.40, rim: 0.55 },
+      transition:     { threePoint: 0.25, midRange: 0.15, rim: 0.60 },
+      cut:            { threePoint: 0.05, midRange: 0.10, rim: 0.85 },
+    };
+    return map[playType] || { threePoint: 0.30, midRange: 0.35, rim: 0.35 };
   }
 
-  // ── Play executions ─────────────────────────────────────────────────
+  /** Default assist probabilities per play type */
+  static _defaultAssistProb(playType) {
+    const probs = {
+      isolation:      0.18,
+      pick_and_roll:  0.55,
+      spot_up:        0.70,
+      post_up:        0.30,
+      transition:     0.50,
+      cut:            0.75,
+    };
+    return probs[playType] || 0.35;
+  }
+
+  /** Realistic free throw percentage from player rating */
+  static _freeThrowPercentage(player) {
+    const skill = player.free_throw || player.three_point || 75;
+    return Math.min(0.92, Math.max(0.55, 0.50 + (skill / 100) * 0.30));
+  }
+
+  /** Foul probability based on play type, shot type and defender */
+  static _calculateFoulProbability(player, defender, playType, shotType, gameState) {
+    const ff = gameState.config.foulAndFreeThrow;
+    const base = ff.foulPerPlayType?.[playType] || 0.08;
+
+    let defenderSkill;
+    if (shotType === 'rim' || playType === 'post_up') {
+      defenderSkill = defender.post_defense || 70;
+    } else {
+      defenderSkill = defender.perimeter_defense || 70;
+    }
+
+    const disciplineFactor = 1.0 + (1.0 - defenderSkill / 100) * 0.8;
+    let prob = base * disciplineFactor;
+
+    const drawFoul = (player.inside_scoring || 70) / 100 * 0.06;
+    prob += drawFoul;
+
+    if (gameState.clutchActive) prob += 0.01;
+    prob += gameState.momentum * 0.02;
+
+    return Math.min(0.25, Math.max(0.02, prob));
+  }
+
+  /** Normal distribution helper */
+  static _randomNormal(mean, stdev) {
+    const u = 1 - Math.random();
+    const v = Math.random();
+    const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    return z * stdev + mean;
+  }
+
+  // ── Play executions (updated to use new shot quality/attempt) ────────
   static _executeIsolation(handler, defender, scheme, gameState) {
     const qual = this._calculateShotQuality(handler, defender, 'isolation', gameState, scheme);
     return this._attemptShot(handler, defender, qual, 'isolation', gameState);
@@ -761,7 +844,17 @@ class GameSimulationEngine {
     return this._attemptShot(player, defender, qual, 'transition', gameState);
   }
 
-  // ── Momentum, chemistry, fatigue ────────────────────────────────────
+  /** New: Cut play execution (off‑ball movement to the rim) */
+  static _executeCut(offense, defense, scheme, gameState) {
+    const cutter = offense.reduce((best, p) =>
+      (p.speed * 0.4 + p.inside_scoring * 0.6) > (best.speed * 0.4 + best.inside_scoring * 0.6) ? p : best
+    );
+    const closestDef = this._selectClosestDefender(defense);
+    const qual = this._calculateShotQuality(cutter, closestDef, 'cut', gameState, scheme);
+    return this._attemptShot(cutter, closestDef, qual, 'cut', gameState);
+  }
+
+  // ── Momentum, chemistry, fatigue (unchanged) ────────────────────────
   static _updateMomentum(gameState, result) {
     const ms = gameState.config.momentumSystem;
     let delta = 0;
@@ -803,7 +896,7 @@ class GameSimulationEngine {
     }
   }
 
-  // ── Critical moments ────────────────────────────────────────────────
+  // ── Critical moments (unchanged) ────────────────────────────────────
   static _checkCriticalMoment(gameState, isHomeOffense, result) {
     const cmList = gameState.config.criticalMoments;
     if (!cmList || cmList.length === 0) return;
@@ -819,7 +912,7 @@ class GameSimulationEngine {
     }
   }
 
-  // ── Stats accumulation ──────────────────────────────────────────────
+  // ── Stats accumulation (unchanged) ──────────────────────────────────
   static _initTeamStats() {
     return {
       possessions: 0,
@@ -895,7 +988,7 @@ class GameSimulationEngine {
     }
   }
 
-  // ── Team creation ───────────────────────────────────────────────────
+  // ── Team creation (unchanged) ───────────────────────────────────────
   static _createTeam(players, teamType, advantage) {
     const boostAttrs = ['overall_rating','three_point','mid_range','inside_scoring','passing',
                         'ball_handling','perimeter_defense','post_defense','rebounding','speed','strength'];
@@ -913,7 +1006,7 @@ class GameSimulationEngine {
     };
   }
 
-  // ── Box score generation ────────────────────────────────────────────
+  // ── Box score generation (unchanged) ────────────────────────────────
   static _generateBoxScoresFromStats(gameState, players, teamSide) {
     const stats = teamSide === 'home' ? gameState.homeStats : gameState.awayStats;
     const score = teamSide === 'home' ? gameState.homeScore : gameState.awayScore;
@@ -967,7 +1060,7 @@ class GameSimulationEngine {
     });
   }
 
-  // ── Config merging ──────────────────────────────────────────────────
+  // ── Config merging (unchanged) ──────────────────────────────────────
   static _mergeConfig(overrides) {
     const base = JSON.parse(JSON.stringify(gameData));
     this._deepMerge(base, overrides);

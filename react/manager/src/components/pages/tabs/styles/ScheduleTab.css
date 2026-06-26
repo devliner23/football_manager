@@ -146,7 +146,7 @@
   font-size: 0.75rem;
   border-radius: 4px;
   background: transparent;
-  transition: background 0.15s ease, border-color 0.15s;
+  transition: background 0.15s ease, border-color 0.15s, opacity 0.2s;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -174,6 +174,24 @@
   border-color: var(--accent);
   box-shadow: 0 0 8px rgba(255, 107, 53, 0.2);
 }
+
+/* ----- Faded style for completed (simulated) days ----- */
+.calendar-day.has-completed {
+  opacity: 0.65;
+  border-color: rgba(255, 255, 255, 0.04);
+}
+
+.calendar-day.has-completed .games-badge {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--text-muted);
+  box-shadow: none;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.calendar-day.has-completed .day-number {
+  color: var(--text-muted);
+}
+/* ------------------------------------------------------- */
 
 .day-number {
   font-weight: 700;
@@ -267,7 +285,7 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--radius-sm);
   overflow: hidden;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, opacity 0.2s;
 }
 
 .day-box:hover {
@@ -289,6 +307,17 @@
   display: flex;
   flex-direction: column;
 }
+
+/* ----- Faded style for completed day boxes in list view ----- */
+.day-box.has-completed {
+  opacity: 0.7;
+  border-color: rgba(255, 255, 255, 0.04);
+}
+
+.day-box.has-completed .day-box-header {
+  color: var(--text-muted);
+}
+/* ---------------------------------------------------------- */
 
 /* Game row inside a day box */
 .day-game-row {
@@ -364,12 +393,16 @@
   white-space: nowrap;
 }
 
-/* Status colours (same as before) */
+/* Status colours */
 .status-scheduled {
   background: var(--status-scheduled-bg);
   color: var(--status-scheduled-text);
 }
 
+.status-completed {
+  background: var(--status-final-bg);
+  color: var(--status-final-text);
+}
 .status-final {
   background: var(--status-final-bg);
   color: var(--status-final-text);
@@ -391,7 +424,7 @@
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.8);   
   backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
@@ -579,4 +612,15 @@
   .calendar-month {
     padding: 1rem;
   }
+}
+
+/* ---------- Current date highlight in list view ---------- */
+.day-box.current-date {
+  background: rgba(255, 107, 53, 0.08);
+  border-color: var(--accent);
+  box-shadow: 0 0 12px rgba(255, 107, 53, 0.15);
+}
+
+.day-box.current-date .day-box-header {
+  color: var(--accent-light);
 }

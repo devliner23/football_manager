@@ -98,6 +98,7 @@ export interface SavedGame {
   user_id: string;
   name: string;
   managed_club_id: string;
+  current_game_date: string;
   current_season: number;
   game_state: {
     season_id?: string;

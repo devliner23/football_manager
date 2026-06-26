@@ -5,7 +5,6 @@ import { leagueAPI, Team, Player, StandingsRow, GameResult, UserGameInfo } from 
 import { gameAPI } from '../../api/client';
 import GameHeader from './GameHeader';
 import GameSidebar from './GameSidebar';
-import TeamControlsPanel from './TeamControlsPanel';
 import OverviewTab from './tabs/OverviewTab';
 import RosterTab from './tabs/RosterTab';
 import StandingsTab from './tabs/StandingsTab';
@@ -15,6 +14,8 @@ import FrontOfficeTab from './tabs/FrontOfficeTab';
 import PlayerModal from './PlayerModal';
 import ScheduleTab from './tabs/ScheduleTab';
 import './SelectedGame.css';
+
+import { GameProvider } from '../../context/GameContext';
 
 import { RingLoader } from "react-spinners";
 
@@ -89,7 +90,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   const [leagueGamesBeforeCount, setLeagueGamesBeforeCount] = useState(0);
   const [simProgress, setSimProgress] = useState<string | null>(null);
   const [lastSimulatedDate, setLastSimulatedDate] = useState<string | null>(
-    game.game_state?.last_simulated_at ?? null
+    game.current_game_date ?? null
   );
   const [currentSeason, setCurrentSeason] = useState(game.current_season);
 
@@ -178,8 +179,8 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
         if (freshGame.managed_club_id) {
           setManagedClubId(freshGame.managed_club_id);
         }
-        if (freshGame.game_state?.last_simulated_to) {
-          setLastSimulatedDate(freshGame.game_state.last_simulated_to);
+        if (freshGame.current_game_date) {
+          setLastSimulatedDate(freshGame.current_game_date);
         }
         setCurrentSeason(freshGame.current_season ?? currentSeason);
       }
@@ -191,7 +192,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   useEffect(() => {
     setLoading(true);
     refreshAllData().finally(() => setLoading(false));
-    console.log(GameResults)
+    console.log(GameResults);
   }, [game.id, refreshAllData]);
 
   // ── Derived data ────────────────────────────────────────────────────────────
@@ -291,66 +292,98 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   };
 
   return (
-    <div className="selected-game-fullscreen">
-      <GameHeader
-        gameName={game.name}
-        record={record}
-        winPct={winPct}
-        onBack={onBack}
-        onDelete={handleDelete}
-      />
-
-      <nav className="game-global-nav">
-        {(Object.keys(tabConfig) as TabType[]).map((tab) => (
-          <button
-            key={tab}
-            className={`nav-btn ${activeTab === tab ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tabConfig[tab].icon}
-            <span>{tabConfig[tab].label}</span>
-          </button>
-        ))}
-      </nav>
-
-      <div className="game-fullscreen-content">
-        <div className="game-left-column">
-          <GameSidebar
-            season={currentSeason}
-            wins={userStanding?.wins ?? 0}
-            losses={userStanding?.losses ?? 0}
-            winPct={winPct}
-            playerCount={userTeamPlayers.length}
-            ppg="N/A"
-            oppg="N/A"
-            onContinue={handleContinue}
-            onSimulate={handleSimulate}
-            onViewStandings={() => setActiveTab('standings')}
-            loading={loading}
-            nextUserGame={nextUserGame}
-            leagueGamesBeforeCount={leagueGamesBeforeCount}
-            onSimulateToDate={handleSimulateToDate}
-            lastSimulatedDate={currentDate}
-          />
-          <TeamControlsPanel />
+    <div className="selected-game-dashboard">
+        <GameProvider value={{
+        season: currentSeason,
+        wins: userStanding?.wins ?? 0,
+        losses: userStanding?.losses ?? 0,
+        winPct,
+        playerCount: userTeamPlayers.length,
+        ppg: 'N/A',
+        oppg: 'N/A',
+        nextUserGame,
+        leagueGamesBeforeCount,
+        lastSimulatedDate: currentDate,
+        loading,
+        onContinue: handleContinue,
+        onSimulate: handleSimulate,
+        onSimulateToDate: handleSimulateToDate,
+        onViewStandings: () => setActiveTab('standings'),
+        }}>
+        {/* ── LEFT SIDEBAR (tab navigation) ── */}
+        <aside className="game-sidebar">
+        {/* Logo / Game name */}
+        <div className="game-sidebar-logo">
+            <div className="game-logo-icon">
+            {game.name.charAt(0).toUpperCase()}
+            </div>
+            <span className="game-logo-text">{game.name}</span>
         </div>
 
-        <main className="game-main-content">
-          <div className="tab-content">
-            {loading && (
-              <div style={{
-                position: 'absolute',
-                top: 0, left: 0, right: 0, bottom: 0,
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center'
-              }}>
-                <RingLoader color="#36d7b7" size={120} />
-              </div>
-            )}
+        {/* Tab navigation */}
+        <nav className="game-nav-menu">
+            {(Object.keys(tabConfig) as TabType[]).map((tab) => (
+            <button
+                key={tab}
+                className={`game-nav-item ${activeTab === tab ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab)}
+            >
+                {tabConfig[tab].icon}
+                <span>{tabConfig[tab].label}</span>
+            </button>
+            ))}
+        </nav>
 
+        {/* Optional: a small season progress indicator (kept simple) */}
+        <div className="game-sidebar-footer">
+            { <GameSidebar
+                season={currentSeason}
+                wins={userStanding?.wins ?? 0}
+                losses={userStanding?.losses ?? 0}
+                winPct={winPct}
+                playerCount={userTeamPlayers.length}
+                ppg="N/A"
+                oppg="N/A"
+                onContinue={handleContinue}
+                onSimulate={handleSimulate}
+                onViewStandings={() => setActiveTab('standings')}
+                loading={loading}
+                nextUserGame={nextUserGame}
+                leagueGamesBeforeCount={leagueGamesBeforeCount}
+                onSimulateToDate={handleSimulateToDate}
+                lastSimulatedDate={currentDate}
+            /> }
+        </div>
+        </aside>
+
+        {/* ── RIGHT MAIN CONTENT ── */}
+        <main className="game-main-content">
+        {/* Header row */}
+        <div className="game-header-row">
+            <button className="game-back-btn" onClick={onBack}>
+            ← Back
+            </button>
+            <h1 className="game-header-title">{game.name}</h1>
+            <div className="game-header-actions">
+            <button className="game-delete-btn" onClick={handleDelete}>
+                Delete
+            </button>
+            </div>
+        </div>
+
+        {/* Loading overlay (kept from original) */}
+        {loading && (
+            <div className="game-loading-overlay">
+            <RingLoader color="#36d7b7" size={120} />
+            </div>
+        )}
+
+        {/* Two‑column content area */}
+        <div className="game-content-columns">
+            {/* Left column – active tab content */}
+            <div className="game-content-left">
             {!loading && activeTab === 'overview' && (
-              <OverviewTab
+                <OverviewTab
                 game={game}
                 userTeam={userTeam}
                 userTeamPlayers={userTeamPlayers}
@@ -360,41 +393,64 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 savedGameId={game.id}
                 refreshKey={refreshKey}
                 onGameClick={(gameId) => setSelectedGameId(gameId)}
-              />
+                />
             )}
-
             {!loading && activeTab === 'roster' && (
-              <RosterTab
+                <RosterTab
                 teams={teams}
                 allPlayers={players}
                 userTeamId={userTeam?.id}
                 onViewPlayer={(player) => setSelectedPlayer(player)}
-              />
+                />
             )}
-
             {!loading && activeTab === 'standings' && (
-              <StandingsTab
+                <StandingsTab
                 standings={standings}
                 teams={teams}
                 userTeamId={userTeam?.id}
-              />
+                />
             )}
-
             {!loading && activeTab === 'schedule' && (
-              <ScheduleTab schedule={schedule} teams={teams} />
+                <ScheduleTab
+                schedule={schedule}
+                teams={teams}
+                currentDate={currentDate}
+                />
             )}
-
             {!loading && activeTab === 'trade' && <TradeTab />}
             {!loading && activeTab === 'freeagents' && <FreeAgentsTab />}
             {!loading && activeTab === 'frontoffice' && <FrontOfficeTab />}
-          </div>
-        </main>
-      </div>
+            </div>
 
-      <PlayerModal
+            {/* Right column – game sidebar & controls */}
+            <div className="game-content-right">
+            {/* <GameSidebar
+                season={currentSeason}
+                wins={userStanding?.wins ?? 0}
+                losses={userStanding?.losses ?? 0}
+                winPct={winPct}
+                playerCount={userTeamPlayers.length}
+                ppg="N/A"
+                oppg="N/A"
+                onContinue={handleContinue}
+                onSimulate={handleSimulate}
+                onViewStandings={() => setActiveTab('standings')}
+                loading={loading}
+                nextUserGame={nextUserGame}
+                leagueGamesBeforeCount={leagueGamesBeforeCount}
+                onSimulateToDate={handleSimulateToDate}
+                lastSimulatedDate={currentDate}
+            /> */}
+            </div>
+        </div>
+        </main>
+
+        {/* Player modal stays at the root level */}
+        <PlayerModal
         player={selectedPlayer}
         onClose={() => setSelectedPlayer(null)}
-      />
+        />
+        </GameProvider>
     </div>
   );
 };

@@ -1,7 +1,6 @@
 import React from 'react';
 import { SavedGame, Team, Player } from '../../../shared/index';
 import GameResults from '../GameResults';
-// If you don't have lucide-react, replace icons with emojis or <span> tags
 import { TrendingUp, TrendingDown, Calendar, ArrowRight, User, Target } from 'lucide-react';
 import "./styles/OverviewTab.css";
 

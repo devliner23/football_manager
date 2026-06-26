@@ -1,8 +1,8 @@
 // src/components/SelectedGame/GameSidebar.tsx
 import React, { useState, useEffect } from 'react';
 import { UserGameInfo } from '../../api/leagueApi';
-import "./GameResults.css";
-
+import { useGameContext } from '../../context/GameContext';
+import "./styles/GameSidebar.css"
 
 interface GameSidebarProps {
   season: number;
@@ -18,7 +18,7 @@ interface GameSidebarProps {
   loading: boolean;
   nextUserGame?: UserGameInfo | null;
   leagueGamesBeforeCount?: number;
-  onSimulateToDate: (date: string) => void;   // new
+  onSimulateToDate: (date: string) => void;
   lastSimulatedDate?: string | null;
 }
 
@@ -40,6 +40,8 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
   onSimulateToDate
 }) => {
   const [simDate, setSimDate] = useState<string>("");
+
+  const ctx = useGameContext();
 
   // Sync with latest simulated date whenever it changes
   useEffect(() => {

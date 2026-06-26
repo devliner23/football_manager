@@ -1,0 +1,151 @@
+/* src/components/SelectedGame/GameSidebar.css – Minimal Padding, Parent-Fit */
+
+.game-sidebar {
+  box-sizing: border-box;
+  background: rgba(18, 18, 24, 0.7);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 0.35rem 0.5rem;
+  color: #e0e0e0;
+  font-family: 'Inter', system-ui, sans-serif;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.game-sidebar-section h4 {
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0 0 0.1rem 0;
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* Record */
+.sidebar-record {
+  display: flex;
+  align-items: baseline;
+  gap: 0.2rem;
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.sidebar-wins {
+  color: #4ade80;
+  text-shadow: 0 0 8px rgba(74, 222, 128, 0.3);
+}
+
+.sidebar-losses {
+  color: #f87171;
+  text-shadow: 0 0 8px rgba(248, 113, 113, 0.3);
+}
+
+.sidebar-dash {
+  color: rgba(255, 255, 255, 0.25);
+  font-weight: 400;
+}
+
+.sidebar-pct {
+  font-size: 0.72rem;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 500;
+}
+
+/* Quick Stats */
+.sidebar-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  margin-bottom: 0;
+}
+
+.sidebar-stat-label {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.sidebar-stat-value {
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.05rem 0.35rem;
+  border-radius: 5px;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Last simulated text */
+.sidebar-date-info {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.4);
+  margin: 0 0 0.15rem 0;
+  font-style: italic;
+}
+
+/* Date input */
+.sim-date-input {
+  width: 100%;
+  margin-bottom: 0.25rem;
+}
+
+.sim-date-picker-card {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.15rem 0.35rem;
+}
+
+.sim-date-picker-card input[type="date"] {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 0.72rem;
+  width: 100%;
+  padding: 0.1rem 0.2rem;
+  outline: none;
+  font-family: inherit;
+}
+
+.sim-date-picker-card input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85);
+  opacity: 0.7;
+  cursor: pointer;
+}
+
+/* Action button */
+.sidebar-action-btn {
+  width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.03));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.7rem;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+  text-transform: uppercase;
+}
+
+.sidebar-action-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.25);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  transform: translateY(-1px);
+}
+
+.sidebar-action-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

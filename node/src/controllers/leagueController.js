@@ -21,6 +21,34 @@ async function loadOwnedGame(savedGameId, userId) {
   return game;
 }
 
+async function updateCurrentGameDate(savedGameId, seasonId, explicitDate = null) {
+  let dateToSet = explicitDate;
+
+  if (!dateToSet) {
+    // Find the most recent completed game date for this season
+    const { data, error } = await supabaseAdmin
+      .from('games')
+      .select('game_date')
+      .eq('season_id', seasonId)
+      .eq('status', 'completed')
+      .order('game_date', { ascending: false })
+      .limit(1);
+
+    if (error) throw error;
+    if (!data || data.length === 0) return null; // no games played yet
+    dateToSet = data[0].game_date;
+  }
+
+  // Update saved_games
+  const { error: updateError } = await supabaseAdmin
+    .from('saved_games')
+    .update({ current_game_date: dateToSet })
+    .eq('id', savedGameId);
+
+  if (updateError) throw updateError;
+  return dateToSet;
+}
+
 async function getCurrentSeasonId(savedGameId) {
   const { data: game, error } = await supabaseAdmin
     .from('saved_games')
@@ -77,6 +105,15 @@ const leagueController = {
       const leagueService = new LeagueService(savedGameId);
       const result        = await leagueService.getNextUserGame();
 
+      const { data: savedGame, error: fetchError } = await supabaseAdmin
+        .from('saved_games')
+        .select('current_game_date')
+        .eq('id', savedGameId)
+        .single();
+        if (!fetchError && savedGame) {
+          result.currentGameDate = savedGame.current_game_date;
+      }
+
       res.json({ success: true, data: result });
     } catch (error) {
       console.error('getNextUserGame error:', error);
@@ -92,6 +129,12 @@ const leagueController = {
 
       const leagueService = new LeagueService(savedGameId);
       const result        = await leagueService.simulateToNextUserGame();
+
+      const seasonId = game.game_state?.season_id;
+        if (seasonId) {
+        const currentDate = await updateCurrentGameDate(savedGameId, seasonId);
+        result.currentGameDate = currentDate; // attach to response
+      }
 
       res.json({ success: true, data: result });
     } catch (error) {
@@ -459,6 +502,10 @@ const leagueController = {
         return res.json({ success: true, message: 'Season complete', seasonComplete: true });
       }
 
+      const currentDate = await updateCurrentGameDate(savedGameId, seasonId);
+      result.currentGameDate = currentDate;
+
+
       const result = await leagueService.simulateGame(nextGame.id);
       res.json({ success: true, message: 'Game simulated', data: result, seasonComplete: false });
     } catch (error) {
@@ -475,6 +522,12 @@ const leagueController = {
 
       const leagueService = new LeagueService(savedGameId);
       const result        = await leagueService.simulateWeek();
+
+      const seasonId = game.game_state?.season_id;
+        if (seasonId) {
+        const currentDate = await updateCurrentGameDate(savedGameId, seasonId);
+        result.currentGameDate = currentDate;
+      }
 
       res.json({ success: true, ...result });
     } catch (error) {
@@ -500,12 +553,21 @@ const leagueController = {
       const leagueService = new LeagueService(savedGameId);
       const result = await leagueService.simulateToDate(targetDate);
 
+      const seasonId = game.game_state?.season_id;
+        if (seasonId) {
+            // If the service returns the actual date it simulated to, use that; otherwise use targetDate.
+            const actualDate = result.actualDate || targetDate;
+            const currentDate = await updateCurrentGameDate(savedGameId, seasonId, actualDate);
+            result.currentGameDate = currentDate;
+      }
+
       res.json({ success: true, data: result });
     } catch (error) {
       console.error('simulateToDate error:', error);
       next(error);
     }
   },
+
 };
 
 module.exports = leagueController;

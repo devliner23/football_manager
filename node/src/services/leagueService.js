@@ -1060,6 +1060,7 @@ async generateSchedule(teams, seasonId) {
     await supabaseAdmin
     .from('saved_games')
     .update({
+        current_game_date: maxSimDate,
         game_state: {
         ...currentState,
         last_simulated_to: maxSimDate,
