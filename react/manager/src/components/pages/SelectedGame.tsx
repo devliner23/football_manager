@@ -89,10 +89,17 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   const [simProgress, setSimProgress] = useState<string | null>(null);
   const [lastSimulatedDate, setLastSimulatedDate] = useState<string | null>(
     game.game_state?.last_simulated_at ?? null
-    );
+  );
   const [currentSeason, setCurrentSeason] = useState(game.current_season);
 
-  const currentDate = lastSimulatedDate
+  // managed_club_id is NULL at game-creation time (the game row is inserted before
+  // initializeLeague runs and sets the real UUID).  We store it in local state so
+  // that refreshAllData() can overwrite it with the value that is now in the DB.
+  const [managedClubId, setManagedClubId] = useState<string | null>(
+    game.managed_club_id ?? null
+  );
+
+  const currentDate = lastSimulatedDate;
 
   // Load all league data
   const loadLeagueData = async () => {
@@ -132,46 +139,51 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
 
   const refreshAllData = useCallback(async () => {
     try {
-        const [
+      const [
         teamsData,
         playersData,
         standingsData,
         scheduleData,
         nextGameData,
-        fullGameData       // <-- add this
-        ] = await Promise.all([
+        fullGameData,
+      ] = await Promise.all([
         leagueAPI.getTeams(game.id),
         leagueAPI.getPlayers(game.id),
         leagueAPI.getStandings(game.id),
         leagueAPI.getSchedule(game.id),
         leagueAPI.getNextUserGame(game.id),
-        gameAPI.getGame(game.id)   // <-- correct API call
-        ]);
+        gameAPI.getGame(game.id),
+      ]);
 
-        if (teamsData) setTeams(teamsData);
-        if (playersData) setPlayers(playersData);
-        if (standingsData) setStandings(standingsData);
-        if (scheduleData) setSchedule(scheduleData);
+      if (teamsData)    setTeams(teamsData);
+      if (playersData)  setPlayers(playersData);
+      if (standingsData) setStandings(standingsData);
+      if (scheduleData) setSchedule(scheduleData);
 
-        // Update next user game logic
-        if (nextGameData?.seasonComplete) {
+      // Update next user game
+      if (nextGameData?.seasonComplete) {
         setNextUserGame(null);
         setLeagueGamesBeforeCount(0);
-        } else if (nextGameData?.nextUserGame) {
+      } else if (nextGameData?.nextUserGame) {
         setNextUserGame(nextGameData.nextUserGame);
         setLeagueGamesBeforeCount(nextGameData.leagueGamesBeforeCount ?? 0);
-        }
+      }
 
-        console.log(fullGameData)
-        // **Update the last simulated date from the fresh game object**
-        if (fullGameData?.data?.game_state?.last_simulated_at) {
-            setLastSimulatedDate(fullGameData.data.game_state.last_simulated_to);
-            setCurrentSeason(fullGameData.data.current_season);
-        } else {
-            console.log("BIG ERROR, NOT WORKING")
+      // Pull fresh scalar fields from the saved_game row.
+      // managed_club_id is set by initializeLeague AFTER game creation, so the
+      // prop we received may still be null — always prefer the DB value here.
+      const freshGame = fullGameData?.data;
+      if (freshGame) {
+        if (freshGame.managed_club_id) {
+          setManagedClubId(freshGame.managed_club_id);
         }
+        if (freshGame.game_state?.last_simulated_to) {
+          setLastSimulatedDate(freshGame.game_state.last_simulated_to);
+        }
+        setCurrentSeason(freshGame.current_season ?? currentSeason);
+      }
     } catch (err) {
-        console.error('refreshAllData failed:', err);
+      console.error('refreshAllData failed:', err);
     }
   }, [game.id]);
 
@@ -180,34 +192,44 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     refreshAllData().finally(() => setLoading(false));
   }, [game.id, refreshAllData]);
 
-  // Helper functions
+  // ── Derived data ────────────────────────────────────────────────────────────
+
   const getTeamById = (teamId: string) => teams.find((t) => t.id === teamId);
   const getPlayersForTeam = (teamId: string) =>
     players.filter((p) => p.team_id === teamId);
 
-// Inside SelectedGame component...
-
+  // Find the managed team using the refreshed UUID, not game.managed_club_id
   const userTeam = useMemo(() => {
-    if (!teams.length || !game.managed_club_id) return undefined;
-    const found = teams.find(t => t.id === game.managed_club_id);
+    if (!teams.length || !managedClubId) return undefined;
+    const found = teams.find(t => t.id === managedClubId);
     if (!found) {
-        console.warn(
-        `⚠️ User team not found. managed_club_id: ${game.managed_club_id}. Available team IDs:`,
+      console.warn(
+        `⚠️ User team not found. managedClubId: ${managedClubId}. Available IDs:`,
         teams.map(t => t.id)
-        );
+      );
     }
     return found;
-}, [teams, game.managed_club_id]);
+  }, [teams, managedClubId]);
+
+  // Derive wins/losses from standings (team_season_stats) rather than the
+  // teams table, which does not carry those columns.
+  const userStanding = useMemo(
+    () => standings.find(s => s.team_id === managedClubId) ?? null,
+    [standings, managedClubId]
+  );
 
   const userTeamPlayers = userTeam ? getPlayersForTeam(userTeam.id) : [];
 
-  const record = userTeam
-    ? `${userTeam.wins ?? 0}-${userTeam.losses ?? 0}`
+  const record = userStanding
+    ? `${userStanding.wins ?? 0}-${userStanding.losses ?? 0}`
     : '0-0';
-  const winPct =
-    userTeam && (userTeam.wins ?? 0) + (userTeam.losses ?? 0) > 0
-      ? (((userTeam.wins ?? 0) / ((userTeam.wins ?? 0) + (userTeam.losses ?? 0))) * 100).toFixed(1)
-      : '0.0';
+
+  const winPct = (() => {
+    if (!userStanding) return '0.0';
+    const total = (userStanding.wins ?? 0) + (userStanding.losses ?? 0);
+    if (total === 0) return '0.0';
+    return (((userStanding.wins ?? 0) / total) * 100).toFixed(1);
+  })();
 
   // Handlers
   const handleContinue = async () => {
@@ -217,7 +239,6 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     } catch (err) {
       console.error('simulateToNextGame error:', err);
     } finally {
-      // Always refresh — the DB was written even if the response errored
       await refreshAllData();
       setLoading(false);
     }
@@ -245,27 +266,22 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
 
   const handleSimulateToDate = async (targetDate: string) => {
     setLoading(true);
- 
+
     try {
       let complete       = false;
       let totalSimulated = 0;
- 
+
       while (!complete) {
         const result = await leagueAPI.simulateToDate(game.id, targetDate);
- 
+
         totalSimulated += result.gamesSimulated ?? 0;
         complete        = result.complete ?? true;
- 
- 
-        // Brief pause between chunks so we don't saturate the DB connection
+
         if (!complete) await new Promise(r => setTimeout(r, 200));
       }
     } catch (err) {
-      // Log but do not alert — the DB may be partially (or fully) written.
-      // refreshAllData() below will pull whatever the DB currently holds.
       console.error('Simulation chunk error:', err);
     } finally {
-      // This block always runs: clears the spinner AND fetches fresh data.
       await refreshAllData();
       setLoading(false);
       setSimProgress(null);
@@ -284,24 +300,23 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
 
       <nav className="game-global-nav">
         {(Object.keys(tabConfig) as TabType[]).map((tab) => (
-            <button
+          <button
             key={tab}
             className={`nav-btn ${activeTab === tab ? 'active' : ''}`}
             onClick={() => setActiveTab(tab)}
-            >
+          >
             {tabConfig[tab].icon}
             <span>{tabConfig[tab].label}</span>
-            </button>
+          </button>
         ))}
       </nav>
 
-      
       <div className="game-fullscreen-content">
         <div className="game-left-column">
-            <GameSidebar
-            season={game.current_season}
-            wins={userTeam?.wins ?? 0}
-            losses={userTeam?.losses ?? 0}
+          <GameSidebar
+            season={currentSeason}
+            wins={userStanding?.wins ?? 0}
+            losses={userStanding?.losses ?? 0}
             winPct={winPct}
             playerCount={userTeamPlayers.length}
             ppg="N/A"
@@ -314,23 +329,24 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
             leagueGamesBeforeCount={leagueGamesBeforeCount}
             onSimulateToDate={handleSimulateToDate}
             lastSimulatedDate={currentDate}
-            />
-            <TeamControlsPanel />
+          />
+          <TeamControlsPanel />
         </div>
 
         <main className="game-main-content">
           <div className="tab-content">
             {loading && (
-            <div style={{
+              <div style={{
                 position: 'absolute',
                 top: 0, left: 0, right: 0, bottom: 0,
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center'
-            }}>
+              }}>
                 <RingLoader color="#36d7b7" size={120} />
-            </div>
+              </div>
             )}
+
             {!loading && activeTab === 'overview' && (
               <OverviewTab
                 game={game}
@@ -347,9 +363,9 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
 
             {!loading && activeTab === 'roster' && (
               <RosterTab
-                teams={teams}               // all teams
-                allPlayers={players}        // all players
-                userTeamId={userTeam?.id}   // optional – to highlight user’s team
+                teams={teams}
+                allPlayers={players}
+                userTeamId={userTeam?.id}
                 onViewPlayer={(player) => setSelectedPlayer(player)}
               />
             )}

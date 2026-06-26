@@ -68,25 +68,6 @@ const leagueController = {
     }
   },
 
-  // ── GET /api/league/:savedGameId/next-user-game ───────────────────────────
-  //
-  // Returns the next scheduled game for the managed team, with team details
-  // joined in, plus a count of league games that will be auto-simulated first.
-  //
-  // Response shape:
-  // {
-  //   success: true,
-  //   data: {
-  //     seasonComplete: false,
-  //     leagueGamesBeforeCount: 4,
-  //     nextUserGame: {
-  //       id, game_date, week, isHome,
-  //       home_team: { id, name, abbreviation, city },
-  //       away_team: { id, name, abbreviation, city }
-  //     }
-  //   }
-  // }
-
   async getNextUserGame(req, res, next) {
     try {
       const { savedGameId } = req.params;
@@ -103,23 +84,6 @@ const leagueController = {
     }
   },
 
-  // ── POST /api/league/:savedGameId/simulate-to-next-game ──────────────────
-  //
-  // Simulates every league game whose game_date is strictly before the
-  // managed team's next game.  Returns the simulation results and the
-  // upcoming user game so the UI can surface it immediately after.
-  //
-  // Response shape:
-  // {
-  //   success: true,
-  //   data: {
-  //     seasonComplete: false,
-  //     gamesSimulated: 4,
-  //     results: [ { gameId, game_date, homeTeamId, awayTeamId, homeScore, awayScore, overtime } ],
-  //     nextUserGame: { id, game_date, isHome, home_team, away_team }
-  //   }
-  // }
-
   async simulateToNextGame(req, res, next) {
     try {
       const { savedGameId } = req.params;
@@ -135,8 +99,6 @@ const leagueController = {
       next(error);
     }
   },
-
-  // ── Existing handlers (unchanged) ─────────────────────────────────────────
 
   async simulateSeason(req, res, next) {
     try {
@@ -171,8 +133,7 @@ const leagueController = {
     try {
       const { savedGameId } = req.params;
       const seasonId = await getCurrentSeasonId(savedGameId);
- 
-      // Fetch players and their season stats in parallel
+
       const [playersRes, statsRes] = await Promise.all([
         supabaseAdmin
           .from('players')
@@ -191,21 +152,20 @@ const leagueController = {
               .eq('season_id', seasonId)
           : Promise.resolve({ data: [], error: null }),
       ]);
- 
+
       if (playersRes.error) throw playersRes.error;
- 
-      // Build a lookup by player_id
+
       const statsByPlayer = {};
       (statsRes.data || []).forEach(s => { statsByPlayer[s.player_id] = s; });
- 
+
       const avg = (val, gp) => (gp > 0 ? parseFloat((val / gp).toFixed(1)) : 0);
- 
+
       const enriched = (playersRes.data || []).map(p => {
         const s  = statsByPlayer[p.id];
         const gp = s?.games_played || 0;
         return {
           ...p,
-          ...(p.traits || {}),          // spread traits so attributes are top-level
+          ...(p.traits || {}),
           games_played: gp,
           points:       avg(s?.total_points         || 0, gp),
           rebounds:     avg(s?.total_rebounds        || 0, gp),
@@ -219,7 +179,7 @@ const leagueController = {
           ft_pct:  s?.total_fta   > 0 ? parseFloat(((s.total_ftm   / s.total_fta)   * 100).toFixed(1)) : 0,
         };
       });
- 
+
       res.json({ success: true, data: enriched });
     } catch (error) { next(error); }
   },
@@ -229,7 +189,7 @@ const leagueController = {
       const { savedGameId } = req.params;
       const seasonId = await getCurrentSeasonId(savedGameId);
       if (!seasonId) return res.json({ success: true, data: [] });
- 
+
       const { data, error } = await supabaseAdmin
         .from('team_season_stats')
         .select(
@@ -238,10 +198,9 @@ const leagueController = {
         )
         .eq('saved_game_id', savedGameId)
         .eq('season_id', seasonId);
- 
+
       if (error) throw error;
- 
-      // Compute win_pct and sort descending; StandingsTab uses wins + losses
+
       const sorted = (data || [])
         .map(row => ({
           ...row,
@@ -250,7 +209,7 @@ const leagueController = {
             : 0,
         }))
         .sort((a, b) => b.win_pct - a.win_pct || b.wins - a.wins);
- 
+
       res.json({ success: true, data: sorted });
     } catch (error) { next(error); }
   },
@@ -301,16 +260,20 @@ const leagueController = {
     } catch (error) { next(error); }
   },
 
-// backend controller – improved getRecentGames
+  // ── GET /api/league/:savedGameId/games/recent ─────────────────────────────
+  //
+  // Returns every game played during the most recent simulation batch
+  // (i.e. all games whose played_at matches the latest completed played_at).
+  // Box scores are attached via player_game_stats (correct table name).
 
   async getRecentGames(req, res, next) {
     try {
-        const { savedGameId } = req.params;
-        const seasonId = await getCurrentSeasonId(savedGameId);
-        if (!seasonId) return res.json({ success: true, data: [] });
+      const { savedGameId } = req.params;
+      const seasonId = await getCurrentSeasonId(savedGameId);
+      if (!seasonId) return res.json({ success: true, data: [] });
 
-        // 1. Find the latest simulation date (most recent played_at of completed games)
-        const { data: latestDateRow, error: dateError } = await supabaseAdmin
+      // 1. Find the most recent played_at across completed games
+      const { data: latestDateRow, error: dateError } = await supabaseAdmin
         .from('games')
         .select('played_at')
         .eq('season_id', seasonId)
@@ -319,66 +282,111 @@ const leagueController = {
         .limit(1)
         .single();
 
-        if (dateError || !latestDateRow) {
+      if (dateError || !latestDateRow) {
         return res.json({ success: true, data: [] });
-        }
+      }
 
-        const latestDate = latestDateRow.played_at;
+      const latestDate = latestDateRow.played_at;
 
-        // 2. Fetch all completed games from that exact simulation date
-        const { data: games, error: gamesError } = await supabaseAdmin
+      // 2. All completed games from that exact simulation batch
+      const { data: games, error: gamesError } = await supabaseAdmin
         .from('games')
         .select(`
-            id, game_date, played_at, week, status,
-            home_team_id, away_team_id,
-            home_score, away_score,
-            home_team:home_team_id ( id, name, abbreviation, city ),
-            away_team:away_team_id ( id, name, abbreviation, city )
+          id, game_date, played_at, week, status,
+          home_team_id, away_team_id,
+          home_score, away_score,
+          home_team:home_team_id ( id, name, abbreviation, city ),
+          away_team:away_team_id ( id, name, abbreviation, city )
         `)
         .eq('season_id', seasonId)
         .eq('status', 'completed')
-        .eq('played_at', latestDate)           // only the latest sim date
-        .order('id', { ascending: true });     // optional ordering
+        .eq('played_at', latestDate)
+        .order('id', { ascending: true });
 
-        if (gamesError) throw gamesError;
-        if (!games || games.length === 0) {
+      if (gamesError) throw gamesError;
+      if (!games || games.length === 0) {
         return res.json({ success: true, data: [] });
-        }
+      }
 
-        // 3. Collect all game IDs to fetch box scores in one query
-        const gameIds = games.map(g => g.id);
+      // 3. Fetch box scores from player_game_stats (not the non-existent game_stats)
+      const gameIds = games.map(g => g.id);
 
-        const { data: allStats, error: statsError } = await supabaseAdmin
-        .from('game_stats')                          // adjust table name if needed
+      const { data: allStats, error: statsError } = await supabaseAdmin
+        .from('player_game_stats')
         .select(`
-            game_id,
-            player_id,
-            points, rebounds, assists, steals, blocks, turnovers,
-            fgm, fga, fgm_3, fga_3, ftm, fta,
-            player:player_id ( first_name, last_name )
+          game_id,
+          player_id,
+          points, rebounds, assists, steals, blocks, turnovers,
+          fgm, fga, fgm_3, fga_3, ftm, fta,
+          player:player_id ( first_name, last_name )
         `)
         .in('game_id', gameIds);
 
-        if (statsError) throw statsError;
+      if (statsError) throw statsError;
 
-        // 4. Group stats by game_id
-        const statsByGame = {};
-        (allStats || []).forEach(stat => {
-        if (!statsByGame[stat.game_id]) {
-            statsByGame[stat.game_id] = [];
-        }
+      // 4. Group box scores by game_id and attach to each game
+      const statsByGame = {};
+      (allStats || []).forEach(stat => {
+        if (!statsByGame[stat.game_id]) statsByGame[stat.game_id] = [];
         statsByGame[stat.game_id].push(stat);
-        });
+      });
 
-        // 5. Attach boxScores to each game object
-        const enrichedGames = games.map(game => ({
+      const enrichedGames = games.map(game => ({
         ...game,
-        boxScores: statsByGame[game.id] || []
-        }));
+        boxScores: statsByGame[game.id] || [],
+      }));
 
-        res.json({ success: true, data: enrichedGames });
+      res.json({ success: true, data: enrichedGames });
     } catch (error) {
-        next(error);
+      next(error);
+    }
+  },
+
+  // ── GET /api/league/games/:gameId ─────────────────────────────────────────
+  //
+  // Returns a single completed game with its full box score.
+  // Called by GameResults when a user expands a game card.
+
+  async getGameDetails(req, res, next) {
+    try {
+      const { gameId } = req.params;
+
+      const { data: game, error: gameError } = await supabaseAdmin
+        .from('games')
+        .select(`
+          id, game_date, played_at, week, status,
+          home_team_id, away_team_id,
+          home_score, away_score,
+          home_team:home_team_id ( id, name, abbreviation, city ),
+          away_team:away_team_id ( id, name, abbreviation, city )
+        `)
+        .eq('id', gameId)
+        .single();
+
+      if (gameError || !game) {
+        return res.status(404).json({ error: 'Game not found' });
+      }
+
+      const { data: boxScores, error: statsError } = await supabaseAdmin
+        .from('player_game_stats')
+        .select(`
+          game_id,
+          player_id,
+          team_id,
+          minutes_played,
+          points, rebounds, assists, steals, blocks, turnovers,
+          fgm, fga, fgm_3, fga_3, ftm, fta,
+          plus_minus,
+          player:player_id ( first_name, last_name )
+        `)
+        .eq('game_id', gameId)
+        .order('points', { ascending: false });
+
+      if (statsError) throw statsError;
+
+      res.json({ success: true, data: { ...game, boxScores: boxScores || [] } });
+    } catch (error) {
+      next(error);
     }
   },
 
@@ -475,26 +483,25 @@ const leagueController = {
 
   async simulateToDate(req, res, next) {
     try {
-        const { savedGameId } = req.params;
-        const { targetDate } = req.body;   // ISO string or date string
+      const { savedGameId } = req.params;
+      const { targetDate } = req.body;
 
-        if (!targetDate) {
+      if (!targetDate) {
         return res.status(400).json({ error: 'targetDate is required' });
-        }
+      }
 
-        // Ownership check
-        const game = await loadOwnedGame(savedGameId, req.user.id);
-        if (!game) {
+      const game = await loadOwnedGame(savedGameId, req.user.id);
+      if (!game) {
         return res.status(404).json({ error: 'Game not found or unauthorized' });
-        }
+      }
 
-        const leagueService = new LeagueService(savedGameId);
-        const result = await leagueService.simulateToDate(targetDate);
+      const leagueService = new LeagueService(savedGameId);
+      const result = await leagueService.simulateToDate(targetDate);
 
-        res.json({ success: true, data: result });
+      res.json({ success: true, data: result });
     } catch (error) {
-        console.error('simulateToDate error:', error);
-        next(error);
+      console.error('simulateToDate error:', error);
+      next(error);
     }
   },
 };
