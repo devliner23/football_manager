@@ -725,34 +725,19 @@ async generateSchedule(teams, seasonId) {
       if (error) throw new Error(`Failed to insert player stats batch: ${error.message}`);
     }
 
-    // 4. Batch-update game records (parallel)
-    await Promise.all(
-      simResults.map(({ game, result }) =>
-        supabaseAdmin
-          .from('games')
-          .update({
-            home_score: result.homeScore,
-            away_score: result.awayScore,
-            status:     'completed',
-            played_at:  new Date().toISOString(),
-          })
-          .eq('id', game.id)
-      )
-    );
+    const gameUpdates = simResults.map(({ game, result }) => ({
+        ...game,
+        home_score: result.homeScore,
+        away_score: result.awayScore,
+        status:     'completed',
+    }));
 
-    const maxSimDate = games.reduce((max, g) => g.game_date > max ? g.game_date : max, '');
-
-    const currentState = await this._getGameState();
-    await supabaseAdmin
-        .from('saved_games')
-        .update({
-        game_state: {
-            ...currentState,
-            last_simulated_to: maxSimDate,          // date up to which we've simulated
-            last_simulated_at: new Date().toISOString(),
-        },
-        })
-        .eq('id', this.savedGameId);
+    for (let i = 0; i < gameUpdates.length; i += 200) {
+    const { error } = await supabaseAdmin
+        .from('games')
+        .upsert(gameUpdates.slice(i, i + 200), { onConflict: 'id' });
+    if (error) throw new Error(`Failed to batch-update games: ${error.message}`);
+    }
 
     // 5. Upsert team season stats
     await this._upsertTeamStats(simResults, seasonId);
@@ -1030,7 +1015,7 @@ async generateSchedule(teams, seasonId) {
     throw new Error('simulateSeason() is not implemented. Use simulateWeek() or simulateToNextUserGame() instead.');
   }
 
-    async simulateToDate(targetDate, chunkSize = 30) {
+  async simulateToDate(targetDate, chunkSize = 200) {
     if (!targetDate) throw new Error('targetDate is required');
  
     const seasonId = await this.getCurrentSeasonId();
@@ -1069,6 +1054,19 @@ async generateSchedule(teams, seasonId) {
  
     // ── Simulate this chunk ──────────────────────────────────────────────────
     const results = await this._bulkSimulateGames(games, seasonId);
+
+    const maxSimDate = games[games.length - 1].game_date;
+    const currentState = await this._getGameState();
+    await supabaseAdmin
+    .from('saved_games')
+    .update({
+        game_state: {
+        ...currentState,
+        last_simulated_to: maxSimDate,
+        last_simulated_at: new Date().toISOString(),
+        },
+    })
+    .eq('id', this.savedGameId);
  
     // After simulating, remaining = totalInRange minus what we just processed
     const gamesRemaining = Math.max(0, (totalInRange || 0) - games.length);
