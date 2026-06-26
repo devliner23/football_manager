@@ -120,7 +120,7 @@ export interface GameResult {
   away_team_id: string;
   home_score: number;
   away_score: number;
-  status: 'scheduled' | 'final' | 'in_progress';
+  status: 'scheduled' | 'completed' | 'in_progress';
   played_at: string;
   week: number;
   home_team?: Team;

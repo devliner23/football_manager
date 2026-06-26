@@ -1,0 +1,375 @@
+/* ---- GLOBAL RESET & CONTAINER ---- */
+.overview-container {
+  background-color: #0f172a;
+  padding: 1.5rem 1.5rem 2.5rem;
+  font-family: system-ui, -apple-system, sans-serif;
+  color: #f1f5f9;
+  min-height: 100vh;
+}
+
+.overview-container.error-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(30, 41, 59, 0.5);
+  border-radius: 1rem;
+  padding: 2rem;
+  max-width: 32rem;
+  text-align: center;
+  color: #94a3b8;
+}
+
+/* ---- GRID LAYOUT ---- */
+.overview-grid {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 1024px) {
+  .overview-grid {
+    grid-template-columns: repeat(12, 1fr);
+  }
+  .overview-left-panel { grid-column: span 4; }
+  .overview-center-panel { grid-column: span 5; }
+  .overview-right-panel { grid-column: span 3; }
+}
+
+/* ---- CARDS (Glassmorphism) ---- */
+.overview-left-panel,
+.overview-center-panel .kpi-card,
+.overview-center-panel .team-leaders-card,
+.overview-right-panel .next-game-card,
+.overview-right-panel .league-snapshot-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(30, 41, 59, 0.5);
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+  backdrop-filter: blur(4px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.overview-left-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ---- LEFT PANEL: TEAM IDENTITY ---- */
+.team-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+}
+
+.team-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background: rgba(99, 102, 241, 0.2);
+  font-size: 2rem;
+  border: 2px solid #6366f1;
+}
+
+.team-name {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin: 0;
+  color: #ffffff;
+}
+
+.team-meta {
+  font-size: 0.875rem;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.25rem 0;
+}
+
+.team-season {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #818cf8;
+  margin: 0;
+}
+
+/* ---- PROGRESS BAR ---- */
+.record-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.record-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.record-label span:first-child { color: #94a3b8; }
+.record-label .record-value { color: #a5b4fc; }
+
+.progress-track {
+  width: 100%;
+  height: 0.625rem;
+  background: #1e293b;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(to right, #6366f1, #22d3ee);
+  border-radius: 9999px;
+  transition: width 0.5s ease;
+}
+
+/* ---- ACTION BUTTONS ---- */
+.quick-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: auto;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 0.75rem;
+  background: linear-gradient(to right, #22d3ee, #3b82f6);
+  border: none;
+  border-radius: 0.75rem;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(34, 211, 238, 0.2);
+  transition: all 0.2s;
+}
+
+.btn-primary:hover { opacity: 0.9; transform: scale(1.01); }
+
+.btn-secondary {
+  width: 100%;
+  padding: 0.5rem;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 0.75rem;
+  color: #cbd5e1;
+  font-weight: 500;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-secondary:hover { background: #334155; }
+
+/* ---- CENTER PANEL: KPI GRID ---- */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.kpi-card {
+  padding: 1rem;
+}
+
+.kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kpi-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+.kpi-icon { font-size: 1.25rem; }
+
+.kpi-body {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 0.25rem;
+}
+
+.kpi-value {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.kpi-trend {
+  display: flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.kpi-trend-up { color: #10b981; }
+.kpi-trend-down { color: #f43f5e; }
+
+/* ---- TEAM LEADERS LIST ---- */
+.team-leaders-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem 0;
+}
+
+.leader-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.leader-item {
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+}
+
+.leader-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.leader-label { color: #94a3b8; font-size: 0.875rem; }
+.leader-name { color: #ffffff; font-weight: 500; font-size: 0.875rem; }
+.empty-state { color: #64748b; font-size: 0.875rem; }
+
+/* ---- RIGHT PANEL ---- */
+.next-game-card {
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, rgba(67, 56, 202, 0.4), rgba(30, 41, 59, 0.6));
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.next-game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.next-game-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #a5b4fc;
+  margin: 0;
+}
+
+.next-game-opponent {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0.25rem 0 0 0;
+}
+
+.next-game-details {
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  color: #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-item { display: flex; align-items: center; gap: 0.5rem; margin: 0; }
+.detail-item.muted { color: #94a3b8; }
+.dot { width: 0.375rem; height: 0.375rem; border-radius: 50%; background: #22d3ee; }
+
+/* ---- LEAGUE SNAPSHOT ---- */
+.leader-snapshot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+}
+
+.snapshot-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.875rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+}
+
+.snapshot-item:last-child { border-bottom: none; }
+.snapshot-label { color: #94a3b8; text-transform: capitalize; }
+.snapshot-value { color: #a5b4fc; font-weight: 500; }
+.snapshot-number { color: #64748b; font-weight: 400; }
+
+.snapshot-footer {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(30, 41, 59, 0.5);
+  text-align: center;
+}
+
+.link-cyan {
+  color: #22d3ee;
+  text-decoration: none;
+  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: color 0.2s;
+}
+
+.link-cyan:hover { color: #67e8f9; }
+
+/* ---- ICON UTILITY ---- */
+.icon-small { width: 0.875rem; height: 0.875rem; }
+.icon-medium { width: 1.25rem; height: 1.25rem; }
+
+/* ---- BOTTOM: GAME RESULTS ---- */
+.overview-game-results {
+  max-width: 1280px;
+  margin: 2rem auto 0;
+}
+
+.overview-game-results > div {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(30, 41, 59, 0.5);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}

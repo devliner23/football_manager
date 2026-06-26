@@ -2,14 +2,14 @@
    SCHEDULE TAB – DARK GLASS SPORTS THEME
    ============================================ */
 
-/* ---------- Variables (shared with dashboard) ---------- */
+/* ---------- Variables ---------- */
 :root {
   --glass-bg: rgba(255, 255, 255, 0.04);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   --glass-blur: 16px;
 
-  --accent: #FF6B35;                /* sports orange */
+  --accent: #FF6B35;
   --accent-light: #FF9F1C;
   --text-primary: #F1F5F9;
   --text-secondary: #94A3B8;
@@ -92,7 +92,7 @@
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ---------- Calendar Container – Dark Glass Stack ---------- */
+/* ---------- Calendar Container ---------- */
 .calendar-container {
   display: flex;
   flex-direction: column;
@@ -182,7 +182,6 @@
   font-size: 0.8rem;
 }
 
-/* Games badge – sporty pill */
 .games-badge {
   margin-top: auto;
   align-self: flex-start;
@@ -203,96 +202,169 @@
   box-shadow: 0 4px 14px rgba(255, 159, 28, 0.6);
 }
 
-/* ---------- List View – Modern Glass Table ---------- */
-.list-container {
+/* ---------- List View – Collapsible Weeks with Day Boxes ---------- */
+.list-weeks-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+/* Week group – glass card */
+.week-group {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: var(--radius);
-  overflow: hidden;
   box-shadow: var(--glass-shadow);
-  margin-top: 0.5rem;
+  overflow: hidden;
+  transition: all 0.2s ease;
 }
 
-.list-header,
-.list-row {
-  display: grid;
-  grid-template-columns: 1fr 0.8fr 2fr 0.8fr 0.8fr;
-  padding: 14px 20px;
+.week-header {
+  display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 0.85rem;
-}
-
-.list-header {
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
   background: rgba(255, 255, 255, 0.04);
-  color: var(--text-muted);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  font-size: 0.7rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.list-row {
+.week-header:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.week-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.week-toggle-icon {
+  font-size: 1.2rem;
+  color: var(--accent);
+  transition: transform 0.2s ease;
+  width: 24px;
+  text-align: center;
+}
+
+.week-games-container {
+  padding: 1rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Day box – separate card inside the week */
+.day-box {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.day-box:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.day-box-header {
+  padding: 0.6rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.day-box-content {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Game row inside a day box */
+.day-game-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
-  color: var(--text-secondary);
+  transition: background 0.15s, transform 0.1s;
 }
 
-.list-row:last-child {
+.day-game-row:last-child {
   border-bottom: none;
 }
 
-.list-row:hover {
+.day-game-row:hover {
   background: rgba(255, 255, 255, 0.06);
-  transform: translateX(6px);
+  transform: translateX(4px);
 }
 
-.list-row:active {
+.day-game-row:active {
   background: rgba(255, 107, 53, 0.08);
 }
 
-/* Team abbreviations & matchup */
-.team-abbr {
-  font-weight: 800;
-  font-size: 0.95rem;
+/* Teams display */
+.day-game-teams {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+  min-width: 0;
 }
 
-.team-abbr.home {
+.team-abbr-list {
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.3px;
+}
+
+.team-abbr-list.home {
   color: var(--text-primary);
 }
 
-.team-abbr.away {
+.team-abbr-list.away {
   color: var(--text-secondary);
 }
 
 .vs {
   color: var(--text-muted);
-  margin: 0 6px;
-  font-weight: 600;
-  font-size: 0.8rem;
+  font-weight: 700;
+  font-size: 0.75rem;
+  margin: 0 0.2rem;
 }
 
-.list-score {
+/* Score and status area */
+.day-game-score {
   font-weight: 700;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
+  margin-right: 1rem;
+  text-align: right;
+  min-width: 60px;
 }
 
-/* Status pills */
-.list-status {
+.day-game-status {
   text-transform: uppercase;
   font-size: 0.7rem;
   font-weight: 800;
   padding: 0.25rem 0.8rem;
   border-radius: 100px;
-  width: fit-content;
   letter-spacing: 0.5px;
+  white-space: nowrap;
 }
 
+/* Status colours (same as before) */
 .status-scheduled {
   background: var(--status-scheduled-bg);
   color: var(--status-scheduled-text);
@@ -315,7 +387,7 @@
   100% { opacity: 1; }
 }
 
-/* ---------- Day Details Modal (from calendar) – Glass Pane ---------- */
+/* ---------- Day Details Modal (from calendar) ---------- */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -368,7 +440,6 @@
   font-weight: 700;
   margin: 0;
   background: linear-gradient(135deg, #FF6B35, #FF9F1C);
-  -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -486,12 +557,23 @@
     font-size: 1.4rem;
   }
 
-  .list-header,
-  .list-row {
-    grid-template-columns: 1fr 0.8fr 1.5fr 0.7fr 0.7fr;
-    padding: 12px 14px;
-    gap: 8px;
-    font-size: 0.8rem;
+  .week-header {
+    padding: 0.9rem 1.2rem;
+  }
+
+  .week-games-container {
+    padding: 0.8rem 1rem 1.2rem;
+  }
+
+  .day-game-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 0.7rem 0.8rem;
+  }
+
+  .day-game-score {
+    margin-right: 0;
+    text-align: left;
   }
 
   .calendar-month {

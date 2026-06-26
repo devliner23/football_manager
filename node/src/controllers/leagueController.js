@@ -336,6 +336,8 @@ const leagueController = {
         boxScores: statsByGame[game.id] || [],
       }));
 
+      console.log("Game data from getRecentGames: ", game)
+
       res.json({ success: true, data: enrichedGames });
     } catch (error) {
       next(error);

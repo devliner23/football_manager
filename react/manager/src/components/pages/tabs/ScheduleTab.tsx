@@ -13,7 +13,7 @@ type ViewMode = 'calendar' | 'list';
 const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('calendar');
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedGame, setSelectedGame] = useState<GameResult | null>(null); // ← new state
+  const [selectedGame, setSelectedGame] = useState<GameResult | null>(null);
 
   const teamMap = useMemo(() => {
     const map = new Map(teams.map(t => [t.id, t]));
@@ -76,20 +76,48 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams }) => {
     return selectedDate ? getGamesForDate(selectedDate) : [];
   }, [selectedDate, gamesByDate]);
 
-  const allGamesFlat = useMemo(() => {
-    const games: GameResult[] = [];
-    Object.keys(schedule)
-      .sort((a, b) => Number(a) - Number(b))
-      .forEach(week => {
-        schedule[Number(week)].forEach(g => games.push(g));
+  const weeks = useMemo(() => {
+    return Object.keys(schedule)
+      .map(Number)
+      .sort((a, b) => a - b)
+      .map(week => {
+        const weekGames = schedule[week];
+        const byDate = new Map<string, GameResult[]>();
+        weekGames.forEach(game => {
+          const dateSource = game.game_date || game.played_at;
+          const dateKey = dateSource
+            ? new Date(dateSource).toISOString().split('T')[0]
+            : 'TBD';
+          if (!byDate.has(dateKey)) byDate.set(dateKey, []);
+          byDate.get(dateKey)!.push(game);
+        });
+        const days = Array.from(byDate.entries()).map(([date, games]) => ({ date, games }));
+        days.sort((a, b) => a.date.localeCompare(b.date));
+        return { week, days };
       });
-    return games;
   }, [schedule]);
 
-  // Handlers
+  const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(
+    () => new Set(weeks.map(w => w.week))
+  );
+
+  const toggleWeek = (week: number) => {
+    setExpandedWeeks(prev => {
+      const next = new Set(prev);
+      if (next.has(week)) next.delete(week);
+      else next.add(week);
+      return next;
+    });
+  };
+
   const openGameModal = (game: GameResult) => {
-    setSelectedDate(null); // close day modal if open
+    setSelectedDate(null);
     setSelectedGame(game);
+  };
+
+  // Helper to check if a game has a final/completed status (backend uses 'completed', but stay safe)
+  const isGameFinished = (game: GameResult): boolean => {
+    return game.status === 'completed';
   };
 
   if (!seasonStart) {
@@ -101,7 +129,6 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams }) => {
     );
   }
 
-  // Get team info for IndividualGameView
   const selectedGameTeams = selectedGame
     ? {
         home: teamMap.get(selectedGame.home_team_id),
@@ -129,7 +156,6 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams }) => {
         </div>
       </div>
 
-      {/* ---------- Calendar View ---------- */}
       {viewMode === 'calendar' && (
         <>
           <div className="calendar-container">
@@ -169,7 +195,6 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams }) => {
             ))}
           </div>
 
-          {/* Day Details Modal (calendar click) */}
           {selectedDate && (
             <div className="modal-backdrop" onClick={() => setSelectedDate(null)}>
               <div className="day-modal" onClick={e => e.stopPropagation()}>
@@ -195,7 +220,7 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams }) => {
                         <div
                           key={game.id}
                           className="modal-game-row clickable"
-                          onClick={() => openGameModal(game)} // ← opens IndividualGameView
+                          onClick={() => openGameModal(game)}
                           role="button"
                           tabIndex={0}
                         >
@@ -212,7 +237,7 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams }) => {
                           </div>
                           <div className="modal-game-info">
                             <div className="modal-score-big">
-                              {game.status === 'final' && game.home_score != null
+                              {isGameFinished(game) && game.home_score != null
                                 ? `${game.home_score} - ${game.away_score}`
                                 : '—'}
                             </div>
@@ -228,49 +253,73 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams }) => {
         </>
       )}
 
-      {/* ---------- List View ---------- */}
       {viewMode === 'list' && (
-        <div className="list-container">
-          <div className="list-header">
-            <span>Date</span>
-            <span>Week</span>
-            <span>Matchup</span>
-            <span>Score</span>
-            <span>Status</span>
-          </div>
-          {allGamesFlat.map(game => {
-            const home = teamMap.get(game.home_team_id);
-            const away = teamMap.get(game.away_team_id);
-            const dateSource = game.game_date || game.played_at;
-            const date = dateSource ? new Date(dateSource).toLocaleDateString() : '—';
+        <div className="list-weeks-container">
+          {weeks.map(({ week, days }) => {
+            const isExpanded = expandedWeeks.has(week);
             return (
-              <div
-                key={game.id}
-                className="list-row"
-                onClick={() => openGameModal(game)} // ← opens IndividualGameView
-                role="button"
-                tabIndex={0}
-              >
-                <span className="list-date">{date}</span>
-                <span className="list-week">Week {game.week}</span>
-                <span className="list-matchup">
-                  <span className="team-abbr home">{home?.abbreviation || 'TBD'}</span>
-                  <span className="vs">vs</span>
-                  <span className="team-abbr away">{away?.abbreviation || 'TBD'}</span>
-                </span>
-                <span className="list-score">
-                  {game.status === 'final' && game.home_score != null
-                    ? `${game.home_score} - ${game.away_score}`
-                    : '—'}
-                </span>
-                <span className={`list-status status-${game.status}`}>{game.status}</span>
+              <div key={week} className="week-group">
+                <div
+                  className="week-header"
+                  onClick={() => toggleWeek(week)}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
+                >
+                  <span className="week-title">Week {week}</span>
+                  <span className="week-toggle-icon">{isExpanded ? '▾' : '▸'}</span>
+                </div>
+                {isExpanded && (
+                  <div className="week-games-container">
+                    {days.map(({ date, games }) => (
+                      <div key={date} className="day-box">
+                        <div className="day-box-header">
+                          {date === 'TBD' ? 'Date TBD' : new Date(date + 'T00:00:00').toLocaleDateString(undefined, {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </div>
+                        <div className="day-box-content">
+                          {games.map(game => {
+                            const home = teamMap.get(game.home_team_id);
+                            const away = teamMap.get(game.away_team_id);
+                            return (
+                              <div
+                                key={game.id}
+                                className="day-game-row"
+                                onClick={() => openGameModal(game)}
+                                role="button"
+                                tabIndex={0}
+                              >
+                                <div className="day-game-teams">
+                                  <span className="team-abbr-list home">{home?.abbreviation || 'TBD'}</span>
+                                  <span className="vs">vs</span>
+                                  <span className="team-abbr-list away">{away?.abbreviation || 'TBD'}</span>
+                                </div>
+                                <div className="day-game-score">
+                                  {isGameFinished(game) && game.home_score != null
+                                    ? `${game.home_score} - ${game.away_score}`
+                                    : '—'}
+                                </div>
+                                <span className={`day-game-status status-${game.status}`}>
+                                  {game.status}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       )}
 
-      {/* Individual Game Modal (reusable) */}
       {selectedGame && selectedGameTeams?.home && selectedGameTeams?.away && (
         <IndividualGameView
           game={selectedGame}

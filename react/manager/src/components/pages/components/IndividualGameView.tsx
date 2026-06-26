@@ -15,7 +15,7 @@ const IndividualGameView: React.FC<IndividualGameViewProps> = ({
   awayTeam,
   onClose,
 }) => {
-  const isFinal = game.status === 'final' && game.home_score != null;
+  const isFinal = game.status === 'completed' && game.home_score != null;
   const date = game.game_date || game.played_at
     ? new Date(game.game_date || game.played_at!).toLocaleDateString(undefined, {
         weekday: 'long',
@@ -66,7 +66,7 @@ const IndividualGameView: React.FC<IndividualGameViewProps> = ({
           <div className="game-meta">
             {game.week && <span className="meta-item">Week {game.week}</span>}
             {date && <span className="meta-item">{date}</span>}
-            {game.status === 'final' && (
+            {game.status === 'completed' && (
               <span className="status-badge status-final">FINAL</span>
             )}
           </div>

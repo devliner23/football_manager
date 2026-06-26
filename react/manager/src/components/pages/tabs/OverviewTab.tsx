@@ -1,6 +1,10 @@
 import React from 'react';
 import { SavedGame, Team, Player } from '../../../shared/index';
 import GameResults from '../GameResults';
+// If you don't have lucide-react, replace icons with emojis or <span> tags
+import { TrendingUp, TrendingDown, Calendar, ArrowRight, User, Target } from 'lucide-react';
+import "./styles/OverviewTab.css";
+
 
 interface OverviewTabProps {
   game: SavedGame;
@@ -36,7 +40,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     return [...players]
       .sort((a, b) => (b[stat] ?? 0) - (a[stat] ?? 0))
       .slice(0, 5)
-      .map(p => ({ name: getPlayerName(p), value: p[stat] ?? 0 }));
+      .map((p) => ({ name: getPlayerName(p), value: p[stat] ?? 0 }));
   };
 
   const teamAverages = () => {
@@ -60,123 +64,144 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
 
   if (!userTeam) {
     return (
-      <div className="tab-panel overview-panel">
-        <div className="info-card full-width">
+      <div className="overview-container error-state">
+        <div className="error-card">
           <p>Team data not available. Please ensure the league is initialised correctly.</p>
         </div>
       </div>
     );
   }
 
+  // Placeholder for next game – replace with real data if you have it
+  const nextGame = { opponent: 'TBD', date: 'Season in progress', venue: 'N/A' };
+
   return (
-    <div className="tab-panel overview-panel">
+    <div className="overview-container">
       <div className="overview-grid">
-        <div className="info-card full-width">
-          <GameResults
-            key={refreshKey}
-            savedGameId={savedGameId}
-            onGameClick={onGameClick}
-          />
-        </div>
 
-        <div className="info-card">
-          <h4>🏷️ Team Information</h4>
-          <div className="info-row">
-            <span className="info-label">Team</span>
-            <span className="info-value">{userTeam.name}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Conference</span>
-            <span className="info-value">{userTeam.conference || 'N/A'}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Division</span>
-            <span className="info-value">{userTeam.division || 'N/A'}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Season</span>
-            <span className="info-value">{game.current_season}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Record</span>
-            <span className="info-value record-value">{record}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Win %</span>
-            <span className="info-value">{winPct}%</span>
-          </div>
-        </div>
-
-        <div className="info-card">
-          <h4>🏆 Team Leaders</h4>
-          {userTeamPlayers.length > 0 ? (
-            <>
-              <div className="info-row">
-                <span className="info-label">Points</span>
-                <span className="info-value">{leaderByStat('points')}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Rebounds</span>
-                <span className="info-value">{leaderByStat('rebounds')}</span>
-              </div>
-              <div className="info-row">
-                <span className="info-label">Assists</span>
-                <span className="info-value">{leaderByStat('assists')}</span>
-              </div>
-            </>
-          ) : (
-            <div className="info-row">No players on roster yet</div>
-          )}
-        </div>
-
-        <div className="info-card">
-          <h4>📊 Team Averages</h4>
-          <div className="info-row">
-            <span className="info-label">Points</span>
-            <span className="info-value">{avg.pts}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Rebounds</span>
-            <span className="info-value">{avg.reb}</span>
-          </div>
-          <div className="info-row">
-            <span className="info-label">Assists</span>
-            <span className="info-value">{avg.ast}</span>
-          </div>
-        </div>
-
-        <div className="info-card full-width">
-          <h4>🌟 League Leaders</h4>
-          <div className="league-leaders-grid">
-            <div>
-              <h5>Points</h5>
-              {leagueLeaders('points').map((p, i) => (
-                <div key={i} className="leader-row">
-                  <span>{i+1}. {p.name}</span>
-                  <span>{p.value}</span>
-                </div>
-              ))}
-            </div>
-            <div>
-              <h5>Rebounds</h5>
-              {leagueLeaders('rebounds').map((p, i) => (
-                <div key={i} className="leader-row">
-                  <span>{i+1}. {p.name}</span>
-                  <span>{p.value}</span>
-                </div>
-              ))}
-            </div>
-            <div>
-              <h5>Assists</h5>
-              {leagueLeaders('assists').map((p, i) => (
-                <div key={i} className="leader-row">
-                  <span>{i+1}. {p.name}</span>
-                  <span>{p.value}</span>
-                </div>
-              ))}
+        {/* --- LEFT COLUMN: TEAM IDENTITY --- */}
+        <div className="overview-left-panel">
+          <div className="team-header">
+            <div className="team-avatar">🏀</div>
+            <div className="team-info">
+              <h1 className="team-name">{userTeam.name}</h1>
+              <p className="team-meta">
+                <User className="icon-small" /> {userTeam.conference || 'N/A'} • {userTeam.division || 'N/A'}
+              </p>
+              <p className="team-season">Season {game.current_season}</p>
             </div>
           </div>
+
+          <div className="record-progress">
+            <div className="record-label">
+              <span>Record</span>
+              <span className="record-value">{record} ({winPct}%)</span>
+            </div>
+            <div className="progress-track">
+              <div
+                className="progress-fill"
+                style={{ width: `${Math.min(100, Math.max(0, parseFloat(winPct)))}%` }}
+              />
+            </div>
+          </div>
+
+          <div className="quick-actions">
+            <button className="btn-primary">
+              Simulate Next Game <ArrowRight className="icon-small" />
+            </button>
+            <button className="btn-secondary">Adjust Lineup</button>
+          </div>
         </div>
+
+        {/* --- CENTER COLUMN: TEAM STATS & LEADERS --- */}
+        <div className="overview-center-panel">
+          <div className="kpi-grid">
+            {[
+              { label: 'Points', value: avg.pts, icon: '🔥' },
+              { label: 'Rebounds', value: avg.reb, icon: '💪' },
+              { label: 'Assists', value: avg.ast, icon: '🎯' }
+            ].map((stat, idx) => (
+              <div key={idx} className="kpi-card">
+                <div className="kpi-header">
+                  <span className="kpi-label">{stat.label}</span>
+                  <span className="kpi-icon">{stat.icon}</span>
+                </div>
+                <div className="kpi-body">
+                  <span className="kpi-value">{stat.value}</span>
+                  <span className="kpi-trend kpi-trend-up">
+                    <TrendingUp className="icon-small" /> +0.2
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="team-leaders-card">
+            <h3 className="card-title">
+              <Target className="icon-small" /> Team Leaders
+            </h3>
+            {userTeamPlayers.length > 0 ? (
+              <div className="leader-list">
+                {[
+                  { stat: 'Points', value: leaderByStat('points') },
+                  { stat: 'Rebounds', value: leaderByStat('rebounds') },
+                  { stat: 'Assists', value: leaderByStat('assists') }
+                ].map((item, i) => (
+                  <div key={i} className="leader-item">
+                    <span className="leader-label">{item.stat}</span>
+                    <span className="leader-name">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">No players on roster yet</div>
+            )}
+          </div>
+        </div>
+
+        {/* --- RIGHT COLUMN: NEXT GAME & LEAGUE SNAPSHOT --- */}
+        <div className="overview-right-panel">
+          <div className="next-game-card">
+            <div className="next-game-header">
+              <div>
+                <p className="next-game-label">Next Match</p>
+                <p className="next-game-opponent">{nextGame.opponent}</p>
+              </div>
+              <Calendar className="icon-medium" />
+            </div>
+            <div className="next-game-details">
+              <p className="detail-item"><span className="dot" /> {nextGame.date}</p>
+              <p className="detail-item muted">{nextGame.venue}</p>
+            </div>
+          </div>
+
+          <div className="league-snapshot-card">
+            <h3 className="card-title">League Leaders</h3>
+            <div className="leader-snapshot-list">
+              {['points', 'rebounds', 'assists'].map((stat) => {
+                const top = leagueLeaders(stat as keyof Pick<Player, 'points' | 'rebounds' | 'assists'>)[0];
+                return top ? (
+                  <div key={stat} className="snapshot-item">
+                    <span className="snapshot-label">{stat}</span>
+                    <span className="snapshot-value">{top.name} <span className="snapshot-number">({top.value})</span></span>
+                  </div>
+                ) : null;
+              })}
+            </div>
+            <div className="snapshot-footer">
+              <a href="#" className="link-cyan">Full Leaderboard <ArrowRight className="icon-small" /></a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* --- BOTTOM: GAME RESULTS (always at the end) --- */}
+      <div className="overview-game-results">
+        <GameResults
+          key={refreshKey}
+          savedGameId={savedGameId}
+          onGameClick={onGameClick}
+        />
       </div>
     </div>
   );

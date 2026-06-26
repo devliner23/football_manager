@@ -28,6 +28,16 @@
       "clutchBoost": 0.05,
       "fatiguePenaltyMultiplier": 1.2
     },
+    "substitutions": {
+        "fatigueThreshold": 0.65,        
+        "minMinutesBeforeSub": 2,        
+        "subCooldownSeconds": 120,       
+        "autoSubPeriods": [1, 2, 3, 4],  
+        "depthRoleMinutes": {            
+            "1": 36, "2": 34, "3": 32, "4": 30, "5": 28,
+            "6": 22, "7": 18, "8": 14, "9": 10, "10": 6
+        }
+    },
     "pick_and_roll": {
       "baseSuccess": 0.47,
       "synergyHandlerScreener": 0.0010,

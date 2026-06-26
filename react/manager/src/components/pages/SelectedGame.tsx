@@ -27,6 +27,7 @@ import {
   Building2,
   Calendar
 } from 'lucide-react';
+import GameResults from './GameResults';
 
 
 interface SelectedGameProps {
@@ -190,6 +191,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   useEffect(() => {
     setLoading(true);
     refreshAllData().finally(() => setLoading(false));
+    console.log(GameResults)
   }, [game.id, refreshAllData]);
 
   // ── Derived data ────────────────────────────────────────────────────────────
