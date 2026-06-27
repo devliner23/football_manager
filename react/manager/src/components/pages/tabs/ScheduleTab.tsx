@@ -1,21 +1,36 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { GameResult } from '../../../api/leagueApi';
 import IndividualGameView from '../components/IndividualGameView';
+import CalendarView from './tabComponents/CalendarView';
+import GamesListView from './tabComponents/GamesListView';
+import MiniCalendar from './tabComponents/MiniCalendar';
+import GameSnapshot from './tabComponents/GameSnapshot';
 import './styles/ScheduleTab.css';
 
 interface ScheduleTabProps {
   schedule: Record<number, GameResult[]>;
   teams: { id: string; name: string; abbreviation: string }[];
-  currentDate: string | null; // e.g., '2026-07-01T00:00:00+00:00'
+  currentDate: string | null;
 }
 
-type ViewMode = 'calendar' | 'list';
+type Tab = 'calendar' | 'games' | 'events';
 
 const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate }) => {
-  const [viewMode, setViewMode] = useState<ViewMode>('calendar');
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedGame, setSelectedGame] = useState<GameResult | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>('games');
+  const [calendarModalDate, setCalendarModalDate] = useState<Date | null>(null);
+  const [calendarModalGame, setCalendarModalGame] = useState<GameResult | null>(null);
+  
+  // Games tab state
+  const [gamesTabSelectedDate, setGamesTabSelectedDate] = useState<Date>(() => {
+    if (currentDate) {
+      const d = new Date(currentDate);
+      return isNaN(d.getTime()) ? new Date() : d;
+    }
+    return new Date();
+  });
+  const [gamesTabViewMode, setGamesTabViewMode] = useState<'daily' | 'weekly'>('daily');
+  const [gamesTabSelectedGame, setGamesTabSelectedGame] = useState<GameResult | null>(null);
 
   const teamMap = useMemo(() => {
     const map = new Map(teams.map(t => [t.id, t]));
@@ -36,410 +51,241 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate 
     return map;
   }, [schedule]);
 
-  const hasCompletedGames = (date: Date | null): boolean => {
-    if (!date) return false;
-    const key = date.toISOString().split('T')[0];
-    const games = gamesByDate.get(key) || [];
-    return games.some(game => game.status === 'completed');
+  // Handlers for Calendar tab modal (unchanged logic)
+  const handleCalendarDateSelect = (date: Date) => {
+    setCalendarModalDate(date);
+    setCalendarModalGame(null);
+  };
+  const handleCalendarGameSelect = (game: GameResult) => {
+    setCalendarModalGame(game);
+    setCalendarModalDate(null);
+  };
+  const closeCalendarModal = () => {
+    setCalendarModalDate(null);
+    setCalendarModalGame(null);
   };
 
-  const [seasonStart, seasonEnd] = useMemo(() => {
-    const dates = Array.from(gamesByDate.keys()).sort();
-    if (dates.length === 0) return [null, null];
-    return [dates[0], dates[dates.length - 1]];
-  }, [gamesByDate]);
-
-  const months = useMemo(() => {
-    if (!seasonStart || !seasonEnd) return [];
-    const start = new Date(seasonStart + 'T00:00:00');
-    const end = new Date(seasonEnd + 'T00:00:00');
-    const monthsArray: { name: string; weeks: Date[][] }[] = [];
-    const current = new Date(start.getFullYear(), start.getMonth(), 1);
-    while (current <= end) {
-      const monthName = current.toLocaleString('default', { month: 'long', year: 'numeric' });
-      const firstDay = new Date(current);
-      const lastDay = new Date(current.getFullYear(), current.getMonth() + 1, 0);
-      const weeks: Date[][] = [];
-      let week: Date[] = [];
-      const startDayOfWeek = firstDay.getDay();
-      for (let i = 0; i < startDayOfWeek; i++) week.push(null!);
-      for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
-        if (week.length === 7) { weeks.push(week); week = []; }
-        week.push(new Date(d));
-      }
-      while (week.length < 7) week.push(null!);
-      if (week.length > 0) weeks.push(week);
-      monthsArray.push({ name: monthName, weeks });
-      current.setMonth(current.getMonth() + 1);
+  // Games tab handlers
+  const handleGamesTabDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const d = new Date(e.target.value + 'T00:00:00');
+    if (!isNaN(d.getTime())) {
+      setGamesTabSelectedDate(d);
+      setGamesTabSelectedGame(null); // reset selected game when date changes
     }
-    return monthsArray;
-  }, [seasonStart, seasonEnd]);
+  };
+  const handleMiniCalendarSelect = (date: Date) => {
+    setGamesTabSelectedDate(date);
+    setGamesTabSelectedGame(null);
+  };
+  const handleGameSelectForSidePanel = (game: GameResult) => {
+    setGamesTabSelectedGame(game);
+  };
 
-  const getGamesForDate = (date: Date | null) => {
-    if (!date) return [];
-    const key = date.toISOString().split('T')[0];
+  // Filter games for daily view
+  const dailyGames = useMemo(() => {
+    const key = gamesTabSelectedDate.toISOString().split('T')[0];
     return gamesByDate.get(key) || [];
-  };
+  }, [gamesTabSelectedDate, gamesByDate]);
 
-  const selectedDateGames = useMemo(() => {
-    return selectedDate ? getGamesForDate(selectedDate) : [];
-  }, [selectedDate, gamesByDate]);
-
-  const weeks = useMemo(() => {
-    return Object.keys(schedule)
-      .map(Number)
-      .sort((a, b) => a - b)
-      .map(week => {
-        const weekGames = schedule[week];
-        const byDate = new Map<string, GameResult[]>();
-        weekGames.forEach(game => {
-          const dateSource = game.game_date || game.played_at;
-          const dateKey = dateSource
-            ? new Date(dateSource).toISOString().split('T')[0]
-            : 'TBD';
-          if (!byDate.has(dateKey)) byDate.set(dateKey, []);
-          byDate.get(dateKey)!.push(game);
-        });
-        const days = Array.from(byDate.entries()).map(([date, games]) => ({ date, games }));
-        days.sort((a, b) => a.date.localeCompare(b.date));
-        return { week, days };
-      });
-  }, [schedule]);
-
-  const getWeekForDate = (dateStr: string): number | null => {
-    for (const [weekNum, games] of Object.entries(schedule)) {
-      for (const game of games) {
-        const ds = game.game_date || game.played_at;
-        if (ds) {
-          const d = new Date(ds).toISOString().split('T')[0];
-          if (d === dateStr) return Number(weekNum);
-        }
-      }
-    }
-    return null;
-  };
-
-  const [expandedWeeks, setExpandedWeeks] = useState<Set<number>>(
-    () => new Set(weeks.map(w => w.week))
+  // Modal only appears for Calendar tab
+  const showCalendarModal = (activeTab === 'calendar') && (
+    calendarModalDate || 
+    (calendarModalGame && teamMap.get(calendarModalGame.home_team_id) && teamMap.get(calendarModalGame.away_team_id))
   );
 
-  const currentDateObj = useMemo(() => {
-    if (currentDate) {
-      const d = new Date(currentDate);
-      if (!isNaN(d.getTime())) return d;
-    }
-    return new Date();
-  }, [currentDate]);
+  const modalDateGames = calendarModalDate
+    ? gamesByDate.get(calendarModalDate.toISOString().split('T')[0]) || []
+    : [];
 
-  useEffect(() => {
-    if (currentDate) {
-      const parsed = new Date(currentDate);
-      if (!isNaN(parsed.getTime())) {
-        const dateStr = parsed.toISOString().split('T')[0];
-        const dateObj = new Date(dateStr + 'T00:00:00');
-        setSelectedDate(dateObj);
-
-        const weekNumber = getWeekForDate(dateStr);
-        if (weekNumber !== null) {
-          setExpandedWeeks(prev => {
-            if (prev.has(weekNumber)) return prev;
-            const next = new Set(prev);
-            next.add(weekNumber);
-            return next;
-          });
-        }
-      }
-    }
-  }, [currentDate, schedule]);
-
-  useEffect(() => {
-    if (viewMode === 'list' && currentDate) {
-      const parsed = new Date(currentDate);
-      if (!isNaN(parsed.getTime())) {
-        const dateStr = parsed.toISOString().split('T')[0];
-        const timer = setTimeout(() => {
-          const target = document.querySelector(`[data-date="${dateStr}"]`);
-          if (target) {
-            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 150);
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [viewMode, currentDate, expandedWeeks]);
-
-  useEffect(() => {
-    if (viewMode === 'calendar' && currentDate && months.length > 0) {
-      const targetDate = currentDateObj;
-      const monthIndex = months.findIndex(month =>
-        month.weeks.some(week =>
-          week.some(day => day && day.toDateString() === targetDate.toDateString())
-        )
-      );
-      if (monthIndex !== -1) {
-        const monthEl = document.getElementById(`month-${monthIndex}`);
-        if (monthEl) {
-          monthEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }
-    }
-  }, [viewMode, currentDate, months, currentDateObj]);
-
-  const toggleWeek = (week: number) => {
-    setExpandedWeeks(prev => {
-      const next = new Set(prev);
-      if (next.has(week)) next.delete(week);
-      else next.add(week);
-      return next;
-    });
-  };
-
-  const openGameModal = (game: GameResult) => {
-    setSelectedDate(null);
-    setSelectedGame(game);
-  };
-
-  const isGameFinished = (game: GameResult): boolean => {
-    return game.status === 'completed';
-  };
-
-  if (!seasonStart) {
-    return (
-      <div className="schedule-tab">
-        <h2>League Schedule</h2>
-        <p>No games scheduled yet.</p>
-      </div>
-    );
-  }
-
-  const selectedGameTeams = selectedGame
-    ? {
-        home: teamMap.get(selectedGame.home_team_id),
-        away: teamMap.get(selectedGame.away_team_id),
-      }
-    : null;
-
-  // ---------- Portal modal for day details or game details ----------
-  const showModal = selectedDate || (selectedGame && selectedGameTeams?.home && selectedGameTeams?.away);
+  const tabs: Tab[] = ['calendar', 'games', 'events'];
 
   return (
-    <div className="schedule-tab">
-      {/* ----- View toggle ----- */}
-      <div className="schedule-header">
-        <h2>League Schedule</h2>
-        <div className="view-toggle">
+    <div className="schedule-tab-container">
+      {/* Glass tab bar */}
+      <div className="tab-bar">
+        {tabs.map(tab => (
           <button
-            className={viewMode === 'calendar' ? 'active' : ''}
-            onClick={() => setViewMode('calendar')}
+            key={tab}
+            className={`tab-item ${activeTab === tab ? 'active' : ''}`}
+            onClick={() => setActiveTab(tab)}
           >
-            📅 Calendar
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
           </button>
-          <button
-            className={viewMode === 'list' ? 'active' : ''}
-            onClick={() => setViewMode('list')}
-          >
-            📋 List
-          </button>
-        </div>
+        ))}
       </div>
 
-      {/* ----- Calendar View ----- */}
-      {viewMode === 'calendar' && (
-        <div className="calendar-container">
-          {months.map((month, idx) => (
-            <div key={idx} id={`month-${idx}`} className="calendar-month">
-              <h3 className="month-name">{month.name}</h3>
-              <div className="weekday-header">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                  <div key={d} className="weekday">{d}</div>
-                ))}
-              </div>
-              {month.weeks.map((week, wi) => (
-                <div key={wi} className="calendar-week">
-                  {week.map((day, di) => {
-                    const games = getGamesForDate(day);
-                    const isToday = day && currentDateObj
-                      ? day.toDateString() === currentDateObj.toDateString()
-                      : false;
-                    const hasCompleted = hasCompletedGames(day);
-                    return (
-                      <div
-                        key={di}
-                        className={`
-                          calendar-day 
-                          ${day ? '' : 'empty'} 
-                          ${games.length > 0 ? 'has-games' : ''} 
-                          ${isToday ? 'today' : ''}
-                          ${hasCompleted ? 'has-completed' : ''}
-                        `}
-                        onClick={day && games.length > 0 ? () => setSelectedDate(day) : undefined}
-                      >
-                        {day && (
-                          <>
-                            <span className="day-number">{day.getDate()}</span>
-                            {games.length > 0 && (
-                              <span className="games-badge">{games.length} {games.length === 1 ? 'game' : 'games'}</span>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Tab content */}
+      <div className="tab-content">
+        {activeTab === 'calendar' && (
+          <div className="placeholder-full">
+            <h2>Calendar</h2>
+            <p>Calendar view is now part of the Games tab. Full calendar coming soon.</p>
+          </div>
+        )}
 
-      {/* ----- List View ----- */}
-      {viewMode === 'list' && (
-        <div className="list-weeks-container">
-          {weeks.map(({ week, days }) => {
-            const isExpanded = expandedWeeks.has(week);
-            return (
-              <div key={week} className="week-group">
-                <div
-                  className="week-header"
-                  onClick={() => toggleWeek(week)}
-                  role="button"
-                  tabIndex={0}
-                  aria-expanded={isExpanded}
-                >
-                  <span className="week-title">Week {week}</span>
-                  <span className="week-toggle-icon">{isExpanded ? '▾' : '▸'}</span>
+        {activeTab === 'games' && (
+          <div className="games-two-col">
+            {/* Left column (70%) */}
+            <div className="games-left">
+              <div className="games-controls">
+                <div className="date-selector">
+                  <label htmlFor="games-date">Date:</label>
+                  <input
+                    id="games-date"
+                    type="date"
+                    value={gamesTabSelectedDate.toISOString().split('T')[0]}
+                    onChange={handleGamesTabDateChange}
+                    className="date-input"
+                  />
                 </div>
-                {isExpanded && (
-                  <div className="week-games-container">
-                    {days.map(({ date, games }) => {
-                      const isCurrentDay = date !== 'TBD' && currentDateObj
-                        ? new Date(date).toDateString() === currentDateObj.toDateString()
-                        : false;
-                      const hasCompleted = games.some(g => g.status === 'completed');
+                <div className="view-toggle-inline">
+                  <button
+                    className={gamesTabViewMode === 'daily' ? 'active' : ''}
+                    onClick={() => setGamesTabViewMode('daily')}
+                  >
+                    Day
+                  </button>
+                  <button
+                    className={gamesTabViewMode === 'weekly' ? 'active' : ''}
+                    onClick={() => setGamesTabViewMode('weekly')}
+                  >
+                    Week
+                  </button>
+                </div>
+              </div>
+
+              {gamesTabViewMode === 'daily' ? (
+                <div className="daily-games-list">
+                  {dailyGames.length === 0 ? (
+                    <p className="no-games">No games on this date.</p>
+                  ) : (
+                    dailyGames.map(game => {
+                      const home = teamMap.get(game.home_team_id);
+                      const away = teamMap.get(game.away_team_id);
+                      const isSelected = gamesTabSelectedGame?.id === game.id;
                       return (
                         <div
-                          key={date}
-                          data-date={date}
-                          className={`day-box ${isCurrentDay ? 'current-date' : ''} ${hasCompleted ? 'has-completed' : ''}`}
+                          key={game.id}
+                          className={`game-card-sidebar ${isSelected ? 'selected' : ''}`}
+                          onClick={() => handleGameSelectForSidePanel(game)}
+                          role="button"
+                          tabIndex={0}
                         >
-                          <div className="day-box-header">
-                            {date === 'TBD' ? 'Date TBD' : new Date(date).toLocaleDateString(undefined, {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
-                              year: 'numeric'
-                            })}
+                          <div className="game-card-content">
+                            <div className="game-teams">
+                              <span className="team home">{home?.abbreviation || 'TBD'}</span>
+                              <span className="vs">vs</span>
+                              <span className="team away">{away?.abbreviation || 'TBD'}</span>
+                            </div>
+                            <div className="game-score">
+                              {game.status === 'completed' && game.home_score != null
+                                ? `${game.home_score} - ${game.away_score}`
+                                : '—'}
+                            </div>
+                            <span className={`game-status status-${game.status}`}>{game.status}</span>
                           </div>
-                          <div className="day-box-content">
-                            {games.map(game => {
-                              const home = teamMap.get(game.home_team_id);
-                              const away = teamMap.get(game.away_team_id);
-                              return (
-                                <div
-                                  key={game.id}
-                                  className="day-game-row"
-                                  onClick={() => openGameModal(game)}
-                                  role="button"
-                                  tabIndex={0}
-                                >
-                                  <div className="day-game-teams">
-                                    <span className="team-abbr-list home">{home?.abbreviation || 'TBD'}</span>
-                                    <span className="vs">vs</span>
-                                    <span className="team-abbr-list away">{away?.abbreviation || 'TBD'}</span>
-                                  </div>
-                                  <div className="day-game-score">
-                                    {isGameFinished(game) && game.home_score != null
-                                      ? `${game.home_score} - ${game.away_score}`
-                                      : '—'}
-                                  </div>
-                                  <span className={`day-game-status status-${game.status}`}>
-                                    {game.status}
-                                  </span>
-                                </div>
-                              );
-                            })}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              ) : (
+                <GamesListView
+                  schedule={schedule}
+                  teams={teams}
+                  currentDate={currentDate}
+                  onGameSelect={handleGameSelectForSidePanel}
+                  highlightDate={gamesTabSelectedDate}
+                />
+              )}
+            </div>
+
+            {/* Right column (30%) */}
+            <div className="games-right">
+              <MiniCalendar
+                schedule={schedule}
+                currentDate={gamesTabSelectedDate}
+                onDateSelect={handleMiniCalendarSelect}
+              />
+              <GameSnapshot
+                game={gamesTabSelectedGame}
+                homeTeam={gamesTabSelectedGame ? (teamMap.get(gamesTabSelectedGame.home_team_id) ?? null) : null}
+                awayTeam={gamesTabSelectedGame ? (teamMap.get(gamesTabSelectedGame.away_team_id) ?? null) : null}
+              />
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'events' && (
+          <div className="placeholder-full">
+            <h2>Events</h2>
+            <p>Upcoming league events and announcements will be shown here.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Calendar‑only modal portal */}
+      {showCalendarModal &&
+        ReactDOM.createPortal(
+          <div className="modal-backdrop" onClick={closeCalendarModal}>
+            <div className="day-modal" onClick={e => e.stopPropagation()}>
+              {calendarModalDate ? (
+                <>
+                  <div className="modal-header">
+                    <h3 className="modal-title">
+                      {calendarModalDate.toLocaleDateString(undefined, {
+                        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
+                      })}
+                    </h3>
+                    <button className="modal-close" onClick={closeCalendarModal}>✕</button>
+                  </div>
+                  <div className="modal-games-list">
+                    {modalDateGames.map(game => {
+                      const home = teamMap.get(game.home_team_id);
+                      const away = teamMap.get(game.away_team_id);
+                      return (
+                        <div
+                          key={game.id}
+                          className="modal-game-row clickable"
+                          onClick={() => handleCalendarGameSelect(game)}
+                          role="button"
+                          tabIndex={0}
+                        >
+                          <div className="modal-game-teams">
+                            <div className="modal-team home">
+                              <span className="team-abbr-full">{home?.abbreviation || 'TBD'}</span>
+                              <span className="team-name">{home?.name || ''}</span>
+                            </div>
+                            <div className="modal-vs">VS</div>
+                            <div className="modal-team away">
+                              <span className="team-abbr-full">{away?.abbreviation || 'TBD'}</span>
+                              <span className="team-name">{away?.name || ''}</span>
+                            </div>
+                          </div>
+                          <div className="modal-game-info">
+                            <div className="modal-score-big">
+                              {game.status === 'completed' && game.home_score != null
+                                ? `${game.home_score} - ${game.away_score}`
+                                : '—'}
+                            </div>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* ----- Modal (portal) ----- */}
-      {showModal &&
-        ReactDOM.createPortal(
-          <div className="modal-backdrop" onClick={() => {
-            setSelectedDate(null);
-            setSelectedGame(null);
-          }}>
-            <div className="day-modal" onClick={e => e.stopPropagation()}>
-              {selectedDate ? (
-                <>
-                  <div className="modal-header">
-                    <h3 className="modal-title">
-                      {selectedDate.toLocaleDateString(undefined, {
-                        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-                      })}
-                    </h3>
-                    <button className="modal-close" onClick={() => setSelectedDate(null)}>✕</button>
-                  </div>
-                  <div className="modal-games-list">
-                    {selectedDateGames.length === 0 ? (
-                      <p className="no-games">No games scheduled.</p>
-                    ) : (
-                      selectedDateGames.map(game => {
-                        const home = teamMap.get(game.home_team_id);
-                        const away = teamMap.get(game.away_team_id);
-                        return (
-                          <div
-                            key={game.id}
-                            className="modal-game-row clickable"
-                            onClick={() => openGameModal(game)}
-                            role="button"
-                            tabIndex={0}
-                          >
-                            <div className="modal-game-teams">
-                              <div className="modal-team home">
-                                <span className="team-abbr-full">{home?.abbreviation || 'TBD'}</span>
-                                <span className="team-name">{home?.name || ''}</span>
-                              </div>
-                              <div className="modal-vs">VS</div>
-                              <div className="modal-team away">
-                                <span className="team-abbr-full">{away?.abbreviation || 'TBD'}</span>
-                                <span className="team-name">{away?.name || ''}</span>
-                              </div>
-                            </div>
-                            <div className="modal-game-info">
-                              <div className="modal-score-big">
-                                {isGameFinished(game) && game.home_score != null
-                                  ? `${game.home_score} - ${game.away_score}`
-                                  : '—'}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
                 </>
-              ) : selectedGame && selectedGameTeams?.home && selectedGameTeams?.away ? (
+              ) : calendarModalGame && teamMap.get(calendarModalGame.home_team_id) && teamMap.get(calendarModalGame.away_team_id) ? (
                 <IndividualGameView
-                  game={selectedGame}
-                  homeTeam={selectedGameTeams.home}
-                  awayTeam={selectedGameTeams.away}
-                  onClose={() => setSelectedGame(null)}
+                  game={calendarModalGame}
+                  homeTeam={teamMap.get(calendarModalGame.home_team_id)!}
+                  awayTeam={teamMap.get(calendarModalGame.away_team_id)!}
+                  onClose={closeCalendarModal}
                 />
               ) : null}
             </div>
           </div>,
           document.getElementById('modal-root') || document.body
-        )
-      }
+        )}
     </div>
   );
 };
