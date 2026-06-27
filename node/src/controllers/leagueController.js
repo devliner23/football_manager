@@ -25,7 +25,6 @@ async function updateCurrentGameDate(savedGameId, seasonId, explicitDate = null)
   let dateToSet = explicitDate;
 
   if (!dateToSet) {
-    // Find the most recent completed game date for this season
     const { data, error } = await supabaseAdmin
       .from('games')
       .select('game_date')
@@ -35,11 +34,10 @@ async function updateCurrentGameDate(savedGameId, seasonId, explicitDate = null)
       .limit(1);
 
     if (error) throw error;
-    if (!data || data.length === 0) return null; // no games played yet
+    if (!data || data.length === 0) return null;
     dateToSet = data[0].game_date;
   }
 
-  // Update saved_games
   const { error: updateError } = await supabaseAdmin
     .from('saved_games')
     .update({ current_game_date: dateToSet })
@@ -72,21 +70,58 @@ async function getCurrentSeasonId(savedGameId) {
 
 const leagueController = {
 
+  // ── GET /api/league/archetypes ─────────────────────────────────────────────
+  // Public (no savedGameId needed) – returns the static archetype catalogue
+  // so the frontend can display the picker without an active game.
+
+  async getArchetypes(req, res, next) {
+    try {
+      const archetypes = TeamArchetypeService.getArchetypes().map(arch => ({
+        id:          arch.id,
+        label:       arch.label,
+        description: arch.description,
+        icon:        arch.icon,
+        strengths:   TeamArchetypeService._getArchetypeStrengths(arch),
+        weaknesses:  TeamArchetypeService._getArchetypeWeaknesses(arch),
+      }));
+      res.json({ success: true, data: archetypes });
+    } catch (error) { next(error); }
+  },
+
+  // ── POST /api/league/:savedGameId/initialize ───────────────────────────────
+  // Body: { season?, managedClubName, userArchetype? }
+
   async initializeLeague(req, res, next) {
     try {
       const { savedGameId } = req.params;
-      const { season = 1, managedClubName = null } = req.body;
+      const {
+        season          = 1,
+        managedClubName = null,
+        userArchetype   = null,   // ← new
+      } = req.body;
 
       console.log('📦 Initialization body:', req.body);
-      console.log('🆔 managedClubName received:', managedClubName, typeof managedClubName);
+      console.log('🆔 managedClubName:', managedClubName, '| archetype:', userArchetype);
+
+      // Validate archetype if provided
+      if (userArchetype && !TeamArchetypeService.isValidArchetype(userArchetype)) {
+        return res.status(400).json({
+          error: `Invalid archetype "${userArchetype}". ` +
+                 `Valid options: ${TeamArchetypeService.getArchetypes().map(a => a.id).join(', ')}`,
+        });
+      }
 
       const game = await loadOwnedGame(savedGameId, req.user.id);
       if (!game) return res.status(404).json({ error: 'Game not found or unauthorized' });
 
       const leagueService = new LeagueService(savedGameId);
-      const result        = await leagueService.initializeLeague(season, managedClubName);
+      const result        = await leagueService.initializeLeague(season, managedClubName, userArchetype);
 
-      res.json({ success: true, message: 'League initialized successfully', data: result });
+      res.json({
+        success: true,
+        message: 'League initialized successfully',
+        data:    result,
+      });
     } catch (error) {
       if (error.message.includes('already initialized')) {
         return res.status(409).json({ error: error.message });
@@ -110,8 +145,8 @@ const leagueController = {
         .select('current_game_date')
         .eq('id', savedGameId)
         .single();
-        if (!fetchError && savedGame) {
-          result.currentGameDate = savedGame.current_game_date;
+      if (!fetchError && savedGame) {
+        result.currentGameDate = savedGame.current_game_date;
       }
 
       res.json({ success: true, data: result });
@@ -131,9 +166,9 @@ const leagueController = {
       const result        = await leagueService.simulateToNextUserGame();
 
       const seasonId = game.game_state?.season_id;
-        if (seasonId) {
-        const currentDate = await updateCurrentGameDate(savedGameId, seasonId);
-        result.currentGameDate = currentDate; // attach to response
+      if (seasonId) {
+        const currentDate  = await updateCurrentGameDate(savedGameId, seasonId);
+        result.currentGameDate = currentDate;
       }
 
       res.json({ success: true, data: result });
@@ -303,19 +338,12 @@ const leagueController = {
     } catch (error) { next(error); }
   },
 
-  // ── GET /api/league/:savedGameId/games/recent ─────────────────────────────
-  //
-  // Returns every game played during the most recent simulation batch
-  // (i.e. all games whose played_at matches the latest completed played_at).
-  // Box scores are attached via player_game_stats (correct table name).
-
   async getRecentGames(req, res, next) {
     try {
       const { savedGameId } = req.params;
       const seasonId = await getCurrentSeasonId(savedGameId);
       if (!seasonId) return res.json({ success: true, data: [] });
 
-      // 1. Find the most recent played_at across completed games
       const { data: latestDateRow, error: dateError } = await supabaseAdmin
         .from('games')
         .select('played_at')
@@ -331,7 +359,6 @@ const leagueController = {
 
       const latestDate = latestDateRow.played_at;
 
-      // 2. All completed games from that exact simulation batch
       const { data: games, error: gamesError } = await supabaseAdmin
         .from('games')
         .select(`
@@ -351,7 +378,6 @@ const leagueController = {
         return res.json({ success: true, data: [] });
       }
 
-      // 3. Fetch box scores from player_game_stats (not the non-existent game_stats)
       const gameIds = games.map(g => g.id);
 
       const { data: allStats, error: statsError } = await supabaseAdmin
@@ -367,7 +393,6 @@ const leagueController = {
 
       if (statsError) throw statsError;
 
-      // 4. Group box scores by game_id and attach to each game
       const statsByGame = {};
       (allStats || []).forEach(stat => {
         if (!statsByGame[stat.game_id]) statsByGame[stat.game_id] = [];
@@ -379,18 +404,11 @@ const leagueController = {
         boxScores: statsByGame[game.id] || [],
       }));
 
-      console.log("Game data from getRecentGames: ", game)
-
       res.json({ success: true, data: enrichedGames });
     } catch (error) {
       next(error);
     }
   },
-
-  // ── GET /api/league/games/:gameId ─────────────────────────────────────────
-  //
-  // Returns a single completed game with its full box score.
-  // Called by GameResults when a user expands a game card.
 
   async getGameDetails(req, res, next) {
     try {
@@ -415,9 +433,7 @@ const leagueController = {
       const { data: boxScores, error: statsError } = await supabaseAdmin
         .from('player_game_stats')
         .select(`
-          game_id,
-          player_id,
-          team_id,
+          game_id, player_id, team_id,
           minutes_played,
           points, rebounds, assists, steals, blocks, turnovers,
           fgm, fga, fgm_3, fga_3, ftm, fta,
@@ -462,20 +478,6 @@ const leagueController = {
     } catch (error) { next(error); }
   },
 
-  async getArchetypes(req, res, next) {
-    try {
-      const archetypes = TeamArchetypeService.getArchetypes().map(arch => ({
-        id:          arch.id,
-        label:       arch.label,
-        description: arch.description,
-        icon:        arch.icon,
-        strengths:   TeamArchetypeService._getArchetypeStrengths(arch),
-        weaknesses:  TeamArchetypeService._getArchetypeWeaknesses(arch),
-      }));
-      res.json({ success: true, data: archetypes });
-    } catch (error) { next(error); }
-  },
-
   async simulateNextGame(req, res, next) {
     try {
       const { savedGameId } = req.params;
@@ -502,11 +504,10 @@ const leagueController = {
         return res.json({ success: true, message: 'Season complete', seasonComplete: true });
       }
 
+      const result      = await leagueService.simulateGame(nextGame.id);
       const currentDate = await updateCurrentGameDate(savedGameId, seasonId);
       result.currentGameDate = currentDate;
 
-
-      const result = await leagueService.simulateGame(nextGame.id);
       res.json({ success: true, message: 'Game simulated', data: result, seasonComplete: false });
     } catch (error) {
       console.error('Simulate next game error:', error);
@@ -524,8 +525,8 @@ const leagueController = {
       const result        = await leagueService.simulateWeek();
 
       const seasonId = game.game_state?.season_id;
-        if (seasonId) {
-        const currentDate = await updateCurrentGameDate(savedGameId, seasonId);
+      if (seasonId) {
+        const currentDate  = await updateCurrentGameDate(savedGameId, seasonId);
         result.currentGameDate = currentDate;
       }
 
@@ -539,7 +540,7 @@ const leagueController = {
   async simulateToDate(req, res, next) {
     try {
       const { savedGameId } = req.params;
-      const { targetDate } = req.body;
+      const { targetDate }  = req.body;
 
       if (!targetDate) {
         return res.status(400).json({ error: 'targetDate is required' });
@@ -551,14 +552,13 @@ const leagueController = {
       }
 
       const leagueService = new LeagueService(savedGameId);
-      const result = await leagueService.simulateToDate(targetDate);
+      const result        = await leagueService.simulateToDate(targetDate);
 
       const seasonId = game.game_state?.season_id;
-        if (seasonId) {
-            // If the service returns the actual date it simulated to, use that; otherwise use targetDate.
-            const actualDate = result.actualDate || targetDate;
-            const currentDate = await updateCurrentGameDate(savedGameId, seasonId, actualDate);
-            result.currentGameDate = currentDate;
+      if (seasonId) {
+        const actualDate  = result.actualDate || targetDate;
+        const currentDate = await updateCurrentGameDate(savedGameId, seasonId, actualDate);
+        result.currentGameDate = currentDate;
       }
 
       res.json({ success: true, data: result });
@@ -567,7 +567,6 @@ const leagueController = {
       next(error);
     }
   },
-
 };
 
 module.exports = leagueController;

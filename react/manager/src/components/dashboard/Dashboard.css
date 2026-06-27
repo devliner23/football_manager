@@ -547,11 +547,6 @@
   filter: blur(2px);
 }
 
-.new-game-form .form-header h2 {
-  font-size: 28px;
-  font-weight: 800;
-  background: var(--primary-gradient);
-}
 .new-game-form .form-header .close-button {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255,255,255,0.15);
@@ -676,13 +671,10 @@
   font-size: 28px;
   font-weight: 800;
   letter-spacing: -0.5px;
-  background: linear-gradient(135deg, #FF6B35, #FF9F1C);
-  -webkit-text-fill-color: transparent;
   text-transform: uppercase;
 }
 
 .new-game-form .form-header .close-button {
-  background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.7);
   width: 40px;
