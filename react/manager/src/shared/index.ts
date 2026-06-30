@@ -77,17 +77,28 @@ export interface Team {
 // ── Standings (matches backend team_season_stats) ──────────
 
 export interface StandingsRow {
-  team_id:        string;
-  saved_game_id?: string;
-  wins:           number;
-  losses:         number;
-  win_pct?:       number;
-  points_for?:    number;
-  points_against?: number;
-  home_wins?:     number;
-  home_losses?:   number;
-  away_wins?:     number;
-  away_losses?:   number;
+  id: string;
+  season_id: string;
+  team_id: string;
+  saved_game_id: string;
+  team_name: string;       // ← add this
+  city: string;
+  abbreviation: string;
+  conference: string;      // ← add this
+  division: string;        // ← add this
+  wins: number;
+  losses: number;
+  games_played: number;    // ← add this
+  win_pct: number;
+  points_for: number;
+  points_against: number;
+  point_diff: number;
+  ppg_for: number;
+  ppg_against: number;
+  home_wins: number;
+  home_losses: number;
+  away_wins: number;
+  away_losses: number;
 }
  
 

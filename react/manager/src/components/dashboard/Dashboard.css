@@ -1,8 +1,8 @@
 /* ============================================
-   ROOT VARIABLES – SPORTS GLASS THEME
+   ROOT VARIABLES – REFINED SPORTS GLASS THEME
    ============================================ */
 :root {
-  /* Core colors – energetic orange & blue */
+  /* Core – slightly toned down for elegance */
   --primary: #FF6B35;
   --primary-light: #FF9F1C;
   --secondary: #1E96FC;
@@ -14,88 +14,81 @@
   --success: #00E676;
   --error: #FF3B30;
 
-  /* Glass morphism base */
-  --glass-bg: rgba(255, 255, 255, 0.04);
-  --glass-blur: blur(24px);
-  --glass-border: rgba(255, 255, 255, 0.10);
-  --glass-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  /* Glass morphism – softer, lighter */
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-blur: blur(12px);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 
-  /* Gradients */
+  /* Gradients – kept */
   --primary-gradient: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
   --secondary-gradient: linear-gradient(135deg, var(--secondary) 0%, var(--secondary-light) 100%);
   --accent-gradient: linear-gradient(135deg, #FF6B35, #1E96FC);
 }
 
 /* ============================================
-   DASHBOARD – FULL-SCREEN SPORTS ARENA
+   DASHBOARD – FULL-SCREEN ARENA BACKGROUND
    ============================================ */
 .dashboard {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: radial-gradient(ellipse at 20% 50%, rgba(30, 150, 252, 0.08) 0%, transparent 50%),
-              radial-gradient(ellipse at 80% 20%, rgba(255, 107, 53, 0.08) 0%, transparent 50%),
-              #0A0E17; /* deep court black */
+  background: #0A0E17; /* deep court black */
   position: relative;
-  padding: 20px;
   overflow-x: hidden;
+  padding: 0; /* padding now handled inside */
 }
 
-/* Dynamic arena spotlight */
+/* Subtle arena spotlight (slower, softer) */
 .dashboard::before {
   content: '';
   position: fixed;
-  top: -20%;
-  left: -20%;
-  width: 140%;
-  height: 140%;
-  background: radial-gradient(circle at 50% 50%, rgba(255, 107, 53, 0.04) 0%, transparent 60%),
-              radial-gradient(circle at 80% 20%, rgba(30, 150, 252, 0.04) 0%, transparent 60%);
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  background: radial-gradient(circle at 30% 50%, rgba(30, 150, 252, 0.04) 0%, transparent 50%),
+              radial-gradient(circle at 70% 20%, rgba(255, 107, 53, 0.04) 0%, transparent 50%);
   pointer-events: none;
   z-index: 0;
-  animation: arenaShift 20s ease-in-out infinite alternate;
+  animation: arenaShift 25s ease-in-out infinite alternate;
 }
 
 @keyframes arenaShift {
   0% { transform: translate(0, 0) scale(1); }
-  100% { transform: translate(2%, -1%) scale(1.05); }
+  100% { transform: translate(1%, -0.5%) scale(1.02); }
 }
 
 /* ============================================
-   HEADER – SCOREBOARD STYLE
+   HEADER – CLEAN SCOREBOARD
    ============================================ */
 .dashboard-header {
   position: relative;
-  padding: 0 28px 20px;
-  margin-bottom: 24px;
-  background: transparent;
-  border: none;
   z-index: 10;
-  display: flex;
-  justify-content: center;
+  padding: 20px 40px;
 }
 
 .header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
   max-width: 1400px;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin: 0 auto;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: 20px;
   padding: 14px 28px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--glass-shadow);
 }
 
 .dashboard-header h1 {
   margin: 0;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 800;
-  text-transform: uppercase;
   letter-spacing: 1px;
+  text-transform: uppercase;
   background: linear-gradient(135deg, #FF6B35, #FF9F1C, #FFFFFF);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -108,53 +101,56 @@
 .dashboard-header h1::before {
   content: '🏀';
   -webkit-text-fill-color: initial;
-  color: var(--primary);
-  font-size: 32px;
+  font-size: 30px;
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .username {
-  padding: 6px 18px;
+  padding: 6px 20px;
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 30px;
   font-size: 14px;
   font-weight: 600;
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .username::before {
-  content: '● ';
-  color: var(--success);
-  font-size: 10px;
-  vertical-align: middle;
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--success);
+  border-radius: 50%;
 }
 
 .settings-button {
   padding: 8px 14px;
   background: rgba(255, 255, 255, 0.06);
   color: var(--text-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 30px;
   cursor: pointer;
   font-size: 18px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   line-height: 1;
 }
-
 .settings-button:hover {
-  background: rgba(255, 255, 255, 0.12);
-  transform: scale(1.08);
+  background: rgba(255, 255, 255, 0.1);
+  transform: scale(1.06);
   border-color: var(--primary);
 }
 
 /* ============================================
-   MAIN CONTENT – EXPANDED CONTAINER
+   MAIN CONTENT – CENTERED FLOATING AREA
    ============================================ */
 .dashboard-content {
   flex: 1;
@@ -163,166 +159,127 @@
   align-items: center;
   justify-content: center;
   z-index: 5;
-  position: relative;
+  padding: 20px 40px 40px;
 }
 
 .dashboard-main {
-  background: transparent;           /* no fill – pure floating content */
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  border: none;
-  border-radius: 0;
-  padding: 40px;
-  box-shadow: none;
+  width: 100%;
+  max-width: 900px;
+  min-height: 480px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 100%;
-  max-width: 1000px;
-  min-height: 500px;
-  margin: 0 auto;
-  position: relative;
-  overflow: visible;                 /* allow inner glow to show through */
 }
-
-/* Pulsing border glow */
-.dashboard-main::before {
-  display: none;
-}
-
-/* Scrollbar still works if needed (transparent track) */
-.dashboard-main::-webkit-scrollbar {
-  width: 4px;
-}
-.dashboard-main::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 2px;
-}
-.dashboard-main::-webkit-scrollbar-thumb {
-  background: var(--primary);
-  border-radius: 2px;
-}
-
-@keyframes borderGlow {
-  0% { opacity: 0.4; filter: blur(2px); }
-  100% { opacity: 1; filter: blur(4px); }
-}
-
-
 
 /* ============================================
-   HERO PANEL CARD – FULL WIDTH, SPORTS ENERGY
+   HERO PANEL CARD – THE GLASS SHOWCASE
    ============================================ */
 .panel-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
   border-radius: 28px;
-  padding: 60px 50px;
+  padding: 56px 48px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   text-align: center;
   width: 100%;
-  max-width: 800px;
-  margin: 0 auto;
+  max-width: 700px;
   position: relative;
   overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  backdrop-filter: blur(10px);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: var(--glass-shadow);
 }
 
 .panel-card:hover {
-  transform: translateY(-5px);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.4);
+  transform: translateY(-4px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
-/* Floating jersey number effect */
-.panel-card::before {
+/* Very subtle inner glow */
+.panel-card::after {
   content: '';
   position: absolute;
-  top: -30%;
-  left: -20%;
-  width: 140%;
-  height: 140%;
-  background: radial-gradient(circle at 30% 30%, rgba(255, 107, 53, 0.08), transparent 60%),
-              radial-gradient(circle at 70% 70%, rgba(30, 150, 252, 0.08), transparent 60%);
-  opacity: 0.8;
-  animation: floatGlow 8s ease-in-out infinite alternate;
+  inset: 1px;
+  border-radius: 27px;
+  background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.02), transparent 70%);
+  pointer-events: none;
 }
 
-@keyframes floatGlow {
-  0% { transform: rotate(0deg) scale(1); }
-  100% { transform: rotate(3deg) scale(1.03); }
-}
-
+/* Icon */
 .panel-card .icon {
-  font-size: 80px;
-  margin-bottom: 20px;
+  font-size: 64px;
+  margin-bottom: 16px;
   display: block;
-  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
-  animation: bounce 2s infinite;
+  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.4));
+  animation: softBounce 3s infinite ease-in-out;
 }
 
-@keyframes bounce {
+@keyframes softBounce {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-6px); }
 }
 
+/* Headline */
 .panel-card h2 {
-  font-size: 36px;
+  font-size: 34px;
   font-weight: 800;
-  margin: 0 0 12px 0;
-  background: linear-gradient(to right, #FFFFFF, #FF9F1C);
+  margin: 0 0 10px 0;
+  background: linear-gradient(to right, #FFFFFF, var(--primary-light));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  text-transform: uppercase;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
+  line-height: 1.2;
 }
 
+/* Description */
 .panel-card p {
   color: var(--text-secondary);
-  font-size: 18px;
-  margin: 0 0 36px 0;
-  max-width: 500px;
+  font-size: 16px;
+  margin: 0 0 32px 0;
+  max-width: 460px;
   line-height: 1.6;
-  opacity: 0.9;
+  opacity: 0.85;
 }
 
+/* Last saved info */
 .panel-card .game-info {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-muted);
   margin: 20px 0 0;
   padding: 10px 24px;
   background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(5px);
+  backdrop-filter: blur(4px);
 }
 
+/* Action buttons container */
 .panel-actions {
   display: flex;
-  gap: 16px;
+  gap: 14px;
   flex-wrap: wrap;
   justify-content: center;
   width: 100%;
-  max-width: 500px;
+  max-width: 480px;
 }
 
 /* ============================================
-   BUTTONS – JERSEY-INSPIRED, BOLD & GLOWING
+   BUTTONS – JERSEY-INSPIRED, GLASS & GLOWING
    ============================================ */
 .panel-card .panel-button {
-  padding: 16px 36px;
+  padding: 15px 32px;
   border: none;
   border-radius: 16px;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   text-transform: uppercase;
   letter-spacing: 1px;
   position: relative;
@@ -330,10 +287,9 @@
   flex: 1 1 auto;
   min-width: 200px;
   color: white;
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.15);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 
 .panel-card .panel-button::after {
@@ -341,34 +297,36 @@
   position: absolute;
   top: 0; left: -100%;
   width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  transition: left 0.6s;
 }
 .panel-card .panel-button:hover::after {
   left: 100%;
 }
 
+/* Continue button */
 .panel-button.continue {
-  background: linear-gradient(135deg, #FF6B35, #FF9F1C);
+  background: var(--primary-gradient);
   border: 1px solid rgba(255,255,255,0.3);
-  box-shadow: 0 8px 30px rgba(255, 107, 53, 0.4);
+  box-shadow: 0 6px 25px rgba(255, 107, 53, 0.35);
 }
 .panel-button.continue:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 40px rgba(255, 107, 53, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 35px rgba(255, 107, 53, 0.5);
 }
 
+/* New season button */
 .panel-button.new-season {
-  background: linear-gradient(135deg, #1E96FC, #00D4FF);
+  background: var(--secondary-gradient);
   border: 1px solid rgba(255,255,255,0.3);
-  box-shadow: 0 8px 30px rgba(30, 150, 252, 0.4);
+  box-shadow: 0 6px 25px rgba(30, 150, 252, 0.35);
 }
 .panel-button.new-season:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 40px rgba(30, 150, 252, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 35px rgba(30, 150, 252, 0.5);
 }
 
-/* Single button centering */
+/* Single button (no saved games) */
 .panel-button.new-season:only-child {
   min-width: 260px;
 }
@@ -376,99 +334,28 @@
 /* ============================================
    LOADING & EMPTY STATES
    ============================================ */
-.loading {
-  text-align: center;
-  color: var(--text-muted);
-  padding: 40px 0;
-  font-size: 15px;
-}
-.loading::after {
-  content: '';
-  display: inline-block;
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-top-color: var(--primary);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-left: 12px;
-  vertical-align: middle;
-}
-
-.no-games {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--text-muted);
-}
-.no-games p {
-  font-size: 16px;
-  margin: 0;
-}
-.no-games .hint {
-  font-size: 13px;
-  opacity: 0.5;
-  margin-top: 8px;
-}
-
-.error {
-  text-align: center;
-  color: var(--error);
-  padding: 16px;
-  font-size: 14px;
-  background: rgba(255, 23, 68, 0.1);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 23, 68, 0.15);
-}
-
-/* ============================================
-   MODALS & OVERLAYS
-   ============================================ */
-.modal-overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(16px) saturate(1.4);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-  animation: modalFadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-@keyframes modalFadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.92) translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
 .loading-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(12px);
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   z-index: 2000;
-  animation: modalFadeIn 0.3s ease;
+  animation: fadeIn 0.3s ease;
 }
 .loading-overlay p {
   color: var(--text-primary);
-  font-size: 20px;
-  margin-top: 28px;
-  font-weight: 600;
+  font-size: 18px;
+  margin-top: 24px;
+  font-weight: 500;
 }
 .loading-spinner {
-  width: 56px;
-  height: 56px;
-  border: 4px solid rgba(255, 255, 255, 0.1);
+  width: 48px;
+  height: 48px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
   border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -478,30 +365,63 @@
   to { transform: rotate(360deg); }
 }
 
-/* Settings modal */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ============================================
+   MODALS & OVERLAYS (settings, form background)
+   ============================================ */
+.modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: modalFadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Settings menu */
 .settings-modal {
-  background: rgba(20, 25, 35, 0.8);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(20, 25, 35, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 24px;
-  padding: 36px 30px;
+  padding: 32px 24px;
   width: 100%;
   max-width: 340px;
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
   color: var(--text-primary);
 }
 .settings-modal h3 {
-  margin: 0 0 24px 0;
-  font-size: 22px;
+  margin: 0 0 20px 0;
+  font-size: 20px;
   font-weight: 700;
   text-align: center;
+  color: var(--text-secondary);
 }
 .settings-modal button {
   display: block;
   width: 100%;
-  padding: 14px 20px;
-  margin-bottom: 12px;
+  padding: 13px 20px;
+  margin-bottom: 10px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 14px;
@@ -516,385 +436,259 @@
   margin-bottom: 0;
 }
 .settings-modal button:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.1);
   border-color: var(--primary);
-  transform: translateX(6px);
+  transform: translateX(4px);
 }
 
 /* ============================================
-   NEW GAME FORM – GLASS MODAL WITH SPORT STYLE
+   NEW GAME FORM – GLASS MODAL WITH SPORT EDGE
    ============================================ */
 .new-game-form {
-  background: rgba(15, 20, 30, 0.7);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 20, 30, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 28px;
-  padding: 48px 44px;
+  padding: 44px 40px;
   width: 100%;
   max-width: 520px;
-  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
   position: relative;
+  overflow: hidden;
 }
+
+/* Outer gradient ring (softer) */
 .new-game-form::before {
   content: '';
   position: absolute;
   top: -2px; left: -2px; right: -2px; bottom: -2px;
   border-radius: 30px;
-  background: linear-gradient(135deg, rgba(255, 107, 53, 0.4), rgba(30, 150, 252, 0.4));
+  background: linear-gradient(135deg, rgba(255, 107, 53, 0.3), rgba(30, 150, 252, 0.3));
   z-index: -1;
-  opacity: 0.6;
+  opacity: 0.5;
   filter: blur(2px);
 }
 
-.new-game-form .form-header .close-button {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255,255,255,0.15);
-  color: rgba(255,255,255,0.6);
-  width: 40px; height: 40px;
-  border-radius: 50%;
-  font-size: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: 0.3s;
-}
-.new-game-form .form-header .close-button:hover {
-  background: rgba(255,59,48,0.2);
-  border-color: rgba(255,59,48,0.4);
-  color: #ff3b30;
-  transform: rotate(90deg);
-}
-
-.new-game-form .form-group .input-wrapper {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.10);
-  border-radius: 14px;
-}
-.new-game-form .form-group .input-wrapper:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
-}
-
-.new-game-form .form-actions .create-button {
-  background: var(--primary-gradient);
-  box-shadow: 0 8px 25px rgba(255, 107, 53, 0.4);
-}
-.new-game-form .form-actions .create-button:hover {
-  box-shadow: 0 12px 35px rgba(255, 107, 53, 0.6);
-  transform: translateY(-2px);
-}
-
-/* ============================================
-   RESPONSIVE
-   ============================================ */
-@media (max-width: 768px) {
-  .dashboard-header h1 {
-    font-size: 22px;
-  }
-  .dashboard-main {
-    padding: 24px 16px;
-    min-height: 400px;
-    border-radius: 24px;
-  }
-  .panel-card {
-    padding: 40px 24px;
-    max-width: 100%;
-  }
-  .panel-card h2 {
-    font-size: 26px;
-  }
-  .panel-card .icon {
-    font-size: 60px;
-  }
-  .panel-actions {
-    flex-direction: column;
-    align-items: center;
-  }
-}
-
-
-/* ============================================
-   NEW GAME FORM – SPORTS MODAL STYLE
-   ============================================ */
-.new-game-form {
-  background: rgba(10, 14, 23, 0.75);
-  backdrop-filter: blur(30px);
-  -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 32px;
-  padding: 44px 40px;
-  width: 100%;
-  max-width: 520px;
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7), 
-              inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-/* Outer gradient ring */
-.new-game-form::before {
-  content: '';
-  position: absolute;
-  top: -2px; left: -2px; right: -2px; bottom: -2px;
-  border-radius: 34px;
-  background: linear-gradient(135deg, 
-    rgba(255, 107, 53, 0.5), 
-    rgba(30, 150, 252, 0.5),
-    rgba(255, 107, 53, 0.5));
-  z-index: -1;
-  opacity: 0.6;
-  filter: blur(2px);
-}
-
-/* Inner spotlight */
-.new-game-form::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: radial-gradient(circle at 30% 30%, 
-    rgba(255, 255, 255, 0.03), transparent 70%);
-  pointer-events: none;
-}
-
-/* ---- Form header ---- */
+/* Header */
 .new-game-form .form-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
-
 .new-game-form .form-header h2 {
   margin: 0;
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 800;
-  letter-spacing: -0.5px;
   text-transform: uppercase;
+  letter-spacing: -0.5px;
 }
-
 .new-game-form .form-header .close-button {
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.7);
-  width: 40px;
-  height: 40px;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.6);
+  width: 38px; height: 38px;
   border-radius: 50%;
   font-size: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s ease;
-  padding: 0;
-  line-height: 1;
+  transition: all 0.3s;
 }
-
 .new-game-form .form-header .close-button:hover:not(:disabled) {
-  background: rgba(255, 59, 48, 0.2);
-  border-color: rgba(255, 59, 48, 0.4);
+  background: rgba(255,59,48,0.2);
+  border-color: rgba(255,59,48,0.5);
   color: #ff3b30;
   transform: rotate(90deg);
 }
 
-/* ---- Form groups ---- */
+/* Form group */
 .new-game-form .form-group {
-  margin-bottom: 24px;
-  position: relative;
+  margin-bottom: 22px;
 }
-
 .new-game-form .form-group label {
   display: block;
   font-size: 13px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
+  color: rgba(255,255,255,0.5);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 8px;
 }
 
-/* Input wrapper */
 .new-game-form .form-group .input-wrapper {
-  position: relative;
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 14px;
-  transition: all 0.3s ease;
-  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-
 .new-game-form .form-group .input-wrapper:focus-within {
-  border-color: var(--primary, #FF6B35);
-  box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.15);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(255,107,53,0.12);
 }
 
 .new-game-form .form-group .input-icon {
-  padding-left: 16px;
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.3);
-  pointer-events: none;
-  transition: color 0.3s;
+  padding-left: 14px;
+  font-size: 16px;
+  color: rgba(255,255,255,0.3);
+  transition: color 0.2s;
 }
-
 .new-game-form .form-group .input-wrapper:focus-within .input-icon {
-  color: var(--primary, #FF6B35);
+  color: var(--primary);
 }
 
 .new-game-form .form-group select,
 .new-game-form .form-group input {
   flex: 1;
-  padding: 14px 16px 14px 10px;
+  padding: 13px 12px;
   background: transparent;
   border: none;
   outline: none;
   font-size: 15px;
   color: #fff;
   font-family: inherit;
-  -webkit-appearance: none;
   appearance: none;
-  cursor: pointer;
 }
-
 .new-game-form .form-group select option {
   background: #1a1a2e;
   color: #fff;
 }
-
 .new-game-form .form-group input::placeholder {
-  color: rgba(255, 255, 255, 0.25);
+  color: rgba(255,255,255,0.25);
 }
 
-/* Dropdown arrow */
-.new-game-form .form-group .input-wrapper .dropdown-arrow {
-  padding-right: 16px;
-  color: rgba(255, 255, 255, 0.3);
+.new-game-form .form-group .dropdown-arrow {
+  padding-right: 14px;
+  color: rgba(255,255,255,0.3);
   font-size: 12px;
-  pointer-events: none;
-  transition: transform 0.3s, color 0.3s;
+  transition: transform 0.2s;
 }
-
 .new-game-form .form-group .input-wrapper:focus-within .dropdown-arrow {
   transform: rotate(180deg);
-  color: var(--primary, #FF6B35);
+  color: var(--primary);
 }
 
-/* ---- Glass‑tinted team nameplate ---- */
+/* Glass team nameplate */
 .glass-team-name {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px 20px;
+  padding: 14px 20px;
   border-radius: 16px;
   font-size: 1.2rem;
   font-weight: 800;
   letter-spacing: 1px;
   text-transform: uppercase;
-  color: #ffffff;
+  color: #fff;
   background: var(--team-color, #FF6B35);
-  border: 2px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 
-    0 0 30px var(--team-color, #FF6B35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255,255,255,0.25);
+  box-shadow: 0 0 25px var(--team-color, #FF6B35), inset 0 1px 0 rgba(255,255,255,0.2);
   margin-bottom: 20px;
   width: 100%;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.6);
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
   position: relative;
   overflow: hidden;
-  transition: transform 0.2s;
 }
-
-/* Subtle shimmer across the nameplate */
 .glass-team-name::after {
   content: '';
   position: absolute;
   top: 0; left: -100%;
   width: 100%; height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.2),
-    transparent
-  );
-  animation: shimmer 2.5s infinite;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer 3s infinite;
 }
-
 @keyframes shimmer {
-  to {
-    left: 100%;
-  }
+  to { left: 100%; }
 }
 
-/* ---- Error message ---- */
+/* Error message */
 .new-game-form .error-message {
-  background: rgba(255, 23, 68, 0.12);
+  background: rgba(255,23,68,0.1);
   color: #ff1744;
   padding: 12px 16px;
   border-radius: 10px;
   font-size: 14px;
-  border: 1px solid rgba(255, 23, 68, 0.15);
+  border: 1px solid rgba(255,23,68,0.2);
   margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
-/* ---- Form actions ---- */
+/* Actions */
 .new-game-form .form-actions {
   display: flex;
   gap: 12px;
-  margin-top: 12px;
+  margin-top: 10px;
 }
-
 .new-game-form .form-actions button {
-  padding: 15px 28px;
+  padding: 14px 24px;
   border: none;
   border-radius: 14px;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.25s ease;
   flex: 1;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  font-family: inherit;
 }
-
 .new-game-form .form-actions .cancel-button {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.6);
+  border: 1px solid rgba(255,255,255,0.1);
 }
-
 .new-game-form .form-actions .cancel-button:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255,255,255,0.12);
   color: #fff;
 }
-
 .new-game-form .form-actions .create-button {
-  background: linear-gradient(135deg, #FF6B35, #FF9F1C);
+  background: var(--primary-gradient);
   color: #fff;
-  box-shadow: 0 6px 25px rgba(255, 107, 53, 0.4);
+  box-shadow: 0 6px 20px rgba(255,107,53,0.4);
 }
-
 .new-game-form .form-actions .create-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 12px 35px rgba(255, 107, 53, 0.6);
+  box-shadow: 0 10px 30px rgba(255,107,53,0.6);
 }
-
 .new-game-form .form-actions button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
 }
 
-/* ---- Responsive ---- */
-@media (max-width: 480px) {
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 768px) {
+  .dashboard-header {
+    padding: 16px 20px;
+  }
+  .header-content {
+    padding: 12px 20px;
+  }
+  .dashboard-header h1 {
+    font-size: 22px;
+  }
+  .dashboard-content {
+    padding: 16px 20px 30px;
+  }
+  .panel-card {
+    padding: 40px 28px;
+    max-width: 100%;
+  }
+  .panel-card h2 {
+    font-size: 26px;
+  }
+  .panel-card .icon {
+    font-size: 56px;
+  }
+  .panel-actions {
+    flex-direction: column;
+    align-items: center;
+  }
   .new-game-form {
     padding: 32px 20px;
-  }
-  .new-game-form .form-actions {
-    flex-direction: column;
   }
 }

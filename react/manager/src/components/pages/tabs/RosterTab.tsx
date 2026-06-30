@@ -1,36 +1,96 @@
 // src/components/SelectedGame/RosterTab.tsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Team, Player } from '../../../shared/index';
-import { 
-  Users, 
-  User, 
-  Trophy, 
+import { StandingsRow } from '../../../api/leagueApi';
+import {
+  Users,
+  User,
+  Trophy,
   TrendingUp,
   Eye,
   Star,
   Activity,
-  BarChart3
+  BarChart3,
+  Hash,
 } from 'lucide-react';
 import PlayerViewModal from './tabComponents/PlayerViewModal';
-import "./styles/RosterTab.css";
+import './styles/RosterTab.css';
 
 interface RosterTabProps {
   teams: Team[];
   allPlayers: Player[];
   userTeamId?: string;
-  onViewPlayer: (player: Player) => void; // can be kept for compatibility
+  onViewPlayer: (player: Player) => void;
+  standings: StandingsRow[];
 }
 
 const RosterTab: React.FC<RosterTabProps> = ({
   teams,
   allPlayers,
   userTeamId,
-  onViewPlayer, // still accepted but not used for modal
+  onViewPlayer,
+  standings,
 }) => {
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(
     userTeamId || (teams.length > 0 ? teams[0].id : null)
   );
   const [viewingPlayer, setViewingPlayer] = useState<Player | null>(null);
+
+  // Map team_id → StandingsRow for quick lookup
+  const standingsMap = useMemo(() => {
+    const map: Record<string, StandingsRow> = {};
+    standings.forEach((row) => {
+      map[row.team_id] = row;
+    });
+    return map;
+  }, [standings]);
+
+  // Compute conference ranks (by win_pct descending)
+  const conferenceRanks = useMemo(() => {
+    const ranks: Record<string, number> = {};
+    const conferences: Record<string, StandingsRow[]> = {};
+
+    standings.forEach((row) => {
+      const conf = row.conference || 'Unknown';
+      if (!conferences[conf]) conferences[conf] = [];
+      conferences[conf].push(row);
+    });
+
+    Object.values(conferences).forEach((teamsInConf) => {
+      teamsInConf.sort((a, b) => (b.win_pct || 0) - (a.win_pct || 0));
+      teamsInConf.forEach((team, index) => {
+        ranks[team.team_id] = index + 1;
+      });
+    });
+
+    return ranks;
+  }, [standings]);
+
+  // Compute division ranks (by win_pct descending within division)
+  const divisionRanks = useMemo(() => {
+    const ranks: Record<string, number> = {};
+    const divisions: Record<string, StandingsRow[]> = {};
+
+    standings.forEach((row) => {
+      const div = row.division || 'Unknown';
+      if (!divisions[div]) divisions[div] = [];
+      divisions[div].push(row);
+    });
+
+    Object.values(divisions).forEach((teamsInDiv) => {
+      teamsInDiv.sort((a, b) => (b.win_pct || 0) - (a.win_pct || 0));
+      teamsInDiv.forEach((team, index) => {
+        ranks[team.team_id] = index + 1;
+      });
+    });
+
+    return ranks;
+  }, [standings]);
+
+  // Helper: get standings data for a team (fallback to Team object if missing)
+  const getStandingsForTeam = (teamId: string): StandingsRow | undefined => {
+    return standingsMap[teamId];
+  };
 
   const selectedTeamPlayers = allPlayers.filter(
     (p) => p.team_id === selectedTeamId
@@ -41,8 +101,10 @@ const RosterTab: React.FC<RosterTabProps> = ({
   );
 
   const selectedTeam = teams.find((t) => t.id === selectedTeamId);
+  const selectedTeamStandings = selectedTeamId
+    ? getStandingsForTeam(selectedTeamId)
+    : undefined;
 
-  // Get top 3 players by rating
   const topPlayers = sortedPlayers.slice(0, 3);
 
   return (
@@ -55,23 +117,36 @@ const RosterTab: React.FC<RosterTabProps> = ({
             <span>Teams</span>
           </div>
           <ul className="team-list">
-            {teams.map((team) => (
-              <li
-                key={team.id}
-                className={`team-item ${team.id === selectedTeamId ? 'active' : ''}`}
-                onClick={() => setSelectedTeamId(team.id)}
-              >
-                <div className="team-info">
-                  <span className="team-name">{team.name}</span>
-                  <span className="team-record">
-                    {team.wins ?? 0}–{team.losses ?? 0}
-                  </span>
-                </div>
-                {team.id === selectedTeamId && (
-                  <div className="team-active-indicator" />
-                )}
-              </li>
-            ))}
+            {teams.map((team) => {
+              const st = getStandingsForTeam(team.id);
+              const confRank = st ? conferenceRanks[team.id] : undefined;
+              const wins = st?.wins ?? team.wins ?? 0;
+              const losses = st?.losses ?? team.losses ?? 0;
+
+              return (
+                <li
+                  key={team.id}
+                  className={`team-item ${team.id === selectedTeamId ? 'active' : ''}`}
+                  onClick={() => setSelectedTeamId(team.id)}
+                >
+                  <div className="team-info">
+                    <span className="team-name">{st?.team_name || team.name}</span>
+                    <div className="team-record-group">
+                      {confRank && (
+                        <span className="team-rank">
+                          <Hash size={12} strokeWidth={2} />
+                          {confRank}
+                        </span>
+                      )}
+                      <span className="team-record">{wins}–{losses}</span>
+                    </div>
+                  </div>
+                  {team.id === selectedTeamId && (
+                    <div className="team-active-indicator" />
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
 
@@ -82,7 +157,15 @@ const RosterTab: React.FC<RosterTabProps> = ({
               <div className="roster-header">
                 <div className="roster-header-left">
                   <Trophy size={20} strokeWidth={2} className="roster-header-icon" />
-                  <h4>{selectedTeam.name}</h4>
+                  <h4>
+                    {selectedTeamStandings && conferenceRanks[selectedTeam.id] && (
+                      <span className="header-rank">
+                        #{conferenceRanks[selectedTeam.id]}{' '}
+                        {selectedTeamStandings.conference}
+                      </span>
+                    )}
+                    {selectedTeamStandings?.team_name || selectedTeam.name}
+                  </h4>
                   <span className="roster-count">
                     {sortedPlayers.length} players
                   </span>
@@ -90,7 +173,10 @@ const RosterTab: React.FC<RosterTabProps> = ({
                 <div className="roster-header-right">
                   <div className="team-stats-badge">
                     <TrendingUp size={14} strokeWidth={2} />
-                    <span>{selectedTeam.wins ?? 0}W - {selectedTeam.losses ?? 0}L</span>
+                    <span>
+                      {selectedTeamStandings?.wins ?? selectedTeam.wins ?? 0}W -{' '}
+                      {selectedTeamStandings?.losses ?? selectedTeam.losses ?? 0}L
+                    </span>
                   </div>
                 </div>
               </div>
@@ -167,7 +253,15 @@ const RosterTab: React.FC<RosterTabProps> = ({
                           <span className="position-badge">{player.position}</span>
                         </td>
                         <td>
-                          <span className={`rating ${player.overall_rating >= 85 ? 'elite' : player.overall_rating >= 70 ? 'good' : 'average'}`}>
+                          <span
+                            className={`rating ${
+                              player.overall_rating >= 85
+                                ? 'elite'
+                                : player.overall_rating >= 70
+                                ? 'good'
+                                : 'average'
+                            }`}
+                          >
                             {player.overall_rating}
                           </span>
                         </td>
@@ -177,7 +271,7 @@ const RosterTab: React.FC<RosterTabProps> = ({
                         <td>
                           <button
                             className="view-player-btn"
-                            onClick={() => setViewingPlayer(player)} // opens modal
+                            onClick={() => setViewingPlayer(player)}
                           >
                             <Eye size={16} strokeWidth={2} />
                             <span>View</span>
@@ -210,9 +304,9 @@ const RosterTab: React.FC<RosterTabProps> = ({
       {viewingPlayer && (
         <PlayerViewModal
           player={viewingPlayer}
-          teamName={selectedTeam?.name}
-          teamWins={selectedTeam?.wins}
-          teamLosses={selectedTeam?.losses}
+          teamName={selectedTeamStandings?.team_name || selectedTeam?.name}
+          teamWins={selectedTeamStandings?.wins ?? selectedTeam?.wins}
+          teamLosses={selectedTeamStandings?.losses ?? selectedTeam?.losses}
           onClose={() => setViewingPlayer(null)}
         />
       )}

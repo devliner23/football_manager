@@ -405,6 +405,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 allPlayers={players}
                 userTeamId={userTeam?.id}
                 onViewPlayer={(player) => setSelectedPlayer(player)}
+                standings={standings}
                 />
             )}
             {!loading && activeTab === 'standings' && (

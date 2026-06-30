@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { SavedGame, Team, Player } from '../../../shared/index';
 import GameResults from '../GameResults';
-import { TrendingUp, TrendingDown, Calendar, ArrowRight, User, Target } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, ArrowRight, User, Target, Play, Settings, ArrowRightLeft } from 'lucide-react';
 import TradePanel from './tabComponents/TradePanel';
 import "./styles/OverviewTab.css";
+
 
 
 interface OverviewTabProps {
@@ -91,30 +92,36 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
             <div className="team-info">
               <h1 className="team-name">{userTeam.name}</h1>
               <p className="team-meta">
-                <User className="icon-small" /> {userTeam.conference || 'N/A'} • {userTeam.division || 'N/A'}
+                <User className="icon-small" />
+                {userTeam.conference || 'N/A'} • {userTeam.division || 'N/A'}
               </p>
-              <p className="team-season">Season {game.current_season}</p>
             </div>
           </div>
 
           <div className="record-progress">
+            <TrendingUp size={16} strokeWidth={2} />
             <div className="record-label">
-              <span>Record</span>
-              <span className="record-value">{record} ({winPct}%)</span>
+              <span>{record}</span>
+              <span className="record-pct">({winPct}%)</span>
             </div>
           </div>
 
           <div className="quick-actions">
-            <button className="btn-primary">
-              Simulate Next Game <ArrowRight className="icon-small" />
+            <button className="icon-btn">
+              <Play size={18} strokeWidth={2} />
+              <span>Sim Next Game</span>
             </button>
-            <button className="btn-secondary">Adjust Lineup</button>
-                      <button
-            className="btn-secondary"
-            onClick={() => setShowTradeModal(true)}
-          >
-            Trade Players <ArrowRight className="icon-small" />
-          </button>
+            <button className="icon-btn">
+              <Settings size={18} strokeWidth={2} />
+              <span>Adjust Lineup</span>
+            </button>
+            <button
+              className="icon-btn"
+              onClick={() => setShowTradeModal(true)}
+            >
+              <ArrowRightLeft size={18} strokeWidth={2} />
+              <span>Trade</span>
+            </button>
           </div>
         </div>
 
