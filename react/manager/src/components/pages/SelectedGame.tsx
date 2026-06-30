@@ -13,7 +13,9 @@ import FreeAgentsTab from './tabs/FreeAgentTab';
 import FrontOfficeTab from './tabs/FrontOfficeTab';
 import PlayerModal from './PlayerModal';
 import ScheduleTab from './tabs/ScheduleTab';
+import LineupTab from './tabs/LineupTab';
 import './SelectedGame.css';
+
 
 import { GameProvider } from '../../context/GameContext';
 
@@ -26,7 +28,8 @@ import {
   Repeat,
   UserPlus,
   Building2,
-  Calendar
+  Calendar,
+  Clipboard
 } from 'lucide-react';
 import GameResults from './GameResults';
 
@@ -38,7 +41,7 @@ interface SelectedGameProps {
   onUpdate: (game: SavedGame) => void;
 }
 
-type TabType = 'overview' | 'leagueRoster' | 'standings' | 'trade' | 'freeagents' | 'frontoffice' | 'schedule';
+type TabType = 'overview' | 'leagueRoster' | 'standings' | 'freeagents' | 'frontoffice' | 'schedule' | 'lineup';
 
 const tabConfig = {
   overview: {
@@ -53,10 +56,6 @@ const tabConfig = {
     label: 'Standings',
     icon: <TrendingUp size={18} strokeWidth={2} />,
   },
-  trade: {
-    label: 'Trade',
-    icon: <Repeat size={18} strokeWidth={2} />,
-  },
   freeagents: {
     label: 'Free Agents',
     icon: <UserPlus size={18} strokeWidth={2} />,
@@ -69,6 +68,10 @@ const tabConfig = {
     label: 'Schedule',
     icon: <Calendar size={18} strokeWidth={2} />,
   },
+  lineup: {
+    label: "Lineup",
+    icon: <Clipboard  strokeWidth={2} />,
+  }
 };
 
 const SelectedGame: React.FC<SelectedGameProps> = ({
@@ -423,11 +426,27 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 currentTeam={managedClubId}
                 />
             )}
-            {!loading && activeTab === 'trade' && <TradeTab />}
             {!loading && activeTab === 'freeagents' && (
               <FreeAgentsTab savedGameId={game.id} teams={teams} />
             )}            
-            {!loading && activeTab === 'frontoffice' && <FrontOfficeTab />}
+            {!loading && activeTab === 'frontoffice' && (
+              <FrontOfficeTab
+                savedGameId={game.id}
+                teams={teams}
+                players={players}
+                userTeam={userTeam}
+                standings={standings}
+                userStanding={userStanding}
+                userTeamPlayers={userTeamPlayers}
+              />
+            )}
+            {!loading && activeTab === 'lineup' && (
+              <LineupTab
+                savedGameId={game.id}
+                userTeam={userTeam}
+                allPlayers={players}
+              />
+            )}
             </div>
 
             {/* Right column – game sidebar & controls */}

@@ -45,6 +45,22 @@ export interface SimulateToNextGameResponse {
   nextUserGame: UserGameInfo | null;
 }
 
+export interface LineupData {
+  teamId: string;
+  savedGameId: string;
+  starters: string[];
+  rotation: string[];
+  minutesTargets: Record<string, number>;
+  isAuto: boolean;
+  persisted: boolean;
+}
+ 
+export interface SetLineupPayload {
+  starters: string[];
+  rotation?: string[];
+  minutesTargets?: Record<string, number>;
+}
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -210,6 +226,48 @@ export const leagueAPI = {
       `/api/league/${savedGameId}/players/${playerId}/release`
     );
     return extractData(response);
+  },
+
+    getLineup: async (savedGameId: string, teamId: string): Promise<LineupData> => {
+    const response = await api.get<ApiResponse<LineupData>>(
+      `/api/lineup/${savedGameId}/${teamId}`
+    );
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Failed to fetch lineup');
+    }
+    return response.data.data;
+  },
+ 
+  /**
+   * Save a custom lineup for the user's managed team.
+   * starters must be exactly 5 player IDs.
+   */
+  setLineup: async (
+    savedGameId: string,
+    teamId: string,
+    payload: SetLineupPayload
+  ): Promise<LineupData> => {
+    const response = await api.put<ApiResponse<LineupData>>(
+      `/api/lineup/${savedGameId}/${teamId}`,
+      payload
+    );
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Failed to save lineup');
+    }
+    return response.data.data;
+  },
+ 
+  /**
+   * Wipe any customization and regenerate the auto lineup from roster ratings.
+   */
+  resetLineup: async (savedGameId: string, teamId: string): Promise<LineupData> => {
+    const response = await api.post<ApiResponse<LineupData>>(
+      `/api/lineup/${savedGameId}/${teamId}/auto`
+    );
+    if (!response.data.success) {
+      throw new Error(response.data.error || 'Failed to reset lineup');
+    }
+    return response.data.data;
   },
 };
 

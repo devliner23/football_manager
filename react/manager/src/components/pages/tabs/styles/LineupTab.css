@@ -1,0 +1,404 @@
+/* ==========================================================================
+   LineupTab.css
+   Dark Glass Theme – Subdued, no neon
+   ========================================================================== */
+
+:root {
+    --glass-bg: rgba(18, 22, 30, 0.75);
+    --glass-border: rgba(255, 255, 255, 0.06);
+    --panel-bg: rgba(26, 30, 40, 0.85);
+    --text: #eaeef5;
+    --text-muted: #8892a6;
+    --accent-blue: #6e8fc9;
+    --accent-gold: #d4b67a;
+    --accent-green: #5f9b7a;
+    --accent-red: #bf6a73;
+    --radius: 16px;
+    --transition: 0.2s ease;
+}
+
+/* ── Main panel ── */
+.lineup-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    padding: 28px;
+    border-radius: var(--radius);
+    background: var(--panel-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* ── Header ── */
+.lineup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.lineup-header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.lineup-title {
+    margin: 0;
+    color: var(--text);
+    font-size: 1.35rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.lineup-header-icon {
+    color: var(--accent-blue);
+}
+
+.lineup-mode-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.lineup-mode-badge--auto {
+    background: rgba(110, 143, 201, 0.2);
+    color: var(--accent-blue);
+}
+
+.lineup-mode-badge--custom {
+    background: rgba(95, 155, 122, 0.2);
+    color: var(--accent-green);
+}
+
+/* ── Buttons ── */
+.lineup-header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.lineup-header-actions button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.85rem;
+    transition: var(--transition);
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.lineup-reset-btn {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-muted);
+}
+.lineup-reset-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+.lineup-save-btn {
+    background: var(--accent-blue);
+    color: #fff;
+}
+.lineup-save-btn:hover {
+    background: #5f83b8;
+    box-shadow: 0 4px 16px rgba(110, 143, 201, 0.25);
+}
+.lineup-save-btn--ok {
+    background: var(--accent-green);
+}
+.lineup-save-btn--ok:hover {
+    background: #4d8a6b;
+}
+.lineup-save-btn--disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* ── Budget bar ── */
+.lineup-budget {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 0;
+}
+
+.lineup-budget-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.85rem;
+}
+
+.lineup-budget-title {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+}
+
+.lineup-budget-total {
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.lineup-budget-track {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+.lineup-budget-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.3s, background 0.3s;
+}
+
+.lineup-budget-warning {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 10px;
+    color: var(--accent-red);
+    font-size: 0.75rem;
+}
+
+/* ── Sections ── */
+.lineup-section {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.lineup-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.lineup-section-label {
+    color: var(--text);
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.lineup-section-count {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+/* ── Player grid ── */
+.lineup-cards {
+    display: grid;
+    gap: 12px;
+}
+
+/* ── Player card ── */
+.lineup-player-card {
+    display: grid;
+    grid-template-columns: 45px 55px 1fr 80px;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 18px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    transition: var(--transition);
+}
+
+.lineup-player-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.lineup-player-card--starter {
+    border-left: 3px solid var(--accent-blue);
+}
+
+.lineup-player-card--empty {
+    opacity: 0.5;
+}
+
+.lineup-slot-label {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+
+.lineup-slot-label--empty {
+    color: var(--text-muted);
+}
+
+.lineup-position-badge {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid;
+    font-weight: 600;
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+}
+
+.lineup-player-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.lineup-player-name {
+    color: var(--text);
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.lineup-rating {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+}
+
+.lineup-rating--elite {
+    color: var(--accent-blue);
+    background: rgba(110, 143, 201, 0.15);
+}
+
+.lineup-rating--good {
+    color: var(--accent-gold);
+    background: rgba(212, 182, 122, 0.15);
+}
+
+.lineup-rating--average {
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* ── Minutes input ── */
+.lineup-minutes-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: flex-end;
+}
+
+.lineup-minutes-input {
+    width: 48px;
+    padding: 6px 4px;
+    text-align: center;
+    border: none;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: var(--transition);
+}
+
+.lineup-minutes-input:focus {
+    outline: 1px solid var(--accent-blue);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.lineup-minutes-input::-webkit-inner-spin-button,
+.lineup-minutes-input::-webkit-outer-spin-button {
+    opacity: 0.4;
+}
+
+.lineup-minutes-unit {
+    color: var(--text-muted);
+    font-size: 0.7rem;
+}
+
+/* ── Error ── */
+.lineup-error {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-radius: 12px;
+    color: var(--accent-red);
+    background: rgba(191, 106, 115, 0.12);
+    border: 1px solid rgba(191, 106, 115, 0.2);
+}
+
+.lineup-error-retry {
+    background: rgba(255, 255, 255, 0.08);
+    border: none;
+    padding: 4px 14px;
+    border-radius: 8px;
+    color: var(--text);
+    cursor: pointer;
+    font-weight: 500;
+    transition: var(--transition);
+}
+.lineup-error-retry:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+/* ── Skeleton ── */
+.lineup-skeleton-wrap {
+    display: grid;
+    gap: 12px;
+}
+
+.lineup-skeleton-card {
+    height: 60px;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #232a36 25%, #2e3644 50%, #232a36 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ── Misc ── */
+.lineup-spinning {
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.lineup-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+    gap: 12px;
+    text-align: center;
+}
+
+.lineup-empty-placeholder {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}

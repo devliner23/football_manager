@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Player, Team } from '../../../../shared/index';
 import './TradePanel.css';
 
@@ -19,34 +19,38 @@ const TradePanel: React.FC<TradePanelProps> = ({ savedGameId, userTeamId, teams 
   const [success, setSuccess] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // fetch user roster on mount
+  // Memoize fetchRoster so it can be safely used inside effects
+  const fetchRoster = useCallback(
+    async (teamId: string, setter: (data: Player[]) => void) => {
+      setLoadingRosters(true);
+      try {
+        const res = await fetch(`/api/saved-games/${savedGameId}/teams/${teamId}/players`);
+        if (!res.ok) throw new Error('Failed to fetch roster');
+        const data = await res.json();
+        // Adjust if your API wraps the array differently
+        setter(data.players ?? data);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoadingRosters(false);
+      }
+    },
+    [savedGameId]
+  );
+
+  // Fetch user roster on mount
   useEffect(() => {
     fetchRoster(userTeamId, setUserRoster);
-  }, [userTeamId]);
+  }, [userTeamId, fetchRoster]);
 
-  // fetch opponent roster when selection changes
+  // Fetch opponent roster when selection changes
   useEffect(() => {
     if (!selectedTeamId) {
       setOtherRoster([]);
       return;
     }
     fetchRoster(selectedTeamId, setOtherRoster);
-  }, [selectedTeamId]);
-
-  const fetchRoster = async (teamId: string, setter: (data: Player[]) => void) => {
-    setLoadingRosters(true);
-    try {
-      const res = await fetch(`/api/saved-games/${savedGameId}/teams/${teamId}/players`);
-      if (!res.ok) throw new Error('Failed to fetch roster');
-      const data = await res.json();
-      // adjust if your API wraps the array differently
-      setter(data.players ?? data);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoadingRosters(false);
-    }
-  };
+  }, [selectedTeamId, fetchRoster]);
 
   const togglePlayer = (player: Player, fromUser: boolean) => {
     if (fromUser) {
@@ -107,11 +111,15 @@ const TradePanel: React.FC<TradePanelProps> = ({ savedGameId, userTeamId, teams 
 
       setTradeFromUser([]);
       setTradeFromOther([]);
-      // refresh rosters after a short delay
-      setTimeout(() => {
+
+      // Refresh rosters after a short delay
+      const timer = setTimeout(() => {
         fetchRoster(userTeamId, setUserRoster);
         if (selectedTeamId) fetchRoster(selectedTeamId, setOtherRoster);
       }, 500);
+
+      // Cleanup in case component unmounts before the timeout
+      return () => clearTimeout(timer);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -119,32 +127,25 @@ const TradePanel: React.FC<TradePanelProps> = ({ savedGameId, userTeamId, teams 
     }
   };
 
-  const PlayerCard: React.FC<{ player: Player; isSelected: boolean; onClick: () => void }> = ({
-    player,
-    isSelected,
-    onClick,
-  }) => (
+  // Small sub-component for player cards – uses CSS classes now
+  const PlayerCard: React.FC<{
+    player: Player;
+    isSelected: boolean;
+    onClick: () => void;
+  }> = ({ player, isSelected, onClick }) => (
     <div
       className={`player-card ${isSelected ? 'selected' : ''}`}
       onClick={onClick}
-      style={{
-        border: '1px solid #ccc',
-        padding: '8px',
-        margin: '4px 0',
-        cursor: 'pointer',
-        backgroundColor: isSelected ? '#e0f0ff' : '#fff',
-        borderRadius: '4px',
-      }}
     >
       <strong>{player.first_name} {player.last_name}</strong>
-      <div>{player.position} | OVR: {player.overall_rating}</div>
+      <div className="player-position">{player.position} | OVR: {player.overall_rating}</div>
     </div>
   );
 
   return (
-    <div className="trade-panel" style={{ display: 'flex', gap: '20px', padding: '20px' }}>
+    <div className="trade-panel">
       {/* LEFT: User roster */}
-      <div style={{ flex: 1 }}>
+      <div className="roster-panel">
         <h3>Your Team</h3>
         {loadingRosters && <p>Loading...</p>}
         {userRoster.map(player => (
@@ -155,16 +156,16 @@ const TradePanel: React.FC<TradePanelProps> = ({ savedGameId, userTeamId, teams 
             onClick={() => togglePlayer(player, true)}
           />
         ))}
-        <p style={{ marginTop: '10px', fontStyle: 'italic' }}>
+        <p className="helper-text">
           Click to select players you will <strong>give away</strong>.
         </p>
       </div>
 
-      {/* CENTER: summary and actions */}
-      <div style={{ flex: 0.8, textAlign: 'center' }}>
+      {/* CENTER: trade summary and actions */}
+      <div className="trade-summary">
         <h3>Trade Summary</h3>
 
-        <div style={{ marginBottom: '10px' }}>
+        <div className="team-select">
           <label>Opponent Team: </label>
           <select
             value={selectedTeamId}
@@ -184,34 +185,42 @@ const TradePanel: React.FC<TradePanelProps> = ({ savedGameId, userTeamId, teams 
           </select>
         </div>
 
-        <div>
+        <div className="trade-lists">
           <h4>You give away:</h4>
-          {tradeFromUser.length === 0 && <p style={{ color: '#888' }}>None</p>}
-          {tradeFromUser.map(p => <div key={p.id}>{p.first_name} {p.last_name}</div>)}
+          {tradeFromUser.length === 0 && <p style={{ color: '#94a3b8' }}>None</p>}
+          {tradeFromUser.map(p => (
+            <div key={p.id} className="player-name">
+              {p.first_name} {p.last_name}
+            </div>
+          ))}
         </div>
-        <div style={{ margin: '15px 0', fontSize: '24px' }}>⇄</div>
-        <div>
+        <div className="trade-arrow">⇄</div>
+        <div className="trade-lists">
           <h4>You receive:</h4>
-          {tradeFromOther.length === 0 && <p style={{ color: '#888' }}>None</p>}
-          {tradeFromOther.map(p => <div key={p.id}>{p.first_name} {p.last_name}</div>)}
+          {tradeFromOther.length === 0 && <p style={{ color: '#94a3b8' }}>None</p>}
+          {tradeFromOther.map(p => (
+            <div key={p.id} className="player-name">
+              {p.first_name} {p.last_name}
+            </div>
+          ))}
         </div>
 
         <button
+          className="submit-btn"
           onClick={handleSubmit}
           disabled={submitting || !selectedTeamId}
-          style={{ marginTop: '20px', padding: '8px 16px' }}
         >
           {submitting ? 'Submitting...' : 'Propose Trade'}
         </button>
 
-        {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
-        {success && <p style={{ color: 'green', marginTop: '10px' }}>{success}</p>}
+        {error && <p className="feedback-message error">{error}</p>}
+        {success && <p className="feedback-message success">{success}</p>}
       </div>
 
       {/* RIGHT: Opponent roster */}
-      <div style={{ flex: 1 }}>
+      <div className="roster-panel">
         <h3>{selectedTeamId ? 'Opponent Roster' : 'Select a team'}</h3>
-        {!selectedTeamId && <p style={{ color: '#888' }}>Pick an opponent from the dropdown above.</p>}
+        {!selectedTeamId && <p style={{ color: '#94a3b8' }}>Pick an opponent from the dropdown above.</p>}
         {loadingRosters && selectedTeamId && <p>Loading...</p>}
         {otherRoster.map(player => (
           <PlayerCard
@@ -222,7 +231,7 @@ const TradePanel: React.FC<TradePanelProps> = ({ savedGameId, userTeamId, teams 
           />
         ))}
         {selectedTeamId && otherRoster.length > 0 && (
-          <p style={{ marginTop: '10px', fontStyle: 'italic' }}>
+          <p className="helper-text">
             Click to select players you want to <strong>receive</strong>.
           </p>
         )}

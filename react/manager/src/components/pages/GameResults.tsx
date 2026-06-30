@@ -127,10 +127,6 @@ const GameResults: React.FC<GameResultsProps> = ({ savedGameId, onGameClick, ref
                 </div>
 
                 <div className="game-footer">
-                  <span className="game-date">
-                    <Calendar size={12} />
-                    {formatDate(game.played_at)}
-                  </span>
                   {!finished && (
                     <span className="game-status-badge">
                       <Clock size={10} /> upcoming
@@ -138,9 +134,6 @@ const GameResults: React.FC<GameResultsProps> = ({ savedGameId, onGameClick, ref
                   )}
                 </div>
 
-                <div className="expand-indicator">
-                  <ChevronDown size={16} />
-                </div>
               </div>
             </div>
           );

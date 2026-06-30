@@ -54,7 +54,7 @@
 }
 
 /* ==========================
-   LEFT PANEL – (kept exactly as provided)
+   LEFT PANEL
    ========================== */
 
 .overview-left-panel {
@@ -156,7 +156,9 @@
   letter-spacing: 0.03em;
 }
 
-/* Quick actions – icon‑first buttons */
+/* ==========================
+   QUICK ACTIONS – BASE STYLES
+   ========================== */
 .quick-actions {
   display: flex;
   flex-direction: column;
@@ -164,6 +166,7 @@
   margin-top: 4px;
 }
 
+/* Shared button/container look */
 .icon-btn {
   display: flex;
   align-items: center;
@@ -179,6 +182,7 @@
   transition: all 0.25s ease;
   text-decoration: none;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .icon-btn svg {
@@ -187,18 +191,84 @@
   transition: color 0.25s ease;
 }
 
-.icon-btn:hover {
+/* Hover for standard buttons only */
+.icon-btn:not(.trade-btn):hover {
   background: rgba(255, 255, 255, 0.06);
   border-color: rgba(255, 255, 255, 0.08);
   color: #ffffff;
   transform: translateX(2px);
 }
 
-.icon-btn:hover svg {
+.icon-btn:not(.trade-btn):hover svg {
   color: #60a5fa;
 }
 
-/* Responsive tweaks for left panel */
+/* ==========================
+   TRADE BUTTON – HOVER‑REVEAL MENU
+   ========================== */
+.icon-btn.trade-btn {
+  position: relative;
+  padding: 0;           /* container itself gets no padding */
+  height: 48px;         /* fixed height prevents layout shift */
+  overflow: hidden;     /* optional, ensures no content spills */
+}
+
+/* Both content layers are absolutely positioned inside the container */
+.trade-btn .btn-default-content,
+.trade-btn .btn-hover-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.3s ease;
+}
+
+/* Default (visible) layer – matches the original look */
+.trade-btn .btn-default-content {
+  gap: 10px;
+  padding: 0 16px;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Hidden layer – four action icons */
+.trade-btn .btn-hover-content {
+  gap: 8px;
+  justify-content: space-evenly;
+  padding: 0 8px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Fade swap on hover */
+.trade-btn:hover .btn-default-content {
+  opacity: 0;
+}
+.trade-btn:hover .btn-hover-content {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Individual icon buttons inside the hover layer */
+.trade-action-icon {
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255, 255, 255, 0.65);
+  transition: color 0.2s ease;
+}
+
+.trade-action-icon:hover {
+  color: #60a5fa;
+}
+
+/* ==========================
+   RESPONSIVE TWEAKS
+   ========================== */
 @media (max-width: 768px) {
   .overview-left-panel {
     padding: 16px;
@@ -570,13 +640,8 @@
 }
 
 .overview-game-results > div {
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: 1rem;
   padding: 1.5rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 /* ==========================

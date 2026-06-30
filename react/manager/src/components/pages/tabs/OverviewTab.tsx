@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { SavedGame, Team, Player } from '../../../shared/index';
 import GameResults from '../GameResults';
-import { TrendingUp, TrendingDown, Calendar, ArrowRight, User, Target, Play, Settings, ArrowRightLeft } from 'lucide-react';
+import { TrendingUp, TrendingDown, Calendar, ArrowRight, User, Target, Play, Settings, ArrowRightLeft, Users, BarChart3 } from 'lucide-react';
 import TradePanel from './tabComponents/TradePanel';
 import "./styles/OverviewTab.css";
 
@@ -106,23 +106,54 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
           </div>
 
-          <div className="quick-actions">
-            <button className="icon-btn">
-              <Play size={18} strokeWidth={2} />
-              <span>Sim Next Game</span>
-            </button>
-            <button className="icon-btn">
-              <Settings size={18} strokeWidth={2} />
-              <span>Adjust Lineup</span>
-            </button>
-            <button
-              className="icon-btn"
-              onClick={() => setShowTradeModal(true)}
-            >
-              <ArrowRightLeft size={18} strokeWidth={2} />
-              <span>Trade</span>
-            </button>
-          </div>
+<div className="quick-actions">
+  <button className="icon-btn">
+    <Play size={18} strokeWidth={2} />
+    <span>Sim Next Game</span>
+  </button>
+  <button className="icon-btn">
+    <Settings size={18} strokeWidth={2} />
+    <span>Adjust Lineup</span>
+  </button>
+
+  {/* 🔄 TRANSFORMED TRADE BUTTON */}
+  <div className="icon-btn trade-btn">
+    <div className="btn-default-content">
+      <ArrowRightLeft size={18} strokeWidth={2} />
+      <span>Team Actions</span>
+    </div>
+    <div className="btn-hover-content">
+      <button
+        className="trade-action-icon"
+        aria-label="Trade Center"
+        onClick={() => {/* later: navigate to /trade */}}
+      >
+        <ArrowRightLeft size={18} strokeWidth={2} />
+      </button>
+      <button
+        className="trade-action-icon"
+        aria-label="Team Assets"
+        onClick={() => {/* later: navigate to /assets */}}
+      >
+        <Users size={18} strokeWidth={2} />
+      </button>
+      <button
+        className="trade-action-icon"
+        aria-label="League Trends"
+        onClick={() => {/* later: navigate to /trends */}}
+      >
+        <TrendingUp size={18} strokeWidth={2} />
+      </button>
+      <button
+        className="trade-action-icon"
+        aria-label="Trade Stats"
+        onClick={() => {/* later: navigate to /stats */}}
+      >
+        <BarChart3 size={18} strokeWidth={2} />
+      </button>
+    </div>
+  </div>
+</div>
         </div>
 
         {/* --- CENTER COLUMN: TEAM STATS & LEADERS --- */}

@@ -10,6 +10,7 @@ const userRoutes = require('./routes/userRoutes');
 const gameRoutes = require('./routes/gameRoutes');
 const teamRoutes = require('./routes/teamRoutes');
 const leagueRoutes = require('./routes/leagueRoutes');
+const lineupRoutes = require("./routes/lineupRoutes");
 
 const app = express();
 
@@ -34,6 +35,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/games', gameRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/league', leagueRoutes);
+app.use('/api/lineup', lineupRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

@@ -48,6 +48,9 @@ class GameSimulationEngine {
     gameState.homeTeam = homeTeam;
     gameState.awayTeam = awayTeam;
 
+    gameState.homeLineup = options.homeLineup || null; 
+    gameState.awayLineup = options.awayLineup || null;
+
     // Substitution state
     gameState.homeActiveIds = [];
     gameState.homeBenchIds = [];
@@ -94,15 +97,40 @@ class GameSimulationEngine {
     };
   }
 
-  // ── Lineup initialization for a period ──────────────────────────────
   static _setPeriodLineups(gameState, period) {
     const setSide = (teamSide) => {
       const players = gameState[teamSide + 'Team'].players;
-      const sorted = [...players].sort((a, b) => b.overall_rating - a.overall_rating);
-      const allIds = sorted.map(p => p.id);
+      const lineup = gameState[teamSide + 'Lineup'];
+      const validIds = new Set(players.map(p => p.id));
 
-      const starters = allIds.slice(0, 5);
-      const bench = allIds.slice(5);
+      let starters, bench;
+      if (lineup && Array.isArray(lineup.starters) && lineup.starters.length === 5) {
+        starters = lineup.starters.filter(id => validIds.has(id));
+        bench = (Array.isArray(lineup.rotation) ? lineup.rotation : [])
+          .filter(id => validIds.has(id) && !starters.includes(id));
+
+        // Anyone not in starters/rotation (shouldn't normally happen) still plays
+        const accounted = new Set([...starters, ...bench]);
+        for (const p of players) {
+          if (!accounted.has(p.id)) bench.push(p.id);
+        }
+        // Safety net: if the supplied lineup is malformed/short, top off from ratings
+        if (starters.length < 5) {
+          const sorted = [...players].sort((a, b) => b.overall_rating - a.overall_rating);
+          for (const p of sorted) {
+            if (starters.length >= 5) break;
+            if (!starters.includes(p.id)) {
+              starters.push(p.id);
+              bench = bench.filter(id => id !== p.id);
+            }
+          }
+        }
+      } else {
+        const sorted = [...players].sort((a, b) => b.overall_rating - a.overall_rating);
+        const allIds = sorted.map(p => p.id);
+        starters = allIds.slice(0, 5);
+        bench = allIds.slice(5);
+      }
 
       if (period.startsWith('Q')) {
         const q = parseInt(period[1]);
@@ -110,24 +138,18 @@ class GameSimulationEngine {
           gameState[teamSide + 'ActiveIds'] = [...starters];
           gameState[teamSide + 'BenchIds'] = [...bench];
         } else if (q === 2 || q === 4) {
-          const mixed = [starters[0], starters[1], starters[2], bench[0], bench[1]];
+          const mixed = [starters[0], starters[1], starters[2], bench[0], bench[1]].filter(Boolean);
           gameState[teamSide + 'ActiveIds'] = mixed;
-          gameState[teamSide + 'BenchIds'] = [
-            ...starters.slice(3),
-            ...bench.slice(2)
-          ];
+          gameState[teamSide + 'BenchIds'] = [...starters.slice(3), ...bench.slice(2)].filter(Boolean);
         }
       } else {
-        // Overtime: pick 5 based on lowest fatigue and highest rating
+        // Overtime: best available 5 by lowest fatigue / highest rating, regardless of lineup
         const fatigueMap = gameState[teamSide + 'Fatigue'];
-        const candidates = allIds.map(id => {
-          const player = players.find(p => p.id === id);
-          return {
-            id,
-            fatigue: fatigueMap.get(id) || 0,
-            rating: player.overall_rating || 0
-          };
-        });
+        const candidates = players.map(p => ({
+          id: p.id,
+          fatigue: fatigueMap.get(p.id) || 0,
+          rating: p.overall_rating || 0,
+        }));
         candidates.sort((a, b) => (a.fatigue - b.fatigue) || (b.rating - a.rating));
         gameState[teamSide + 'ActiveIds'] = candidates.slice(0, 5).map(c => c.id);
         gameState[teamSide + 'BenchIds'] = candidates.slice(5).map(c => c.id);
@@ -1018,16 +1040,27 @@ class GameSimulationEngine {
     const sorted = [...players].sort((a, b) => (b.overall_rating || 0) - (a.overall_rating || 0));
     const rankOf = new Map(sorted.map((p, i) => [p.id, i]));
 
+    const lineup = gameState[teamSide + 'Lineup'];
     const playerMinutes = new Map();
-    for (const p of players) {
-      const rank = rankOf.get(p.id) ?? players.length;
-      const fatigue = fatigueMap.get(p.id) || 0;
-      let base;
-      if (rank <= 1) base = 30 + ((p.overall_rating || 70) - 70) * 0.30;
-      else if (rank <= 4) base = 24 + ((p.overall_rating || 65) - 65) * 0.25;
-      else if (rank <= 8) base = 13 + ((p.overall_rating || 60) - 60) * 0.20;
-      else base = 2 + ((p.overall_rating || 50) - 50) * 0.10;
-      playerMinutes.set(p.id, Math.max(1, Math.round(base - fatigue * 6)));
+
+    if (lineup && lineup.minutesTargets) {
+      for (const p of players) {
+        const target = lineup.minutesTargets[p.id];
+        const fatigue = fatigueMap.get(p.id) || 0;
+        const base = (target === undefined || target === null) ? 6 : target;
+        playerMinutes.set(p.id, Math.max(1, Math.round(base - fatigue * 4)));
+      }
+    } else {
+      for (const p of players) {
+        const rank = rankOf.get(p.id) ?? players.length;
+        const fatigue = fatigueMap.get(p.id) || 0;
+        let base;
+        if (rank <= 1) base = 30 + ((p.overall_rating || 70) - 70) * 0.30;
+        else if (rank <= 4) base = 24 + ((p.overall_rating || 65) - 65) * 0.25;
+        else if (rank <= 8) base = 13 + ((p.overall_rating || 60) - 60) * 0.20;
+        else base = 2 + ((p.overall_rating || 50) - 50) * 0.10;
+        playerMinutes.set(p.id, Math.max(1, Math.round(base - fatigue * 6)));
+      }
     }
     const totalAlloc = [...playerMinutes.values()].reduce((a, b) => a + b, 0);
     const scale = totalMinutes / totalAlloc;

@@ -3,6 +3,7 @@ const NBA_TEAMS = require('../data/teams.json');
 const GameSimulationEngine = require('./gameSimulationEngine');
 const PlayerGenerator = require('./playerGenerator');
 const TeamArchetypeService = require('./teamArchetypeService');
+const LineupService = require("./lineupService");
 const { generateFreeAgentPool } = require("./freeAgentGenerator");
 
 const ROSTER_SIZE = 15;
@@ -411,7 +412,12 @@ class LeagueService {
       this.getRosterForTeam(awayTeamId),
     ]);
 
-    const result   = GameSimulationEngine.simulateGame(homePlayers, awayPlayers, { homeCourtAdvantage: 1.03 });
+    const lineups = await this._getLineupsForTeams([homeTeamId, awayTeamId]);
+    const result = GameSimulationEngine.simulateGame(homePlayers, awayPlayers, {
+      homeCourtAdvantage: 1.03,
+      homeLineup: lineups[homeTeamId],
+      awayLineup: lineups[awayTeamId],
+    });
     const allStats = [
       ...result.homeBoxScores.map(b => mapBoxScore(b, homeTeamId, gameId, this.savedGameId)),
       ...result.awayBoxScores.map(b => mapBoxScore(b, awayTeamId, gameId, this.savedGameId)),
@@ -651,11 +657,19 @@ class LeagueService {
     );
     const rosterMap = Object.fromEntries(rosterEntries);
 
+// In _bulkSimulateGames(games, seasonId), after rosterMap is built, add:
+    const lineupMap = await this._getLineupsForTeams(teamIds);
+
+    // Then update the simResults mapping to pass lineups:
     const simResults = games.map(game => {
       const result = GameSimulationEngine.simulateGame(
         rosterMap[game.home_team_id],
         rosterMap[game.away_team_id],
-        { homeCourtAdvantage: 1.03 }
+        {
+          homeCourtAdvantage: 1.03,
+          homeLineup: lineupMap[game.home_team_id],
+          awayLineup: lineupMap[game.away_team_id],
+        }
       );
       return {
         game,
@@ -1403,6 +1417,14 @@ async signFreeAgent(playerId, teamId) {
     );
     if (result.rowCount === 0) throw new Error('Trade not found.');
     return result.rows[0];
+  }
+
+  async _getLineupsForTeams(teamIds) {
+    const lineupService = new LineupService(this.savedGameId);
+    const entries = await Promise.all(
+      teamIds.map(async id => [id, await lineupService.getLineupForSimulation(id)])
+    );
+    return Object.fromEntries(entries);
   }
 };
 
