@@ -1,10 +1,16 @@
 /* ---- GLOBAL RESET & CONTAINER ---- */
 .overview-container {
-  background-color: #0f172a;
-  padding: 1.5rem 1.5rem 2.5rem;
-  font-family: system-ui, -apple-system, sans-serif;
-  color: #f1f5f9;
-  min-height: 100vh;
+  background: radial-gradient(
+      circle at top left,
+      rgba(99, 102, 241, 0.08),
+      transparent 40%
+    ),
+    radial-gradient(
+      circle at bottom right,
+      rgba(34, 211, 238, 0.06),
+      transparent 45%
+    ),
+    #0f172a;
 }
 
 .overview-container.error-state {
@@ -47,12 +53,29 @@
 .overview-center-panel .team-leaders-card,
 .overview-right-panel .next-game-card,
 .overview-right-panel .league-snapshot-card {
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(30, 41, 59, 0.5);
-  border-radius: 1rem;
   padding: 1.25rem 1.5rem;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.overview-left-panel,
+.kpi-card,
+.team-leaders-card,
+.next-game-card,
+.league-snapshot-card {
+  border-radius: 1.25rem;
+  background: rgba(30, 41, 59, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  backdrop-filter: blur(10px);
+  transition: all 0.25s ease;
+}
+
+/* hover lift for ALL cards */
+.kpi-card:hover,
+.team-leaders-card:hover,
+.next-game-card:hover,
+.league-snapshot-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(99, 102, 241, 0.25);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
 }
 
 .overview-left-panel {
@@ -194,7 +217,23 @@
 }
 
 .kpi-card {
-  padding: 1rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card::before {
+  content: "";
+  position: absolute;
+  top: -40%;
+  right: -30%;
+  width: 120px;
+  height: 120px;
+  background: radial-gradient(
+    circle,
+    rgba(34, 211, 238, 0.15),
+    transparent 70%
+  );
+  transform: rotate(25deg);
 }
 
 .kpi-header {
@@ -221,16 +260,14 @@
 }
 
 .kpi-value {
-  font-size: 1.875rem;
-  font-weight: 700;
-  color: #ffffff;
+  font-size: 2.25rem;
+  letter-spacing: -0.03em;
 }
 
 .kpi-trend {
-  display: flex;
-  align-items: center;
-  font-size: 0.75rem;
-  font-weight: 700;
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  background: rgba(16, 185, 129, 0.1);
 }
 
 .kpi-trend-up { color: #10b981; }
@@ -262,8 +299,17 @@
 .leader-item {
   display: flex;
   justify-content: space-between;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid rgba(30, 41, 59, 0.5);
+  padding: 0.75rem 0.5rem;
+  border-radius: 0.75rem;
+  transition: background 0.2s ease;
+}
+
+.leader-item:hover {
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.leader-name {
+  font-weight: 600;
 }
 
 .leader-item:last-child {
@@ -277,9 +323,21 @@
 
 /* ---- RIGHT PANEL ---- */
 .next-game-card {
-  margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, rgba(67, 56, 202, 0.4), rgba(30, 41, 59, 0.6));
-  border-color: rgba(99, 102, 241, 0.3);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 1.5rem
+}
+
+.next-game-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(99, 102, 241, 0.15),
+    transparent 50%
+  );
+  pointer-events: none;
 }
 
 .next-game-header {

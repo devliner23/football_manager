@@ -173,6 +173,44 @@ export const leagueAPI = {
     const { data } = await api.post(`/api/league/${savedGameId}/simulate-to-date`, { targetDate });
     return data.data; // { seasonComplete, gamesSimulated, results }
   },
+
+  // Add these three methods to the leagueAPI object in leagueApi.ts
+// (alongside getTeams, getPlayers, tradePlayer, etc.)
+
+  getFreeAgents: async (
+    savedGameId: string,
+    params: { position?: string; minOverall?: number; limit?: number; offset?: number } = {}
+  ) => {
+    const query = new URLSearchParams();
+    if (params.position)   query.set('position',   params.position);
+    if (params.minOverall) query.set('minOverall',  String(params.minOverall));
+    if (params.limit)      query.set('limit',       String(params.limit));
+    if (params.offset)     query.set('offset',      String(params.offset));
+
+    const qs = query.toString();
+    const response = await api.get<ApiResponse<Player[]>>(
+      `/api/league/${savedGameId}/free-agents${qs ? `?${qs}` : ''}`
+    );
+    return extractData(response);
+  },
+
+  signFreeAgent: async (
+    savedGameId: string,
+    data: { playerId: string; teamId: string }
+  ) => {
+    const response = await api.post<ApiResponse<Player>>(
+      `/api/league/${savedGameId}/free-agents/sign`,
+      data
+    );
+    return extractData(response);
+  },
+
+  releasePlayer: async (savedGameId: string, playerId: string) => {
+    const response = await api.post<ApiResponse<Player>>(
+      `/api/league/${savedGameId}/players/${playerId}/release`
+    );
+    return extractData(response);
+  },
 };
 
 export type { Team, Player, StandingsRow, SavedGame, GameResult, PlayerGameStats };

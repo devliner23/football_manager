@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { SavedGame, Team, Player } from '../../../shared/index';
 import GameResults from '../GameResults';
 import { TrendingUp, TrendingDown, Calendar, ArrowRight, User, Target } from 'lucide-react';
+import TradePanel from './tabComponents/TradePanel';
 import "./styles/OverviewTab.css";
 
 
@@ -15,6 +16,7 @@ interface OverviewTabProps {
   savedGameId: string;
   refreshKey: number;
   onGameClick: (gameId: string) => void;
+  allTeams: Team[];
 }
 
 const OverviewTab: React.FC<OverviewTabProps> = ({
@@ -27,7 +29,11 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   savedGameId,
   refreshKey,
   onGameClick,
+  allTeams
 }) => {
+  const [showTradeModal, setShowTradeModal] = useState(false);
+
+
   const getPlayerName = (player: Player) => `${player.first_name} ${player.last_name}`;
 
   const leaderByStat = (stat: keyof Pick<Player, 'points' | 'rebounds' | 'assists'>) => {
@@ -96,12 +102,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
               <span>Record</span>
               <span className="record-value">{record} ({winPct}%)</span>
             </div>
-            <div className="progress-track">
-              <div
-                className="progress-fill"
-                style={{ width: `${Math.min(100, Math.max(0, parseFloat(winPct)))}%` }}
-              />
-            </div>
           </div>
 
           <div className="quick-actions">
@@ -109,6 +109,12 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
               Simulate Next Game <ArrowRight className="icon-small" />
             </button>
             <button className="btn-secondary">Adjust Lineup</button>
+                      <button
+            className="btn-secondary"
+            onClick={() => setShowTradeModal(true)}
+          >
+            Trade Players <ArrowRight className="icon-small" />
+          </button>
           </div>
         </div>
 
@@ -202,6 +208,62 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           onGameClick={onGameClick}
         />
       </div>
+
+
+
+            {showTradeModal && userTeam && (
+        <div
+          className="modal-overlay"
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setShowTradeModal(false)} // close on backdrop click
+        >
+          <div
+            className="modal-content"
+            style={{
+              background: '#fff',
+              borderRadius: '8px',
+              padding: '20px',
+              width: '90%',
+              maxWidth: '1200px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              position: 'relative',
+            }}
+            onClick={e => e.stopPropagation()} // prevent closing when clicking inside
+          >
+            <button
+              onClick={() => setShowTradeModal(false)}
+              style={{
+                position: 'absolute',
+                top: '10px',
+                right: '10px',
+                background: 'none',
+                border: 'none',
+                fontSize: '20px',
+                cursor: 'pointer',
+              }}
+            >
+              ✕
+            </button>
+            <TradePanel
+              savedGameId={savedGameId}
+              userTeamId={userTeam.id}
+              teams={allTeams.filter(t => t.id !== userTeam.id)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

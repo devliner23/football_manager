@@ -38,15 +38,15 @@ interface SelectedGameProps {
   onUpdate: (game: SavedGame) => void;
 }
 
-type TabType = 'overview' | 'roster' | 'standings' | 'trade' | 'freeagents' | 'frontoffice' | 'schedule';
+type TabType = 'overview' | 'leagueRoster' | 'standings' | 'trade' | 'freeagents' | 'frontoffice' | 'schedule';
 
 const tabConfig = {
   overview: {
     label: 'Overview',
     icon: <LayoutDashboard size={18} strokeWidth={2} />,
   },
-  roster: {
-    label: 'Roster',
+  leagueRoster: {
+    label: 'League Rosters',
     icon: <Users size={18} strokeWidth={2} />,
   },
   standings: {
@@ -243,6 +243,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
       console.error('simulateToNextGame error:', err);
     } finally {
       await refreshAllData();
+      setRefreshKey(k => k + 1);
       setLoading(false);
     }
   };
@@ -257,6 +258,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
       console.error('Simulation failed:', error);
       alert('Simulation failed. Check console.');
     } finally {
+      setRefreshKey(k => k + 1);
       setLoading(false);
     }
   };
@@ -286,6 +288,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
       console.error('Simulation chunk error:', err);
     } finally {
       await refreshAllData();
+      setRefreshKey(k => k + 1);
       setLoading(false);
       setSimProgress(null);
     }
@@ -393,9 +396,10 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 savedGameId={game.id}
                 refreshKey={refreshKey}
                 onGameClick={(gameId) => setSelectedGameId(gameId)}
+                allTeams={teams}
                 />
             )}
-            {!loading && activeTab === 'roster' && (
+            {!loading && activeTab === 'leagueRoster' && (
                 <RosterTab
                 teams={teams}
                 allPlayers={players}
@@ -418,7 +422,9 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 />
             )}
             {!loading && activeTab === 'trade' && <TradeTab />}
-            {!loading && activeTab === 'freeagents' && <FreeAgentsTab />}
+            {!loading && activeTab === 'freeagents' && (
+              <FreeAgentsTab savedGameId={game.id} teams={teams} />
+            )}            
             {!loading && activeTab === 'frontoffice' && <FrontOfficeTab />}
             </div>
 

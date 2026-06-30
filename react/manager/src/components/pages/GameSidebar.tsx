@@ -1,8 +1,22 @@
-// src/components/SelectedGame/GameSidebar.tsx
 import React, { useState, useEffect } from 'react';
 import { UserGameInfo } from '../../api/leagueApi';
 import { useGameContext } from '../../context/GameContext';
-import "./styles/GameSidebar.css"
+import { CalendarDate, DateValue } from '@internationalized/date';
+import {
+  DatePicker,
+  DateInput,
+  Popover,
+  DateSegment,
+  Calendar,
+  CalendarGrid,
+  CalendarGridBody,
+  CalendarGridHeader,
+  CalendarHeaderCell,
+  CalendarCell,
+  Heading,
+  Button
+} from 'react-aria-components';
+import "./styles/GameSidebar.css";
 
 interface GameSidebarProps {
   season: number;
@@ -34,16 +48,14 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
   onSimulate,
   onViewStandings,
   loading,
-  nextUserGame, 
+  nextUserGame,
   leagueGamesBeforeCount = 0,
   lastSimulatedDate,
-  onSimulateToDate
+  onSimulateToDate,
 }) => {
   const [simDate, setSimDate] = useState<string>("");
 
-  const ctx = useGameContext();
-
-  // Sync with latest simulated date whenever it changes
+  // Sync with latest simulated date
   useEffect(() => {
     if (lastSimulatedDate) {
       const formatted = new Date(lastSimulatedDate).toISOString().slice(0, 10);
@@ -52,9 +64,28 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
       setSimDate(new Date().toISOString().slice(0, 10));
     }
   }, [lastSimulatedDate]);
-  
+
+  // Convert string ↔ CalendarDate for the DatePicker
+  const toCalendarDate = (dateStr: string): CalendarDate | null => {
+    if (!dateStr) return null;
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new CalendarDate(y, m, d);
+  };
+
+  const fromCalendarDate = (date: DateValue | null): string => {
+    if (!date) return '';
+    // DateValue can be CalendarDate, CalendarDateTime, or ZonedDateTime
+    // We only use CalendarDate, so we can cast safely.
+    const cd = date as CalendarDate;
+    return `${cd.year}-${String(cd.month).padStart(2, '0')}-${String(cd.day).padStart(2, '0')}`;
+  };
+
+  const handleDateChange = (date: DateValue | null) => {
+    setSimDate(fromCalendarDate(date));
+  };
+
   return (
-    <aside className="game-sidebar">
+    <aside className="game-sidebar-container">
       <div className="game-sidebar-section">
         <h4>Season {season}</h4>
         <div className="sidebar-record">
@@ -89,19 +120,44 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
           </p>
         )}
         <div className="sim-date-input">
-          <div className="sim-date-picker-card">
-            <input
-              type="date"
-              id="sim-date"
-              value={simDate}
-              onChange={(e) => setSimDate(e.target.value)}
-            />
-          </div>
+          <DatePicker
+            className="sim-date-picker-card"
+            value={toCalendarDate(simDate)}
+            onChange={handleDateChange}
+            placeholderValue={new CalendarDate(2026, 1, 1)}
+            isDisabled={loading}
+          >
+            <div className="date-picker-wrapper">
+              <DateInput className="date-picker-input">
+                {(segment) => <DateSegment segment={segment} />}
+              </DateInput>
+              <Button className="date-picker-button">📅</Button>
+            </div>
+              <Popover className="date-picker-popover" placement="bottom start">
+                <Calendar className="date-picker-calendar">
+                  <header className="calendar-header">
+                    <Button slot="previous">‹</Button>
+                    <Heading />
+                    <Button slot="next">›</Button>
+                  </header>
+
+                  <CalendarGrid>
+                    <CalendarGridHeader>
+                      {(day) => <CalendarHeaderCell>{day}</CalendarHeaderCell>}
+                    </CalendarGridHeader>
+
+                    <CalendarGridBody>
+                      {(date) => <CalendarCell date={date} />}
+                    </CalendarGridBody>
+                  </CalendarGrid>
+                </Calendar>
+              </Popover>
+          </DatePicker>
         </div>
         <button
           className="sidebar-action-btn"
           onClick={() => onSimulateToDate(simDate)}
-          disabled={loading}
+          disabled={loading || !simDate}
         >
           {loading ? 'Simulating…' : 'Simulate to Date'}
         </button>

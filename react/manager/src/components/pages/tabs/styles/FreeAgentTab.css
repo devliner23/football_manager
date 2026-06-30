@@ -1,0 +1,419 @@
+/* src/components/pages/tabs/styles/FreeAgentTab.css */
+
+/* ── Panel ─────────────────────────────────────────────────────────────────── */
+.fa-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  color: #e0e0e0;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────────── */
+.fa-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.fa-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.fa-title-row h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #f0f0f0;
+}
+
+.fa-count {
+  font-size: 0.75rem;
+  background: rgba(255,255,255,0.08);
+  padding: 0.15rem 0.6rem;
+  border-radius: 20px;
+  color: #94a3b8;
+}
+
+.fa-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+/* ── Position filter pills ──────────────────────────────────────────────────── */
+.fa-pos-filters {
+  display: flex;
+  gap: 4px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 3px;
+}
+
+.fa-pos-btn {
+  padding: 5px 14px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: rgba(255,255,255,0.55);
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fa-pos-btn:hover {
+  color: #fff;
+  background: rgba(255,255,255,0.06);
+}
+
+.fa-pos-btn.active {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ── Min OVR filter ─────────────────────────────────────────────────────────── */
+.fa-ovr-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 5px 10px;
+  color: #64748b;
+}
+
+.fa-ovr-filter input {
+  width: 64px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #e0e0e0;
+  font-size: 0.85rem;
+}
+
+.fa-ovr-filter input::placeholder {
+  color: #4a5568;
+}
+
+/* ── Refresh button ─────────────────────────────────────────────────────────── */
+.fa-refresh-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 6px 9px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.fa-refresh-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.fa-refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinning { animation: spin 0.7s linear infinite; }
+
+/* ── Feedback banner ────────────────────────────────────────────────────────── */
+.fa-feedback {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 1rem;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.fa-feedback button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.7;
+  display: flex;
+}
+
+.fa-feedback--success {
+  background: rgba(74,222,128,0.12);
+  border: 1px solid rgba(74,222,128,0.25);
+  color: #4ade80;
+}
+
+.fa-feedback--error {
+  background: rgba(248,113,113,0.12);
+  border: 1px solid rgba(248,113,113,0.25);
+  color: #f87171;
+}
+
+/* ── Table ──────────────────────────────────────────────────────────────────── */
+.fa-table-wrap {
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.fa-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #64748b;
+  font-style: italic;
+}
+
+.fa-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.fa-table thead th {
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.4);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  white-space: nowrap;
+}
+
+.fa-row {
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  transition: background 0.15s;
+}
+
+.fa-row:last-child { border-bottom: none; }
+
+.fa-row:hover { background: rgba(255,255,255,0.03); }
+
+.fa-table td {
+  padding: 10px 12px;
+  vertical-align: middle;
+}
+
+.fa-name {
+  font-weight: 500;
+  color: #f1f5f9;
+  white-space: nowrap;
+}
+
+.fa-muted { color: #64748b; }
+
+/* ── Badges / ratings ───────────────────────────────────────────────────────── */
+.fa-pos-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: rgba(255,255,255,0.08);
+  color: #cbd5e1;
+  letter-spacing: 0.3px;
+}
+
+.fa-rating {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.rating-elite  { background: rgba(250,204, 21,0.15); color: #fbbf24; }
+.rating-good   { background: rgba(74, 222,128,0.12); color: #4ade80; }
+.rating-average{ background: rgba(148,163,184,0.12); color: #94a3b8; }
+.rating-low    { background: rgba(248,113,113,0.10); color: #f87171; }
+
+/* ── Trait cells ────────────────────────────────────────────────────────────── */
+.fa-trait {
+  white-space: nowrap;
+}
+
+.fa-trait-label {
+  display: block;
+  font-size: 0.68rem;
+  color: #4a5568;
+  margin-bottom: 1px;
+}
+
+.fa-trait-val {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #cbd5e1;
+}
+
+/* ── Action buttons ─────────────────────────────────────────────────────────── */
+.fa-actions { white-space: nowrap; }
+
+.fa-sign-btn {
+  padding: 5px 14px;
+  border-radius: 7px;
+  border: 1px solid rgba(99,179,237,0.35);
+  background: rgba(99,179,237,0.1);
+  color: #63b3ed;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fa-sign-btn:hover {
+  background: rgba(99,179,237,0.2);
+  border-color: rgba(99,179,237,0.6);
+}
+
+/* ── Sign modal ─────────────────────────────────────────────────────────────── */
+.fa-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.fa-modal {
+  background: rgba(18,22,32,0.95);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px;
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+}
+
+.fa-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fa-modal-header h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #f1f5f9;
+}
+
+.fa-modal-header button {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  transition: color 0.2s;
+}
+
+.fa-modal-header button:hover { color: #f1f5f9; }
+
+.fa-modal-info {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.fa-modal-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: rgba(255,255,255,0.4);
+}
+
+.fa-team-select {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.fa-team-select:focus {
+  border-color: rgba(99,179,237,0.5);
+}
+
+.fa-team-select option {
+  background: #1a2035;
+}
+
+.fa-modal-actions {
+  display: flex;
+  gap: 0.6rem;
+  margin-top: 0.25rem;
+}
+
+.fa-cancel-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.6);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.fa-cancel-btn:hover:not(:disabled) {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.fa-confirm-btn {
+  flex: 2;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+}
+
+.fa-confirm-btn:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(59,130,246,0.55);
+  transform: translateY(-1px);
+}
+
+.fa-confirm-btn:disabled,
+.fa-cancel-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+
+/* ── Responsive ─────────────────────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .fa-table thead th:nth-child(5),
+  .fa-table thead th:nth-child(6),
+  .fa-table td:nth-child(5),
+  .fa-table td:nth-child(6) { display: none; }
+}
+
+@media (max-width: 500px) {
+  .fa-table thead th:nth-child(7),
+  .fa-table td:nth-child(7) { display: none; }
+}

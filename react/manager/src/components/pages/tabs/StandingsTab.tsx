@@ -205,6 +205,7 @@ function TableView({ rows }: { rows: EnrichedRow[] }) {
 }
 
 // ── 3. Differential Scatter ──────────────────────────────────────────────────
+// ── 3. Differential Scatter (Professional) ────────────────────────────────
 function DifferentialView({ rows }: { rows: EnrichedRow[] }) {
   const playedRows = rows.filter(r => r.wins + r.losses > 0);
 
@@ -216,68 +217,176 @@ function DifferentialView({ rows }: { rows: EnrichedRow[] }) {
     );
   }
 
+  // --- margins (in SVG percentage units) ---
+  const margin = { top: 8, right: 12, bottom: 20, left: 20 };
+  const innerWidth  = 100 - margin.left - margin.right;
+  const innerHeight = 100 - margin.top  - margin.bottom;
+
+  // --- data ranges ---
   const ppgs  = playedRows.map(r => r.ppg);
   const oppgs = playedRows.map(r => r.oppg);
-  const minX  = Math.floor(Math.min(...oppgs) - 2);
-  const maxX  = Math.ceil(Math.max(...oppgs)  + 2);
-  const minY  = Math.floor(Math.min(...ppgs)  - 2);
-  const maxY  = Math.ceil(Math.max(...ppgs)   + 2);
+  let minX = Math.min(...oppgs);
+  let maxX = Math.max(...oppgs);
+  let minY = Math.min(...ppgs);
+  let maxY = Math.max(...ppgs);
 
-  const toSvgX = (v: number) => ((v - minX) / (maxX - minX)) * 100;
-  const toSvgY = (v: number) => 100 - ((v - minY) / (maxY - minY)) * 100;
+  // Pad ranges to avoid points on the edge
+  const padX = (maxX - minX) * 0.1 || 1;
+  const padY = (maxY - minY) * 0.1 || 1;
+  minX = Math.floor((minX - padX) * 10) / 10;
+  maxX = Math.ceil ((maxX + padX) * 10) / 10;
+  minY = Math.floor((minY - padY) * 10) / 10;
+  maxY = Math.ceil ((maxY + padY) * 10) / 10;
 
-  // Diagonal line where ppg === oppg  →  "break-even"
-  const diagX1 = toSvgX(minX); const diagY1 = toSvgY(minX);
-  const diagX2 = toSvgX(maxX); const diagY2 = toSvgY(maxX);
+  // If all values are identical, expand manually
+  if (minX === maxX) { minX -= 1; maxX += 1; }
+  if (minY === maxY) { minY -= 1; maxY += 1; }
+
+  // --- coordinate mappers (respect margins) ---
+  const toSvgX = (v: number) => margin.left + ((v - minX) / (maxX - minX)) * innerWidth;
+  const toSvgY = (v: number) => margin.top  + (1 - (v - minY) / (maxY - minY)) * innerHeight;
+
+  // --- diagonal (break‑even) ---
+  const diagStart = Math.max(minX, minY);
+  const diagEnd   = Math.min(maxX, maxY);
+  const diagX1 = toSvgX(diagStart);
+  const diagY1 = toSvgY(diagStart);
+  const diagX2 = toSvgX(diagEnd);
+  const diagY2 = toSvgY(diagEnd);
+
+  // --- tick generation (3 to 5 nice ticks) ---
+  function niceTicks(min: number, max: number, count = 4): number[] {
+    const range = max - min;
+    const step = Math.pow(10, Math.floor(Math.log10(range / count)));
+    const niceMin = Math.floor(min / step) * step;
+    const niceMax = Math.ceil(max / step) * step;
+    const ticks: number[] = [];
+    for (let v = niceMin; v <= niceMax + step/2; v += step) {
+      ticks.push(v);
+    }
+    return ticks;
+  }
+
+  const xTicks = niceTicks(minX, maxX);
+  const yTicks = niceTicks(minY, maxY);
+
+  // --- quadrant labels (positioned in the corners) ---
+  const qLabels = [
+    { text: '⇑ High Offense / Low Defense', x: margin.left + innerWidth * 0.05, y: margin.top + innerHeight * 0.08, anchor: 'start', color: '#4ade80' },
+    { text: '⇓ Low Offense / High Defense', x: margin.left + innerWidth * 0.95, y: margin.top + innerHeight * 0.92, anchor: 'end', color: '#f87171' },
+  ];
 
   return (
     <div className="diff-view">
+      {/* Y-axis label (absolute, outside SVG) */}
       <div className="diff-axis-label diff-axis-label--y">Points Scored (PPG)</div>
 
       <div className="diff-chart-wrap">
+        {/* Y ticks (outside SVG, on the left) */}
         <div className="diff-y-ticks">
-          {[maxY, (maxY + minY) / 2, minY].map(v => (
-            <span key={v}>{v.toFixed(0)}</span>
+          {yTicks.map(v => (
+            <span key={v} style={{ top: `${100 - ((v - minY) / (maxY - minY)) * 100}%` }}>
+              {v.toFixed(1)}
+            </span>
           ))}
         </div>
 
         <svg
           className="diff-svg"
           viewBox="0 0 100 100"
-          preserveAspectRatio="none"
+          preserveAspectRatio="xMidYMid meet"
         >
-          {/* Grid */}
-          {[25, 50, 75].map(p => (
-            <React.Fragment key={p}>
-              <line x1={p} y1="0" x2={p} y2="100" stroke="rgba(255,255,255,0.04)" strokeWidth="0.4" />
-              <line x1="0" y1={p} x2="100" y2={p} stroke="rgba(255,255,255,0.04)" strokeWidth="0.4" />
-            </React.Fragment>
-          ))}
+          {/* ── Background / grid ── */}
+          <rect x={margin.left} y={margin.top} width={innerWidth} height={innerHeight} fill="rgba(255,255,255,0.02)" />
 
-          {/* Break-even diagonal */}
+          {/* Grid lines (major) */}
+          {xTicks.map(v => {
+            const x = toSvgX(v);
+            return (
+              <line
+                key={`xgrid-${v}`}
+                x1={x} y1={margin.top}
+                x2={x} y2={margin.top + innerHeight}
+                stroke="rgba(255,255,255,0.08)"
+                strokeWidth="0.4"
+              />
+            );
+          })}
+          {yTicks.map(v => {
+            const y = toSvgY(v);
+            return (
+              <line
+                key={`ygrid-${v}`}
+                x1={margin.left} y1={y}
+                x2={margin.left + innerWidth} y2={y}
+                stroke="rgba(255,255,255,0.08)"
+                strokeWidth="0.4"
+              />
+            );
+          })}
+
+          {/* ── Axis lines ── */}
+          <line
+            x1={margin.left} y1={margin.top + innerHeight}
+            x2={margin.left + innerWidth} y2={margin.top + innerHeight}
+            stroke="rgba(255,255,255,0.25)"
+            strokeWidth="0.6"
+          />
+          <line
+            x1={margin.left} y1={margin.top}
+            x2={margin.left} y2={margin.top + innerHeight}
+            stroke="rgba(255,255,255,0.25)"
+            strokeWidth="0.6"
+          />
+
+          {/* ── Break‑even diagonal ── */}
           <line
             x1={diagX1} y1={diagY1}
             x2={diagX2} y2={diagY2}
-            stroke="rgba(255,255,255,0.12)"
-            strokeWidth="0.5"
-            strokeDasharray="2 2"
+            stroke="rgba(255,255,255,0.2)"
+            strokeWidth="0.8"
+            strokeDasharray="3 3"
           />
 
-          {/* Quadrant tint: above diagonal = positive diff */}
+          {/* ── Quadrant tints (only if we have data in that area) ── */}
           <defs>
             <linearGradient id="posGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(74,222,128,0.06)" />
+              <stop offset="0%" stopColor="rgba(74,222,128,0.05)" />
               <stop offset="100%" stopColor="transparent" />
             </linearGradient>
             <linearGradient id="negGrad" x1="0" y1="1" x2="0" y2="0">
-              <stop offset="0%" stopColor="rgba(248,113,113,0.06)" />
+              <stop offset="0%" stopColor="rgba(248,113,113,0.05)" />
               <stop offset="100%" stopColor="transparent" />
             </linearGradient>
           </defs>
-          <rect x="0" y="0" width="100" height="100" fill="url(#posGrad)" />
-          <rect x="0" y="0" width="100" height="100" fill="url(#negGrad)" />
+          <rect
+            x={margin.left} y={margin.top}
+            width={innerWidth} height={innerHeight}
+            fill="url(#posGrad)"
+          />
+          <rect
+            x={margin.left} y={margin.top}
+            width={innerWidth} height={innerHeight}
+            fill="url(#negGrad)"
+          />
 
-          {/* Bubbles */}
+          {/* ── Quadrant labels (top‑left and bottom‑right) ── */}
+          {qLabels.map((ql, i) => (
+            <text
+              key={i}
+              x={ql.x}
+              y={ql.y}
+              fontSize="2.2"
+              fill={ql.color}
+              opacity="0.5"
+              fontWeight="500"
+              style={{ pointerEvents: 'none', userSelect: 'none' }}
+            >
+              {ql.text}
+            </text>
+          ))}
+
+          {/* ── Bubbles ── */}
           {playedRows.map(row => {
             const cx = toSvgX(row.oppg);
             const cy = toSvgY(row.ppg);
@@ -287,12 +396,11 @@ function DifferentialView({ rows }: { rows: EnrichedRow[] }) {
 
             return (
               <g key={row.team_id} className="bubble-group">
-                {/* Glow ring */}
+                {/* Glow ring for user */}
                 {row.isUser && (
-                  <circle cx={cx} cy={cy} r={r + 2} fill="none"
-                    stroke={c.main} strokeWidth="0.6" opacity="0.5" />
+                  <circle cx={cx} cy={cy} r={r + 2} fill="none" stroke={c.main} strokeWidth="0.8" opacity="0.5" />
                 )}
-                <circle cx={cx} cy={cy} r={r} fill={c.glass} stroke={c.main} strokeWidth="0.5" />
+                <circle cx={cx} cy={cy} r={r} fill={c.glass} stroke={c.main} strokeWidth="0.6" />
                 <text
                   x={cx} y={cy + 0.9}
                   textAnchor="middle"
@@ -306,24 +414,35 @@ function DifferentialView({ rows }: { rows: EnrichedRow[] }) {
               </g>
             );
           })}
+
+          {/* ── X‑axis tick labels (inside SVG) ── */}
+          {xTicks.map(v => {
+            const x = toSvgX(v);
+            return (
+              <text
+                key={`xtick-${v}`}
+                x={x}
+                y={margin.top + innerHeight + 3.5}
+                textAnchor="middle"
+                fontSize="2.4"
+                fill="rgba(255,255,255,0.5)"
+                style={{ pointerEvents: 'none', userSelect: 'none' }}
+              >
+                {v.toFixed(1)}
+              </text>
+            );
+          })}
         </svg>
 
-        <div className="diff-x-ticks">
-          {[minX, (minX + maxX) / 2, maxX].map(v => (
-            <span key={v}>{v.toFixed(0)}</span>
-          ))}
-        </div>
+        {/* X ticks are now inside SVG, so we can remove the outside x‑ticks div */}
+        {/* We'll keep the container for potential future use, but it's empty now */}
+        <div className="diff-x-ticks" style={{ display: 'none' }} />
       </div>
 
+      {/* X-axis label (positioned below) */}
       <div className="diff-axis-label diff-axis-label--x">Points Allowed (OPPG)</div>
 
-      {/* Quadrant labels */}
-      <div className="diff-quadrants">
-        <div className="diff-quad diff-quad--good">↑ High Offense / Low Defense (Best)</div>
-        <div className="diff-quad diff-quad--bad">↓ Low Offense / High Defense (Worst)</div>
-      </div>
-
-      {/* Legend strip */}
+      {/* Legend */}
       <div className="diff-legend">
         {playedRows.map(row => {
           const c = teamColor(row.team?.name ?? row.team_id);
@@ -346,7 +465,6 @@ function DifferentialView({ rows }: { rows: EnrichedRow[] }) {
     </div>
   );
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 //  MAIN COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────

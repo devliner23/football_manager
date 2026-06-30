@@ -567,6 +567,213 @@ const leagueController = {
       next(error);
     }
   },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+// FREE AGENCY — controller handlers
+//
+// Add these three methods to the `leagueController` object in leagueController.js
+// (alongside getTeams, getPlayers, tradePlayer, etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+
+  // ── GET /api/league/:savedGameId/free-agents ────────────────────────────────
+  // Query params:
+  //   position    string  filter by position (PG|SG|SF|PF|C)
+  //   minOverall  number  minimum overall rating
+  //   limit       number  max results (default 100, max 200)
+  //   offset      number  pagination offset (default 0)
+
+  async getFreeAgents(req, res, next) {
+    try {
+      const { savedGameId } = req.params;
+      const {
+        position,
+        minOverall,
+        limit  = 100,
+        offset = 0,
+      } = req.query;
+
+      // Ownership check
+      const game = await loadOwnedGame(savedGameId, req.user.id);
+      if (!game) return res.status(404).json({ error: 'Game not found or unauthorized' });
+
+      const leagueService = new LeagueService(savedGameId);
+      const freeAgents    = await leagueService.getFreeAgents({
+        position:   position   || undefined,
+        minOverall: minOverall ? parseInt(minOverall, 10) : undefined,
+        limit:      Math.min(parseInt(limit,  10) || 100, 200),
+        offset:     parseInt(offset, 10) || 0,
+      });
+
+      res.json({
+        success: true,
+        data:    freeAgents,
+        count:   freeAgents.length,
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  // ── POST /api/league/:savedGameId/free-agents/sign ─────────────────────────
+  // Body: { playerId: string, teamId: string }
+
+  async signFreeAgent(req, res, next) {
+    try {
+      const { savedGameId }     = req.params;
+      const { playerId, teamId } = req.body;
+
+      if (!playerId || !teamId) {
+        return res.status(400).json({ error: 'playerId and teamId are required' });
+      }
+
+      const game = await loadOwnedGame(savedGameId, req.user.id);
+      if (!game) return res.status(404).json({ error: 'Game not found or unauthorized' });
+
+      const leagueService = new LeagueService(savedGameId);
+      const player        = await leagueService.signFreeAgent(playerId, teamId);
+
+      res.json({
+        success: true,
+        message: `Player signed successfully`,
+        data:    player,
+      });
+    } catch (error) {
+      // Surface roster-full and business-rule errors as 400 rather than 500
+      if (
+        error.message.includes('Roster full') ||
+        error.message.includes('not a free agent') ||
+        error.message.includes('already a free agent') ||
+        error.message.includes('not found')
+      ) {
+        return res.status(400).json({ error: error.message });
+      }
+      next(error);
+    }
+  },
+
+  // ── POST /api/league/:savedGameId/players/:playerId/release ────────────────
+  // No body required.
+
+  async releasePlayer(req, res, next) {
+    try {
+      const { savedGameId, playerId } = req.params;
+
+      const game = await loadOwnedGame(savedGameId, req.user.id);
+      if (!game) return res.status(404).json({ error: 'Game not found or unauthorized' });
+
+      const leagueService = new LeagueService(savedGameId);
+      const player        = await leagueService.releasePlayer(playerId);
+
+      res.json({
+        success: true,
+        message: `${player.first_name} ${player.last_name} released to free agency`,
+        data:    player,
+      });
+    } catch (error) {
+      if (
+        error.message.includes('already a free agent') ||
+        error.message.includes('not found')
+      ) {
+        return res.status(400).json({ error: error.message });
+      }
+      next(error);
+    }
+  },
+  async proposeTrade(req, res, next) {
+    try {
+      const { savedGameId } = req.params;
+      const { receivingTeamId, playerIdsFromProposer, playerIdsFromReceiver } = req.body;
+      const proposingTeamId = req.userManagedTeamId; // from auth middleware
+
+      if (!receivingTeamId || !playerIdsFromProposer || !playerIdsFromReceiver) {
+        return res.status(400).json({ error: 'Missing required fields.' });
+      }
+
+      const trade = await leagueService.proposeTrade(
+        savedGameId,
+        proposingTeamId,
+        receivingTeamId,
+        playerIdsFromProposer,
+        playerIdsFromReceiver
+      );
+
+      return res.status(201).json(trade);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // GET /saved-games/:savedGameId/trades
+  async getTrades(req, res, next) {
+    try {
+      const { savedGameId } = req.params;
+      const teamId = req.query.teamId || req.userManagedTeamId; // optional filter
+      const trades = await leagueService.getTrades(savedGameId, teamId);
+      return res.json(trades);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // GET /saved-games/:savedGameId/trades/:tradeId
+  async getTradeById(req, res, next) {
+    try {
+      const { savedGameId, tradeId } = req.params;
+      const trade = await leagueService.getTradeById(tradeId, savedGameId);
+      return res.json(trade);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // POST /saved-games/:savedGameId/trades/:tradeId/accept
+  async acceptTrade(req, res, next) {
+    try {
+      const { savedGameId, tradeId } = req.params;
+      // Only the receiving team (or admin) should be allowed to accept
+      const trade = await leagueService.getTradeById(tradeId, savedGameId);
+      if (trade.receiving_team_id !== req.userManagedTeamId) {
+        return res.status(403).json({ error: 'Only the receiving team can accept a trade.' });
+      }
+      const updated = await leagueService.acceptTrade(tradeId, savedGameId, true);
+      return res.json(updated);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // POST /saved-games/:savedGameId/trades/:tradeId/reject
+  async rejectTrade(req, res, next) {
+    try {
+      const { savedGameId, tradeId } = req.params;
+      const trade = await leagueService.getTradeById(tradeId, savedGameId);
+      if (trade.receiving_team_id !== req.userManagedTeamId) {
+        return res.status(403).json({ error: 'Only the receiving team can reject a trade.' });
+      }
+      const updated = await leagueService.rejectTrade(tradeId, savedGameId);
+      return res.json(updated);
+    } catch (err) {
+      next(err);
+    }
+  },
+
+  // DELETE /saved-games/:savedGameId/trades/:tradeId (cancel)
+  async cancelTrade(req, res, next) {
+    try {
+      const { savedGameId, tradeId } = req.params;
+      // Both the proposing team and the receiving team can cancel a pending trade
+      const trade = await leagueService.getTradeById(tradeId, savedGameId);
+      if (trade.proposing_team_id !== req.userManagedTeamId && trade.receiving_team_id !== req.userManagedTeamId) {
+        return res.status(403).json({ error: 'Not authorized to cancel this trade.' });
+      }
+      const updated = await leagueService.cancelTrade(tradeId, savedGameId);
+      return res.json(updated);
+    } catch (err) {
+      next(err);
+    }
+  }
 };
+  
+
 
 module.exports = leagueController;

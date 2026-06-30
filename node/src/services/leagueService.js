@@ -3,6 +3,7 @@ const NBA_TEAMS = require('../data/teams.json');
 const GameSimulationEngine = require('./gameSimulationEngine');
 const PlayerGenerator = require('./playerGenerator');
 const TeamArchetypeService = require('./teamArchetypeService');
+const { generateFreeAgentPool } = require("./freeAgentGenerator");
 
 const ROSTER_SIZE = 15;
 const BATCH_SIZE_STATS   = 200;
@@ -10,6 +11,9 @@ const BATCH_SIZE_PLAYERS = 100;
 
 const DAYS_IN_SEASON    = 180;
 const MAX_GAMES_PER_DAY = 10;
+
+const FA_BATCH_SIZE = 100;
+const MAX_ROSTER_SIZE = 15;
 
 // ── Box-score mapper ──────────────────────────────────────────────────────────
 function mapBoxScore(b, teamId, gameId, savedGameId) {
@@ -293,6 +297,7 @@ class LeagueService {
   }
 
   async rollbackLeague() {
+    await supabaseAdmin.from('players').delete().eq('saved_game_id', this.savedGameId);
     await supabaseAdmin.from('teams').delete().eq('saved_game_id', this.savedGameId);
   }
 
@@ -347,6 +352,7 @@ class LeagueService {
       seasonRecord     = await this.createSeason(season);
       await this.createSeasonStats(teams, seasonRecord.id);
       const gamesCount = await this.generateSchedule(teams, seasonRecord.id);
+      const faCount = await this.createFreeAgents(season);
 
       // 5. Persist metadata to the saved_game row
       const currentState = (await this._getGameState()) || {};
@@ -370,6 +376,7 @@ class LeagueService {
         season,
         teamsCreated:   teams.length,
         playersCreated: players.length,
+        freeAgentsCreated:   faCount.length, 
         gamesCreated:   gamesCount,
         userArchetype:  validUserArchetype,
       };
@@ -1002,6 +1009,402 @@ class LeagueService {
       results,
     };
   }
+
+  // ── Create free agent pool ────────────────────────────────────────────────────
+ 
+/**
+ * Generate and persist the initial free agent pool.
+ * Called once during initializeLeague().
+ *
+ * @param {number} season
+ * @param {number} count  - number of free agents to seed (default 75)
+ */
+async createFreeAgents(season = 1, count = 75) {
+  const players = generateFreeAgentPool(this.savedGameId, count);
+ 
+  const inserted = [];
+  for (let i = 0; i < players.length; i += FA_BATCH_SIZE) {
+    const batch = players.slice(i, i + FA_BATCH_SIZE);
+    const { data, error } = await supabaseAdmin
+      .from('players')
+      .insert(batch)
+      .select();
+    if (error) throw new Error(`Failed to create free agents: ${error.message}`);
+    inserted.push(...data);
+  }
+ 
+  console.log(`✅ Created ${inserted.length} free agents`);
+  return inserted;
 }
+ 
+// ── Get free agents ───────────────────────────────────────────────────────────
+ 
+/**
+ * Return all free agents for this saved game, sorted by overall_rating desc.
+ *
+ * @param {Object} options
+ * @param {string} [options.position]      - filter by position ('PG','SG',…)
+ * @param {number} [options.minOverall]    - filter by minimum overall rating
+ * @param {number} [options.limit]         - max rows to return (default 100)
+ * @param {number} [options.offset]        - pagination offset (default 0)
+ */
+async getFreeAgents({ position, minOverall, limit = 100, offset = 0 } = {}) {
+  let query = supabaseAdmin
+    .from('players')
+    .select('*')
+    .eq('saved_game_id', this.savedGameId)
+    .is('team_id', null)
+    .order('overall_rating', { ascending: false })
+    .range(offset, offset + limit - 1);
+ 
+  if (position) {
+    query = query.eq('position', position);
+  }
+  if (minOverall != null) {
+    query = query.gte('overall_rating', minOverall);
+  }
+ 
+  const { data, error } = await query;
+  if (error) throw new Error(`Failed to fetch free agents: ${error.message}`);
+  return data || [];
+}
+ 
+// ── Release a player ──────────────────────────────────────────────────────────
+ 
+/**
+ * Release a player from their team, making them a free agent.
+ * - Sets team_id to null.
+ * - Season stats are preserved (they keep their history).
+ * - Validates the player belongs to this saved game.
+ *
+ * @param {string} playerId
+ * @returns {Object} updated player row
+ */
+async releasePlayer(playerId) {
+  // 1. Confirm player exists in this save
+  const { data: player, error: fetchError } = await supabaseAdmin
+    .from('players')
+    .select('id, team_id, first_name, last_name, saved_game_id')
+    .eq('id', playerId)
+    .eq('saved_game_id', this.savedGameId)
+    .single();
+ 
+  if (fetchError || !player) {
+    throw new Error('Player not found in this saved game');
+  }
+  if (player.team_id === null) {
+    throw new Error('Player is already a free agent');
+  }
+ 
+  // 2. Check roster size won't break — not required here (releasing is always ok)
+ 
+  // 3. Set team_id to null
+  const { data: updated, error: updateError } = await supabaseAdmin
+    .from('players')
+    .update({ team_id: null })
+    .eq('id', playerId)
+    .eq('saved_game_id', this.savedGameId)
+    .select()
+    .single();
+ 
+  if (updateError) throw new Error(`Failed to release player: ${updateError.message}`);
+ 
+  console.log(`🔓 Released ${player.first_name} ${player.last_name} to free agency`);
+  return updated;
+}
+ 
+// ── Sign a free agent ─────────────────────────────────────────────────────────
+ 
+/**
+ * Sign a free agent to a team.
+ * - Validates the player is actually a free agent.
+ * - Validates the destination team belongs to this saved game.
+ * - Enforces MAX_ROSTER_SIZE (15).
+ *
+ * @param {string} playerId
+ * @param {string} teamId
+ * @returns {Object} updated player row
+ */
+async signFreeAgent(playerId, teamId) {
+  // 1. Confirm player is a free agent in this save
+  const { data: player, error: fetchError } = await supabaseAdmin
+    .from('players')
+    .select('id, team_id, first_name, last_name, overall_rating, position')
+    .eq('id', playerId)
+    .eq('saved_game_id', this.savedGameId)
+    .single();
+ 
+  if (fetchError || !player) {
+    throw new Error('Player not found in this saved game');
+  }
+  if (player.team_id !== null) {
+    throw new Error('Player is not a free agent — release them first');
+  }
+ 
+  // 2. Confirm destination team exists in this save
+  const { data: team, error: teamError } = await supabaseAdmin
+    .from('teams')
+    .select('id, name')
+    .eq('id', teamId)
+    .eq('saved_game_id', this.savedGameId)
+    .single();
+ 
+  if (teamError || !team) {
+    throw new Error('Team not found in this saved game');
+  }
+ 
+  // 3. Enforce roster size cap
+  const { count, error: countError } = await supabaseAdmin
+    .from('players')
+    .select('id', { count: 'exact', head: true })
+    .eq('team_id', teamId)
+    .eq('saved_game_id', this.savedGameId);
+ 
+  if (countError) throw new Error(`Failed to check roster size: ${countError.message}`);
+ 
+  if ((count ?? 0) >= MAX_ROSTER_SIZE) {
+    throw new Error(
+      `Roster full — ${team.name} already has ${count} players (max ${MAX_ROSTER_SIZE}). ` +
+      `Release a player first.`
+    );
+  }
+ 
+  // 4. Assign the player
+  const { data: updated, error: updateError } = await supabaseAdmin
+    .from('players')
+    .update({ team_id: teamId })
+    .eq('id', playerId)
+    .eq('saved_game_id', this.savedGameId)
+    .select()
+    .single();
+ 
+  if (updateError) throw new Error(`Failed to sign free agent: ${updateError.message}`);
+ 
+  console.log(
+    `✍️  Signed ${player.first_name} ${player.last_name} ` +
+    `(${player.position}, OVR ${player.overall_rating}) → ${team.name}`
+  );
+  return updated;
+}
+
+  /**
+   * Propose a trade from the user's managed team to another team.
+   * @param {string} savedGameId
+   * @param {string} proposingTeamId - must be the user's managed_club_id
+   * @param {string} receivingTeamId
+   * @param {string[]} playerIdsFromProposer - players the user is giving away
+   * @param {string[]} playerIdsFromReceiver - players the user wants to receive
+   * @returns trade object with status and reason
+   */
+  async proposeTrade(savedGameId, proposingTeamId, receivingTeamId, playerIdsFromProposer, playerIdsFromReceiver) {
+    // 1. Validate teams belong to the same saved game
+    const teams = await db.query(
+      `SELECT id FROM teams WHERE id IN ($1, $2) AND saved_game_id = $3`,
+      [proposingTeamId, receivingTeamId, savedGameId]
+    );
+    if (teams.rowCount !== 2) {
+      throw new Error('One or both teams do not belong to this saved game.');
+    }
+
+    // 2. Validate players exist and belong to the correct teams
+    const allPlayerIds = [...playerIdsFromProposer, ...playerIdsFromReceiver];
+    if (allPlayerIds.length === 0) {
+      throw new Error('Must include at least one player from each team.');
+    }
+
+    const players = await db.query(
+      `SELECT id, team_id, overall_rating, potential_rating, age FROM players
+       WHERE id = ANY($1::uuid[]) AND saved_game_id = $2`,
+      [allPlayerIds, savedGameId]
+    );
+    if (players.rowCount !== allPlayerIds.length) {
+      throw new Error('Some players not found in this saved game.');
+    }
+
+    const playerMap = {};
+    players.rows.forEach(p => { playerMap[p.id] = p; });
+
+    // Verify team ownership
+    for (const pid of playerIdsFromProposer) {
+      if (playerMap[pid].team_id !== proposingTeamId) {
+        throw new Error(`Player ${pid} does not belong to the proposing team.`);
+      }
+    }
+    for (const pid of playerIdsFromReceiver) {
+      if (playerMap[pid].team_id !== receivingTeamId) {
+        throw new Error(`Player ${pid} does not belong to the receiving team.`);
+      }
+    }
+
+    // 3. Check for existing pending trades involving any of these players (optional, to avoid conflicts)
+    const pendingConflicts = await db.query(
+      `SELECT 1 FROM trade_players tp
+       JOIN trades t ON tp.trade_id = t.id
+       WHERE tp.player_id = ANY($1::uuid[])
+         AND t.saved_game_id = $2
+         AND t.status = 'pending'`,
+      [allPlayerIds, savedGameId]
+    );
+    if (pendingConflicts.rowCount > 0) {
+      throw new Error('One or more players are already involved in a pending trade.');
+    }
+
+    // 4. Evaluate trade using AI logic
+    const proposingPlayersData = playerIdsFromProposer.map(id => playerMap[id]);
+    const receivingPlayersData = playerIdsFromReceiver.map(id => playerMap[id]);
+    const evaluation = evaluateTrade(proposingPlayersData, receivingPlayersData);
+
+    // 5. Insert trade record
+    const tradeResult = await db.query(
+      `INSERT INTO trades (saved_game_id, proposing_team_id, receiving_team_id, status)
+       VALUES ($1, $2, $3, 'pending') RETURNING *`,
+      [savedGameId, proposingTeamId, receivingTeamId]
+    );
+    const trade = tradeResult.rows[0];
+
+    // 6. Insert trade players
+    const tradePlayerValues = [];
+    const now = new Date().toISOString();
+
+    for (const pid of playerIdsFromProposer) {
+      tradePlayerValues.push(`('${trade.id}', '${pid}', '${proposingTeamId}', '${receivingTeamId}')`);
+    }
+    for (const pid of playerIdsFromReceiver) {
+      tradePlayerValues.push(`('${trade.id}', '${pid}', '${receivingTeamId}', '${proposingTeamId}')`);
+    }
+
+    await db.query(
+      `INSERT INTO trade_players (trade_id, player_id, from_team_id, to_team_id) VALUES ${tradePlayerValues.join(', ')}`
+    );
+
+    // 7. If AI accepts immediately, complete the trade
+    if (evaluation.accepted) {
+      await this.acceptTrade(trade.id, savedGameId, false); // false = skip permission check
+      trade.status = 'completed';
+      trade.result = 'Trade accepted and completed.';
+    } else {
+      trade.status = 'pending';
+      trade.result = evaluation.reason;
+    }
+
+    return trade;
+  }
+
+  /**
+   * Accept a pending trade (either manual or automatic).
+   * @param {string} tradeId
+   * @param {string} savedGameId
+   * @param {boolean} requireAuthority - if true, only receiving team can accept
+   */
+  async acceptTrade(tradeId, savedGameId, requireAuthority = true) {
+    const tradeResult = await db.query(
+      `SELECT * FROM trades WHERE id = $1 AND saved_game_id = $2 AND status = 'pending'`,
+      [tradeId, savedGameId]
+    );
+    if (tradeResult.rowCount === 0) {
+      throw new Error('Trade not found or not pending.');
+    }
+    const trade = tradeResult.rows[0];
+
+    // If requireAuthority, verify caller is the receiving team (could be enforced at controller level)
+    // but we pass it here for flexibility.
+
+    // Get all trade players
+    const tradePlayers = await db.query(
+      `SELECT * FROM trade_players WHERE trade_id = $1`,
+      [tradeId]
+    );
+
+    // Perform the swap: update player team_id
+    for (const tp of tradePlayers.rows) {
+      await db.query(
+        `UPDATE players SET team_id = $1, updated_at = now() WHERE id = $2`,
+        [tp.to_team_id, tp.player_id]
+      );
+    }
+
+    // Mark trade as completed
+    await db.query(
+      `UPDATE trades SET status = 'completed', updated_at = now() WHERE id = $1`,
+      [tradeId]
+    );
+
+    return { ...trade, status: 'completed' };
+  }
+
+  /**
+   * Reject a pending trade.
+   */
+  async rejectTrade(tradeId, savedGameId) {
+    const result = await db.query(
+      `UPDATE trades SET status = 'rejected', updated_at = now()
+       WHERE id = $1 AND saved_game_id = $2 AND status = 'pending' RETURNING *`,
+      [tradeId, savedGameId]
+    );
+    if (result.rowCount === 0) throw new Error('Trade not found or not pending.');
+    return result.rows[0];
+  }
+
+  /**
+   * Cancel a trade (proposing team or system).
+   */
+  async cancelTrade(tradeId, savedGameId) {
+    const result = await db.query(
+      `UPDATE trades SET status = 'cancelled', updated_at = now()
+       WHERE id = $1 AND saved_game_id = $2 AND status = 'pending' RETURNING *`,
+      [tradeId, savedGameId]
+    );
+    if (result.rowCount === 0) throw new Error('Trade not found or not pending.');
+    return result.rows[0];
+  }
+
+  /**
+   * Get all trades for a saved game (optionally filtered by team).
+   */
+  async getTrades(savedGameId, teamId = null) {
+    let query = `SELECT t.*,
+                        json_agg(json_build_object(
+                          'player_id', tp.player_id,
+                          'from_team_id', tp.from_team_id,
+                          'to_team_id', tp.to_team_id
+                        )) as players
+                 FROM trades t
+                 LEFT JOIN trade_players tp ON t.id = tp.trade_id
+                 WHERE t.saved_game_id = $1`;
+    const params = [savedGameId];
+
+    if (teamId) {
+      query += ` AND (t.proposing_team_id = $2 OR t.receiving_team_id = $2)`;
+      params.push(teamId);
+    }
+
+    query += ` GROUP BY t.id ORDER BY t.created_at DESC`;
+
+    const result = await db.query(query, params);
+    return result.rows;
+  }
+
+  /**
+   * Get a single trade by ID with its players.
+   */
+  async getTradeById(tradeId, savedGameId) {
+    const result = await db.query(
+      `SELECT t.*,
+              json_agg(json_build_object(
+                'player_id', tp.player_id,
+                'from_team_id', tp.from_team_id,
+                'to_team_id', tp.to_team_id
+              )) as players
+       FROM trades t
+       LEFT JOIN trade_players tp ON t.id = tp.trade_id
+       WHERE t.id = $1 AND t.saved_game_id = $2
+       GROUP BY t.id`,
+      [tradeId, savedGameId]
+    );
+    if (result.rowCount === 0) throw new Error('Trade not found.');
+    return result.rows[0];
+  }
+};
+
 
 module.exports = LeagueService;

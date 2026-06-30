@@ -51,4 +51,15 @@ router.post('/:savedGameId/simulate-next-game',    leagueController.simulateNext
 router.post('/:savedGameId/trade',                 leagueController.tradePlayer);
 router.get ('/:savedGameId/archetypes',            leagueController.getArchetypes);
 
+router.get( '/:savedGameId/free-agents', leagueController.getFreeAgents);
+router.post('/:savedGameId/free-agents/sign', leagueController.signFreeAgent);
+router.post('/:savedGameId/players/:playerId/release', leagueController.releasePlayer);
+
+router.post('/saved-games/:savedGameId/trades', leagueController.proposeTrade);
+router.get('/saved-games/:savedGameId/trades', leagueController.getTrades);
+router.get('/saved-games/:savedGameId/trades/:tradeId', leagueController.getTradeById);
+router.post('/saved-games/:savedGameId/trades/:tradeId/accept', leagueController.acceptTrade);
+router.post('/saved-games/:savedGameId/trades/:tradeId/reject', leagueController.rejectTrade);
+router.delete('/saved-games/:savedGameId/trades/:tradeId', leagueController.cancelTrade);
+
 module.exports = router;
