@@ -346,10 +346,10 @@ const leagueController = {
 
       const { data: latestDateRow, error: dateError } = await supabaseAdmin
         .from('games')
-        .select('played_at')
+        .select('game_date')
         .eq('season_id', seasonId)
         .eq('status', 'completed')
-        .order('played_at', { ascending: false })
+        .order('game_date', { ascending: false })
         .limit(1)
         .single();
 
@@ -357,7 +357,7 @@ const leagueController = {
         return res.json({ success: true, data: [] });
       }
 
-      const latestDate = latestDateRow.played_at;
+      const latestDate = latestDateRow.game_date;
 
       const { data: games, error: gamesError } = await supabaseAdmin
         .from('games')
@@ -370,7 +370,7 @@ const leagueController = {
         `)
         .eq('season_id', seasonId)
         .eq('status', 'completed')
-        .eq('played_at', latestDate)
+        .eq('game_date', latestDate)
         .order('id', { ascending: true });
 
       if (gamesError) throw gamesError;

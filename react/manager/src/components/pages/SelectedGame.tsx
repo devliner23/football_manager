@@ -419,6 +419,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 schedule={schedule}
                 teams={teams}
                 currentDate={currentDate}
+                currentTeam={managedClubId}
                 />
             )}
             {!loading && activeTab === 'trade' && <TradeTab />}
