@@ -1,11 +1,14 @@
-/* ==========================
-   OVERVIEW TAB – DARK GLASS THEME
-   ========================== */
+/* ========================== OVERVIEW TAB – DEEP CYBER GLASS THEME ========================== */
 
 /* ---- GLOBAL CONTAINER ---- */
 .overview-container {
   min-height: 100vh;
   padding: 1.5rem;
+  /* Syncs with Dashboard background gradients */
+  background: #09090b;
+  background-image: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #09090b 70%);
+  color: #f4f4f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 .overview-container.error-state {
@@ -15,16 +18,19 @@
 }
 
 .error-card {
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(30, 41, 59, 0.5);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(239, 68, 68, 0.2);
   border-radius: 1rem;
   padding: 2rem;
   max-width: 32rem;
   text-align: center;
-  color: #94a3b8;
+  color: #a1a1aa;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
 }
 
-/* ---- GRID LAYOUT ---- */
+/* ---- GRID LAYOUT STRUCTURE ---- */
 .overview-grid {
   max-width: 1280px;
   margin: 0 auto;
@@ -37,25 +43,30 @@
   .overview-grid {
     grid-template-columns: repeat(12, 1fr);
   }
-  .overview-left-panel { grid-column: span 4; }
-  .overview-center-panel { grid-column: span 5; }
-  .overview-right-panel { grid-column: span 3; }
+  .overview-left-panel {
+    grid-column: span 4;
+  }
+  .overview-center-panel {
+    grid-column: span 5;
+  }
+  .overview-right-panel {
+    grid-column: span 3;
+  }
 }
 
-/* ==========================
-   LEFT PANEL
-   ========================== */
-
+/* ========================== LEFT PANEL (FRANCHISE DETAILS) ========================== */
 .overview-left-panel {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 2px solid #3b82f6; /* Dashboard premium top visual edge */
   border-radius: 20px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
 }
 
 .team-header {
@@ -68,12 +79,13 @@
   width: 60px;
   height: 60px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(59, 130, 246, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  filter: drop-shadow(0 0 10px rgba(59, 130, 246, 0.2));
 }
 
 .team-info {
@@ -82,16 +94,16 @@
 
 .team-name {
   margin: 0;
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: 1.35rem;
+  font-weight: 800;
   color: #ffffff;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.5px;
 }
 
 .team-meta {
   margin: 4px 0 0;
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.85rem;
+  color: #a1a1aa;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -100,23 +112,24 @@
 .icon-small {
   width: 14px;
   height: 14px;
-  opacity: 0.5;
+  opacity: 0.65;
 }
 
-/* Record area */
+/* Record Metrics Area */
 .record-progress {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: #e2e8f0;
 }
 
 .record-progress svg {
   color: #60a5fa;
+  filter: drop-shadow(0 0 4px rgba(96, 165, 250, 0.4));
 }
 
 .record-label {
@@ -124,140 +137,153 @@
   align-items: center;
   gap: 8px;
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .record-pct {
-  color: rgba(255, 255, 255, 0.35);
+  color: #a1a1aa;
   font-size: 0.8rem;
+  margin-left: auto;
 }
 
-/* Season badge */
+/* Season configuration badge */
 .season-badge {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 10px;
-  padding: 6px 14px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+  padding: 4px 10px;
   align-self: flex-start;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
-/* ==========================
-   QUICK ACTIONS – BASE STYLES
-   ========================== */
+/* ========================== QUICK ACTIONS ========================== */
 .quick-actions {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   margin-top: 4px;
 }
 
-/* Shared button/container look */
+/* Shared button/container architecture matching Dashboard's buttons */
 .icon-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 16px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.65);
-  font-size: 0.85rem;
-  font-weight: 500;
+  gap: 12px;
+  padding: 14px 20px;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: #cbd5e1;
+  font-size: 0.9rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-decoration: none;
   width: 100%;
   box-sizing: border-box;
 }
 
 .icon-btn svg {
-  color: rgba(255, 255, 255, 0.3);
+  color: rgba(96, 165, 250, 0.7);
   flex-shrink: 0;
-  transition: color 0.25s ease;
+  transition: all 0.2s ease;
 }
 
-/* Hover for standard buttons only */
+/* Hover configuration for non-nested standard layout buttons */
 .icon-btn:not(.trade-btn):hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(59, 130, 246, 0.16);
+  border-color: #60a5fa;
   color: #ffffff;
-  transform: translateX(2px);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
 }
 
 .icon-btn:not(.trade-btn):hover svg {
   color: #60a5fa;
+  transform: scale(1.1);
 }
 
-/* ==========================
-   TRADE BUTTON – HOVER‑REVEAL MENU
-   ========================== */
+/* ========================== INTERACTIVE TRADE BUTTON SYSTEM ========================== */
 .icon-btn.trade-btn {
   position: relative;
-  padding: 0;           /* container itself gets no padding */
-  height: 48px;         /* fixed height prevents layout shift */
-  overflow: hidden;     /* optional, ensures no content spills */
+  padding: 0;
+  height: 52px;
+  overflow: hidden;
+  border-color: rgba(59, 130, 246, 0.25);
 }
 
-/* Both content layers are absolutely positioned inside the container */
-.trade-btn .btn-default-content,
+.trade-btn .btn-default-content, 
 .trade-btn .btn-hover-content {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Default (visible) layer – matches the original look */
+/* Default state view layer matches the layout */
 .trade-btn .btn-default-content {
-  gap: 10px;
-  padding: 0 16px;
+  gap: 12px;
+  padding: 0 20px;
   opacity: 1;
   pointer-events: auto;
+  transform: translateY(0);
 }
 
-/* Hidden layer – four action icons */
+/* Hidden layer styling displaying choices */
 .trade-btn .btn-hover-content {
   gap: 8px;
   justify-content: space-evenly;
-  padding: 0 8px;
+  padding: 0 12px;
   opacity: 0;
   pointer-events: none;
+  background: rgba(30, 27, 75, 0.4);
+  transform: translateY(10px);
 }
 
-/* Fade swap on hover */
+/* Fluid switch mechanics on action hover interaction */
+.trade-btn:hover {
+  border-color: #60a5fa;
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.25);
+}
+
 .trade-btn:hover .btn-default-content {
   opacity: 0;
+  transform: translateY(-10px);
 }
+
 .trade-btn:hover .btn-hover-content {
   opacity: 1;
   pointer-events: auto;
+  transform: translateY(0);
 }
 
-/* Individual icon buttons inside the hover layer */
+/* Floating interior icon engines */
 .trade-action-icon {
-  background: none;
-  border: none;
-  padding: 4px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  padding: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.65);
-  transition: color 0.2s ease;
+  color: #a1a1aa;
+  transition: all 0.2s ease;
 }
 
 .trade-action-icon:hover {
-  color: #60a5fa;
+  color: #ffffff;
+  background: rgba(59, 130, 246, 0.25);
+  border-color: #60a5fa;
+  transform: scale(1.1);
 }
 
-/* ==========================
-   RESPONSIVE TWEAKS
-   ========================== */
+/* Responsive Structural Padding Shifts */
 @media (max-width: 768px) {
   .overview-left-panel {
     padding: 16px;
@@ -269,17 +295,14 @@
   }
 }
 
-/* ==========================
-   CENTER PANEL – KPI CARDS & TEAM LEADERS
-   ========================== */
-
+/* ========================== CENTER PANEL (KPI METRICS & LEADERS) ========================== */
 .overview-center-panel {
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
 }
 
-/* KPI Grid */
+/* KPI Architecture Grid layout */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -295,13 +318,14 @@
 .kpi-card {
   padding: 1.25rem;
   border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   position: relative;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.5);
 }
 
 .kpi-card::before {
@@ -311,19 +335,15 @@
   right: -20%;
   width: 120px;
   height: 120px;
-  background: radial-gradient(
-    circle,
-    rgba(34, 211, 238, 0.1),
-    transparent 70%
-  );
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.15), transparent 70%);
   transform: rotate(25deg);
   pointer-events: none;
 }
 
 .kpi-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(99, 102, 241, 0.3);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  border-color: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 12px 30px rgba(59, 130, 246, 0.15);
 }
 
 .kpi-header {
@@ -334,77 +354,64 @@
 }
 
 .kpi-label {
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.05em;
+  color: #a1a1aa;
 }
 
 .kpi-icon {
-  font-size: 1.3rem;
-}
-
-.kpi-body {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  width: 16px;
+  height: 16px;
+  color: rgba(96, 165, 250, 0.6);
 }
 
 .kpi-value {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 1.6rem;
+  font-weight: 800;
   color: #ffffff;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.5px;
+  margin-bottom: 0.25rem;
 }
 
-.kpi-trend {
+.kpi-meta {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #a1a1aa;
   display: flex;
   align-items: center;
-  gap: 3px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(16, 185, 129, 0.1);
+  gap: 4px;
+}
+
+.kpi-meta.trend-up {
   color: #10b981;
 }
 
-.kpi-trend-up svg {
-  color: #10b981;
+.kpi-meta.trend-down {
+  color: #ef4444;
 }
 
-.kpi-trend-down {
-  background: rgba(244, 63, 94, 0.1);
-  color: #f43f5e;
-}
-
-/* Team Leaders Card */
-.team-leaders-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+/* Leaders Dashboard Glass Layout Node */
+.leaders-card {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 1rem;
-  padding: 1.25rem;
-  transition: all 0.3s ease;
-}
-
-.team-leaders-card:hover {
-  border-color: rgba(99, 102, 241, 0.2);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+  padding: 1.5rem;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
 }
 
 .card-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
-  margin: 0 0 1rem 0;
+  margin: 0 0 1.25rem 0;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.3px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 10px;
 }
 
 .leader-list {
@@ -417,40 +424,39 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 1rem;
-  border-radius: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.02);
-  border: 1px solid transparent;
+  border: 1px solid rgba(255, 255, 255, 0.04);
   transition: all 0.2s ease;
 }
 
 .leader-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.06);
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.25);
+  transform: translateX(2px);
 }
 
 .leader-label {
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.4);
-  font-weight: 500;
+  font-size: 0.85rem;
+  color: #a1a1aa;
+  font-weight: 600;
 }
 
 .leader-name {
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
+  font-weight: 700;
+  color: #ffffff;
 }
 
 .empty-state {
-  color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.3);
   text-align: center;
   padding: 1.5rem 0;
   font-style: italic;
+  font-size: 0.9rem;
 }
 
-/* ==========================
-   RIGHT PANEL – NEXT GAME & LEAGUE SNAPSHOT
-   ========================== */
-
+/* ========================== RIGHT PANEL (UPCOMING MATCHUP & LEAGUE SNAPSHOT) ========================== */
 .overview-right-panel {
   display: flex;
   flex-direction: column;
@@ -458,124 +464,75 @@
 }
 
 .next-game-card {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 1rem;
   padding: 1.25rem;
   position: relative;
-  overflow: hidden;
-  transition: all 0.3s ease;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
 }
 
-.next-game-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(99, 102, 241, 0.08),
-    transparent 50%
-  );
-  pointer-events: none;
-}
-
-.next-game-card:hover {
-  border-color: rgba(99, 102, 241, 0.25);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
-}
-
-.next-game-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.75rem;
-}
-
-.next-game-label {
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.3);
-}
-
-.next-game-opponent {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #ffffff;
-  margin: 0.25rem 0 0;
-}
-
-/* Placeholder state for missing opponent */
-.next-game-opponent:empty::before,
-.next-game-opponent[data-placeholder]::before {
-  content: "TBD";
-  color: rgba(255, 255, 255, 0.2);
-  font-style: italic;
-  font-weight: 400;
-}
-
-.next-game-details {
+.next-game-content {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.8rem;
-  color: rgba(255, 255, 255, 0.4);
+  gap: 12px;
+  margin-top: 4px;
 }
 
-.detail-item {
+.vs-badge {
+  font-size: 0.75rem;
+  font-weight: 800;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.05em;
+}
+
+.opp-name {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.3px;
+}
+
+.game-date-row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: #a1a1aa;
 }
 
-.detail-item .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #22d3ee;
+.game-date-row svg {
+  color: #f59e0b;
 }
 
-/* Placeholder styling for missing details */
-.detail-item.muted {
-  color: rgba(255, 255, 255, 0.2);
-  font-style: italic;
-}
-
-/* League Snapshot Card */
-.league-snapshot-card {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+/* League Summary Table Card nodes */
+.snapshot-card {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 1rem;
   padding: 1.25rem;
-  transition: all 0.3s ease;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
 }
 
-.league-snapshot-card:hover {
-  border-color: rgba(99, 102, 241, 0.2);
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
-}
-
-.league-snapshot-card .card-title {
-  margin-bottom: 1rem;
-}
-
-.leader-snapshot-list {
+.snapshot-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
 }
 
 .snapshot-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 0.75rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .snapshot-item:last-child {
@@ -583,77 +540,71 @@
 }
 
 .snapshot-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: capitalize;
-  color: rgba(255, 255, 255, 0.35);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: #a1a1aa;
 }
 
 .snapshot-value {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #ffffff;
 }
 
 .snapshot-number {
-  color: rgba(255, 255, 255, 0.3);
-  font-weight: 400;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 500;
+  margin-right: 4px;
 }
 
 .snapshot-footer {
   margin-top: 1rem;
   padding-top: 0.75rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   text-align: center;
 }
 
+/* Link Actions Styles */
 .link-cyan {
-  color: #22d3ee;
+  color: #60a5fa;
   text-decoration: none;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.8rem;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  transition: color 0.2s;
+  transition: all 0.2s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .link-cyan:hover {
-  color: #67e8f9;
+  color: #ffffff;
+  text-shadow: 0 0 8px rgba(96, 165, 250, 0.6);
 }
 
-/* ---- BOTTOM: GAME RESULTS ---- */
-.overview-game-results {
-  max-width: 1280px;
-  margin: 2rem auto 0;
+.link-cyan svg {
+  transition: transform 0.2s ease;
 }
 
-.overview-game-results > div {
+.link-cyan:hover svg {
+  transform: translateX(3px);
+}
+
+/* ========================== BOTTOM: GAME RESULTS SIMULATION CARDS ========================== */
+.overview-bottom-panel {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
+}
+
+.results-wrapper-card {
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 1rem;
   padding: 1.5rem;
-}
-
-/* ==========================
-   UTILITY ICONS
-   ========================== */
-
-.icon-small { width: 14px; height: 14px; }
-.icon-medium { width: 20px; height: 20px; color: rgba(255, 255, 255, 0.3); }
-
-/* ==========================
-   MODAL OVERLAY (Trade)
-   ========================== */
-
-.modal-overlay {
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-}
-
-.modal-content {
-  background: rgba(20, 20, 30, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 1.5rem;
-  color: #fff;
-  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
 }

@@ -127,99 +127,139 @@ const Dashboard: React.FC = () => {
   const hasGames = savedGames.length > 0;
 
   // ── Main dashboard ──
-  return (
-    <div className="dashboard">
-      <header className="dashboard-header">
-        <div className="header-content">
-          <h1>🏀 Hardwood GM</h1>
-          <div className="user-info">
-            <span className="username">
-              {user?.username || 'Coach'}
-            </span>
+return (
+    <div className="dark-glass-dashboard">
+      {/* Top Navigation Bar */}
+      <header className="dashboard-navbar">
+        <div className="nav-container">
+          <div className="nav-logo">
+            <span className="logo-icon">🏀</span>
+            <h1 className="logo-text">Hardwood<span className="text-glow-blue">GM</span></h1>
+          </div>
+          <div className="nav-user-panel">
+            <div className="user-badge">
+              <span className="user-status-dot"></span>
+              <span className="username">{user?.username || 'Coach'}</span>
+            </div>
             <button
-              className="settings-button"
+              className="glass-action-btn settings-trigger"
               onClick={() => setShowSettingsMenu(true)}
+              aria-label="Open settings"
             >
-              ⚙
+              ⚙️
             </button>
           </div>
         </div>
       </header>
 
-      <div className="dashboard-content">
-        <div className="dashboard-main">
-          <div className="panel-card full-width">
+      {/* Main Container */}
+      <main className="dashboard-content-wrapper">
+        <div className="dashboard-layout">
+          
+          {/* Main Action Control Panel Card */}
+          <section className="glass-panel main-panel animated-border-glow">
             {hasGames && latestGame ? (
-              <>
-                <span className="icon">▶️</span>
-                <h2>Continue Season</h2>
-                <p>Pick up where you left off in your most recent season.</p>
-                <div className="panel-actions">
+              <div className="panel-inner">
+                <div className="panel-badge neon-blue">ACTIVE LEAGUE</div>
+                <h2 className="panel-title">Continue Journey</h2>
+                <p className="panel-subtitle">Resume command over your active basketball franchise.</p>
+                
+                <div className="panel-actions-grid">
                   <button 
-                    className="panel-button continue"
+                    className="glass-btn btn-primary-blue-glow"
                     onClick={handleContinueLatest}
                   >
-                    Continue Game
+                    ⚡ Resume Season
                   </button>
                   <button 
-                    className="panel-button new-season"
+                    className="glass-btn btn-secondary-danger"
                     onClick={handleStartNewSeason}
                   >
-                    Start New Season
+                    🔄 Purge & Restart
                   </button>
                 </div>
-                <div className="game-info">
-                  Last saved: {new Date(latestGame.updated_at || latestGame.created_at).toLocaleString()} <br />
-                  Save Name: {latestGame.name}
-                </div>
-              </>
+                
+                {/* Meta details footer inside the card */}
+                <footer className="panel-meta-footer">
+                  <div className="meta-item">
+                    <span className="meta-label">Save File</span>
+                    <span className="meta-value text-white">{latestGame.name}</span>
+                  </div>
+                  <div className="meta-item text-right">
+                    <span className="meta-label">Last Saved</span>
+                    <span className="meta-value">
+                      {new Date(latestGame.updated_at || latestGame.created_at).toLocaleDateString()} at{' '}
+                      {new Date(latestGame.updated_at || latestGame.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                </footer>
+              </div>
             ) : (
-              <>
-                <span className="icon">🏆</span>
-                <h2>Start Your First Season</h2>
-                <p>No saved games found. Create your first basketball season now!</p>
+              <div className="panel-inner empty-state">
+                <div className="panel-badge neon-amber">NO FRANCHISE</div>
+                <h2 className="panel-title">Inaugurate Your League</h2>
+                <p className="panel-subtitle">No active careers found. Step up to the front office and build your basketball dynasty from scratch.</p>
                 <button 
-                  className="panel-button new-season"
+                  className="glass-btn btn-primary-glow large-btn"
                   onClick={() => setShowNewGameForm(true)}
                 >
-                  Get Started
+                  🏆 Establish New Franchise
                 </button>
-              </>
+              </div>
             )}
-          </div>
-        </div>
-      </div>
+          </section>
 
+          {/* Quick Stats Summary / System Log Row */}
+          {error && (
+            <div className="glass-banner error-banner">
+              <span>⚠️ {error}</span>
+            </div>
+          )}
+          
+        </div>
+      </main>
+
+      {/* Modern Blurred Modals */}
       {showNewGameForm && (
-        <div className="modal-overlay">
-          <NewGameForm
-            onClose={() => setShowNewGameForm(false)}
-            onGameCreated={handleGameCreated}
-          />
+        <div className="glass-modal-backdrop blur-bg">
+          <div className="glass-modal-container layout-popup">
+            <NewGameForm
+              onClose={() => setShowNewGameForm(false)}
+              onGameCreated={handleGameCreated}
+            />
+          </div>
         </div>
       )}
 
       {isCreatingGame && (
-        <div className="loading-overlay">
-          <div className="loading-spinner"></div>
-          <p>Creating your league…</p>
+        <div className="glass-modal-backdrop heavy-blur-bg">
+          <div className="creation-spinner-box">
+            <div className="pulse-ring-loader"></div>
+            <h3>Generating Simulated Universe</h3>
+            <p>Drafting players, balancing cap sheets, and establishing schedules...</p>
+          </div>
         </div>
       )}
 
       {showSettingsMenu && (
         <div
-          className="modal-overlay"
+          className="glass-modal-backdrop blur-bg"
           onClick={() => setShowSettingsMenu(false)}
         >
           <div
-            className="settings-modal"
+            className="settings-glass-drawer"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3>Menu</h3>
-            <button>▶ Resume</button>
-            <button>🔊 Audio</button>
-            <button>⚙ Settings</button>
-            <button onClick={logout}>🚪 Logout</button>
+            <div className="drawer-header">
+              <h3>SYSTEM CONTROL</h3>
+              <button className="close-drawer" onClick={() => setShowSettingsMenu(false)}>✕</button>
+            </div>
+            <div className="drawer-links">
+              <button className="drawer-item" onClick={() => setShowSettingsMenu(false)}>▶ Resume Operations</button>
+              <button className="drawer-item">🔊 Audio Options</button>
+              <button className="drawer-item">⚙ System Config</button>
+              <button className="drawer-item text-danger" onClick={logout}>🚪 Terminate Session (Logout)</button>
+            </div>
           </div>
         </div>
       )}
