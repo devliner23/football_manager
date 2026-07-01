@@ -41,7 +41,7 @@ interface SelectedGameProps {
   onUpdate: (game: SavedGame) => void;
 }
 
-type TabType = 'overview' | 'leagueRoster' | 'standings' | 'freeagents' | 'frontoffice' | 'schedule' | 'lineup';
+type TabType = 'overview' | 'leagueRoster' | 'standings' | 'frontoffice' | 'schedule';
 
 const tabConfig = {
   overview: {
@@ -56,10 +56,6 @@ const tabConfig = {
     label: 'Standings',
     icon: <TrendingUp size={18} strokeWidth={2} />,
   },
-  freeagents: {
-    label: 'Free Agents',
-    icon: <UserPlus size={18} strokeWidth={2} />,
-  },
   frontoffice: {
     label: 'Front Office',
     icon: <Building2 size={18} strokeWidth={2} />,
@@ -68,10 +64,6 @@ const tabConfig = {
     label: 'Schedule',
     icon: <Calendar size={18} strokeWidth={2} />,
   },
-  lineup: {
-    label: "Lineup",
-    icon: <Clipboard  strokeWidth={2} />,
-  }
 };
 
 const SelectedGame: React.FC<SelectedGameProps> = ({
@@ -320,10 +312,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
         <aside className="game-sidebar">
         {/* Logo / Game name */}
         <div className="game-sidebar-logo">
-            <div className="game-logo-icon">
-            {game.name.charAt(0).toUpperCase()}
-            </div>
-            <span className="game-logo-text">{game.name}</span>
+            <span className="game-logo-text">Hardwood GM</span>
         </div>
 
         {/* Tab navigation */}
@@ -425,10 +414,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 currentDate={currentDate}
                 currentTeam={managedClubId}
                 />
-            )}
-            {!loading && activeTab === 'freeagents' && (
-              <FreeAgentsTab savedGameId={game.id} teams={teams} />
-            )}            
+            )}         
             {!loading && activeTab === 'frontoffice' && (
               <FrontOfficeTab
                 savedGameId={game.id}
@@ -440,15 +426,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 userTeamPlayers={userTeamPlayers}
               />
             )}
-            {!loading && activeTab === 'lineup' && (
-              <LineupTab
-                savedGameId={game.id}
-                userTeam={userTeam}
-                allPlayers={players}
-              />
-            )}
             </div>
-
             {/* Right column – game sidebar & controls */}
             <div className="game-content-right">
             {/* <GameSidebar

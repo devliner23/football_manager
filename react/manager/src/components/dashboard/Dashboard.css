@@ -98,12 +98,6 @@
   gap: 10px;
 }
 
-.dashboard-header h1::before {
-  content: '🏀';
-  -webkit-text-fill-color: initial;
-  font-size: 30px;
-}
-
 .user-info {
   display: flex;
   align-items: center;

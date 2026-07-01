@@ -15,14 +15,60 @@
   --radius: 0.75rem;
 }
 
-/* Overall container */
 .selected-game-dashboard {
+  position: relative;
+
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: var(--bg-primary);
+
   color: var(--text-primary);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+
+  isolation: isolate;
+
+  background:
+    radial-gradient(circle at top left,
+      rgba(77, 124, 255, 0.12) 0%,
+      rgba(33, 41, 60, 0.10) 22%,
+      transparent 45%),
+
+    radial-gradient(circle at bottom right,
+      rgba(255,255,255,.03) 0%,
+      transparent 42%),
+
+    linear-gradient(
+      135deg,
+      #0d1017 0%,
+      #10151d 30%,
+      #0b0f15 65%,
+      #070a10 100%
+    );
+}
+
+.selected-game-dashboard::before {
+  content: "";
+
+  position: absolute;
+  inset: 0;
+
+  background-image: url("/src/assets/basketball-svgrepo-com.svg");
+
+  background-repeat: no-repeat;
+
+  background-position: calc(100% + 160px) center;
+
+  background-size: min(75vw, 1300px);
+
+  opacity: .045;
+
+  transform: rotate(-18deg);
+
+  filter: blur(1px);
+
+  pointer-events: none;
+
+  z-index: -2;
 }
 
 /* ---- LEFT SIDEBAR ---- */

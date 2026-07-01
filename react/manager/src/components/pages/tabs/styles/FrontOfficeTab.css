@@ -1,213 +1,194 @@
-/* ── Front Office Hub – Professional Dark Theme ── */
+/* Container Layouts */
 .front-office-hub {
-  padding: 1.5rem;
-  color: #e0e0e0;
+  padding: 20px;
+  color: #f5f5f5;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* ── Large navigation buttons ── */
+.fo-header-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #2d2d2d;
+  padding-bottom: 12px;
+}
+
+.fo-season-badge {
+  background: #1e3a8a;
+  color: #60a5fa;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
+}
+
+/* Nav Buttons styling tweaks */
 .fo-big-buttons {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.2rem;
-  margin-bottom: 2.5rem;
+  gap: 16px;
+  margin-bottom: 30px;
 }
 
 .fo-big-btn {
-  background: #1e1e2f;
-  color: #c0c0d0;
-  border: 1px solid #2c2c44;
-  border-radius: 8px;
-  padding: 1.8rem 0.8rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  box-shadow: none;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.fo-big-btn:hover {
-  background: #2a2a3c;
-  color: #ffffff;
-  border-color: #4a4a6a;
-}
-
-.fo-big-btn:active {
-  background: #1a1a2a;
-}
-
-/* ── Back button (sub‑views) ── */
-.fo-back-btn {
-  background: transparent;
-  border: 1px solid #3a3a5a;
-  color: #b0b0c0;
-  padding: 0.5rem 1.2rem;
-  border-radius: 6px;
-  font-weight: 500;
-  cursor: pointer;
-  margin-bottom: 1.5rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  transition: background 0.2s, color 0.2s;
-}
-.fo-back-btn:hover {
-  background: #2a2a3c;
-  color: #ffffff;
-}
-
-/* ── Placeholder for missing views ── */
-.fo-placeholder {
-  background: #1e1e2f;
-  border: 1px solid #2c2c44;
-  border-radius: 8px;
-  padding: 2rem;
-  text-align: center;
-  color: #8a8a9a;
-}
-
-/* ── Cards grid ── */
-.fo-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.5rem;
-}
-
-/* Individual card */
-.fo-card {
-  background: #1e1e2f;
-  border: 1px solid #2c2c44;
-  border-radius: 8px;
-  padding: 1.5rem 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.fo-card:hover {
-  border-color: #3a3a5a;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-
-/* Avatar circle */
-.fo-card-avatar {
-  font-size: 2.8rem;
-  width: 80px;
-  height: 80px;
-  line-height: 80px;
-  background: #2a2a3c;
-  border-radius: 50%;
-  border: 2px solid #3a3a5a;
-  margin-bottom: 1rem;
-  color: #c0c0d0;
-}
-
-/* Card title */
-.fo-card-title {
-  font-size: 1.15rem;
-  font-weight: 600;
-  margin: 0.5rem 0 0.25rem;
-  color: #d0d0e0;
-}
-
-/* Description text */
-.fo-card-desc {
-  font-size: 0.9rem;
-  color: #9090a0;
-  margin-bottom: 1rem;
-  flex: 1;
-}
-
-/* Card action button */
-.fo-card-button {
-  background: transparent;
-  color: #c0c0d0;
-  border: 1px solid #3a3a5a;
-  border-radius: 6px;
-  padding: 0.6rem 1.5rem;
-  font-weight: 600;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 12px;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: all 0.2s ease-in-out;
+  color: white;
 }
-.fo-card-button:hover {
-  background: #2a2a3c;
+
+.fo-big-btn:hover {
+  transform: translateY(-3px);
+  background: #252525;
+  border-color: #444;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.btn-icon {
+  font-size: 1.8rem;
+}
+
+.btn-text {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+/* Flashy Live Dashboard Grid */
+.fo-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.fo-dash-card {
+  background: linear-gradient(145deg, #18181b, #27272a);
+  border: 1px solid #3f3f46;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 160px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+}
+
+/* Flashy/Animated card variation */
+.animated-border {
+  position: relative;
+  border-left: 4px solid #3b82f6; /* Gives it an active visual pop */
+}
+
+.fo-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.fo-card-header h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  color: #a1a1aa;
+  letter-spacing: 0.5px;
+}
+
+.live-indicator {
+  background: #ef4444;
+  color: white;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 800;
+  animation: pulse 1.5s infinite;
+}
+
+.big-stat-row {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 16px;
+}
+
+.stat-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 0.75rem;
+  color: #71717a;
+  text-transform: uppercase;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 800;
   color: #ffffff;
 }
 
-/* ── Modal (dark overlay) ── */
-.fo-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.75);
+.text-glow {
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+}
+
+.text-accent { color: #f59e0b; }
+.text-money { color: #10b981; }
+.text-success { color: #22c55e; }
+.text-warning { color: #f59e0b; }
+.streak-win { color: #4ade80; }
+.streak-loss { color: #f87171; }
+
+.footer-metric {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid #3f3f46;
+  padding-top: 10px;
+  font-size: 0.85rem;
+  color: #d4d4d8;
+}
+
+/* Schedule Card Unique Layout */
+.schedule-card {
+  background: linear-gradient(145deg, #111827, #1f2937);
+  border-color: #374151;
+}
+
+.matchup-placeholder {
   display: flex;
   align-items: center;
-  justify-content: center;
-  z-index: 1000;
+  gap: 16px;
+  height: 100%;
 }
 
-.fo-modal-content {
-  background: #1e1e2f;
-  border: 1px solid #2c2c44;
-  border-radius: 12px;
-  padding: 2rem;
-  min-width: 360px;
-  max-width: 85vw;
-  max-height: 80vh;
-  overflow-y: auto;
-  position: relative;
-  color: #d0d0e0;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+.vs-badge {
+  font-size: 1.5rem;
+  font-weight: 900;
+  font-style: italic;
+  color: #4b5563;
+  background: #111;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px dashed #4b5563;
 }
 
-/* Close button */
-.fo-modal-close {
-  position: absolute;
-  top: 10px;
-  right: 15px;
-  background: none;
-  border: none;
-  font-size: 1.6rem;
-  cursor: pointer;
-  color: #7a7a8a;
-  transition: color 0.2s;
-}
-.fo-modal-close:hover {
-  color: #ffffff;
+.matchup-placeholder p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #9ca3af;
+  line-height: 1.4;
 }
 
-/* Action button inside modal (if used) */
-.fo-card-action {
-  background: #2a2a3c;
-  color: #d0d0e0;
-  border: 1px solid #3a3a5a;
-  border-radius: 6px;
-  padding: 0.5rem 1.2rem;
-  margin-top: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.fo-card-action:hover {
-  background: #3a3a5a;
-}
-
-/* ── Responsive adjustments ── */
-@media (max-width: 768px) {
-  .fo-big-buttons {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (max-width: 480px) {
-  .fo-big-buttons {
-    grid-template-columns: 1fr;
-  }
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  50% { opacity: 1; }
+  100% { opacity: 0.6; }
 }

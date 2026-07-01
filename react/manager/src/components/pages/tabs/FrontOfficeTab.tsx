@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useGameContext } from '../../../context/GameContext';
 import { Team, Player, StandingsRow } from '../../../api/leagueApi';
-import TradePanel from './tabComponents/TradePanel';          // <-- your new trade component
+import TradePanel from './tabComponents/TradePanel';
 import FreeAgentsTab from './FreeAgentTab';
 import LineupTab from './LineupTab';
 import './styles/FrontOfficeTab.css';
@@ -9,7 +9,7 @@ import './styles/FrontOfficeTab.css';
 interface FrontOfficeTabProps {
   savedGameId: string;
   teams: Team[];
-  players: Player[];          // passed but not used directly; sub‑components may need them
+  players: Player[];
   userTeam?: Team;
   standings: StandingsRow[];
   userStanding: StandingsRow | null;
@@ -28,7 +28,6 @@ const FrontOfficeTab: React.FC<FrontOfficeTabProps> = ({
   userTeamPlayers,
 }) => {
   const [currentView, setCurrentView] = useState<SubView>('hub');
-  const [modalContent, setModalContent] = useState<React.ReactNode>(null);
 
   const {
     season = 0,
@@ -38,165 +37,186 @@ const FrontOfficeTab: React.FC<FrontOfficeTabProps> = ({
     nextUserGame,
   } = useGameContext() || {};
 
-  const openModal = (content: React.ReactNode) => setModalContent(content);
-  const closeModal = () => setModalContent(null);
-
-  // Extract user team id and opponent teams (all except user team)
+  // Extract user team id and opponent teams
   const userTeamId = userTeam?.id ?? '';
   const opponentTeams = useMemo(
     () => (userTeam ? teams.filter((t) => t.id !== userTeam.id) : teams),
     [teams, userTeam]
   );
 
-  // ── Sub‑view render helpers ──
+  // Quick stats calculations for the dashboard widgets
+  const totalRosterCount = userTeamPlayers.length;
+  // const currentStreak = userStanding?.streak ?? 'W2'; // Flashy mock placeholder fallback
+  // const teamConferenceRank = userStanding?.rank ?? '#4'; // Flashy mock placeholder fallback
+
+  // Sub‑view back navigation helper
   const renderBackButton = () => (
     <button className="fo-back-btn" onClick={() => setCurrentView('hub')}>
-      ← Back to Front Office
+      ← Back to Front Office Hub
     </button>
   );
 
-  // If a sub‑view is active, render it instead of the hub
+  // ── Render Sub-views if active ──
   if (currentView !== 'hub') {
     return (
-      <div className="front-office-hub">
+      <div className="front-office-container">
         {renderBackButton()}
-        {currentView === 'trade' && (
-          userTeam ? (
-            <TradePanel
+        <div className="fo-subview-content">
+          {currentView === 'trade' && (
+            userTeam ? (
+              <TradePanel
+                savedGameId={savedGameId}
+                userTeamId={userTeamId}
+                teams={opponentTeams}
+              />
+            ) : (
+              <div className="fo-placeholder-screen">
+                <p>No user team assigned yet. Please set up your team first.</p>
+              </div>
+            )
+          )}
+          {currentView === 'freeagents' && (
+            <FreeAgentsTab savedGameId={savedGameId} teams={teams} />
+          )}
+          {currentView === 'lineup' && (
+            <LineupTab
               savedGameId={savedGameId}
-              userTeamId={userTeamId}
-              teams={opponentTeams}
+              userTeam={userTeam}
+              allPlayers={players}
             />
-          ) : (
-            <div className="fo-placeholder">
-              <p>No user team assigned yet. Please set up your team first.</p>
+          )}
+          {currentView === 'finances' && (
+            <div className="fo-placeholder-screen">
+              <h2>Finances Hub</h2>
+              <p>Salary cap breakdown, contracts, and revenue tracking coming soon.</p>
             </div>
-          )
-        )}
-        {currentView === 'freeagents' && (
-          <FreeAgentsTab savedGameId={savedGameId} teams={teams} />
-        )}
-        {currentView === 'lineup' && (
-          <LineupTab
-            savedGameId={savedGameId}
-            userTeam={userTeam}
-            allPlayers={players}
-          />
-        )}
-        {currentView === 'finances' && (
-          <div className="fo-placeholder">
-            <h2>Finances</h2>
-            <p>Salary cap, revenue, and expenses will appear here.</p>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     );
   }
 
-  // ── Hub view (default) ──
-  const highlightCards = [
-    {
-      id: 'record',
-      image: '🏀',
-      title: 'Season Record',
-      description: `${wins} - ${losses} (${winPct}%)`,
-      actionLabel: 'Standings',
-      detailContent: (
-        <div>
-          <h3>Full Standings</h3>
-          <p>{wins}-{losses} (win % {winPct}) – Season {season}</p>
-        </div>
-      ),
-    },
-    // {
-    //   id: 'nextgame',
-    //   image: '📅',
-    //   title: 'Next Game',
-    //   description: nextUserGame
-    //     ? `${nextUserGame.opponent ?? nextUserGame.opponent_name ?? 'Unknown'} (${nextUserGame.date ?? 'TBA'})`
-    //     : 'No upcoming game',
-    //   actionLabel: 'View Schedule',
-    //   detailContent: (
-    //     <div>
-    //       <h3>Upcoming Matchup</h3>
-    //       <p>{nextUserGame
-    //         ? `${nextUserGame.opponent ?? nextUserGame.opponent_name} on ${nextUserGame.date}`
-    //         : 'No game scheduled'}
-    //       </p>
-    //     </div>
-    //   ),
-    // },
-    {
-      id: 'roster',
-      image: '👥',
-      title: 'Team Depth',
-      description: `${userTeamPlayers.length} players on roster`,
-      actionLabel: 'Roster',
-      detailContent: (
-        <div>
-          <h3>Roster Highlights</h3>
-          <p>You have {userTeamPlayers.length} active players.</p>
-        </div>
-      ),
-    },
-    {
-      id: 'lineupcard',
-      image: '📋',
-      title: 'Lineup',
-      description: userStanding
-        ? 'Current streak: --'   // you can later feed real streak data
-        : 'Set your starting five',
-      actionLabel: 'Open Lineup',
-      detailContent: (
-        <div>
-          <h3>Lineup Editor</h3>
-          <p>Adjust your starters and bench rotations.</p>
-        </div>
-      ),
-    },
-  ];
-
+  // ── Main Hub View ──
   return (
     <div className="front-office-hub">
-      {/* ── Large navigation buttons ── */}
+      {/* Header Summary Row */}
+      <div className="fo-header-summary">
+        <h1>{userTeam?.name ?? 'Front Office Hub'}</h1>
+        <div className="fo-season-badge">Season {season}</div>
+      </div>
+
+      {/* Main 4 Action Navigation Buttons */}
       <div className="fo-big-buttons">
-        <button className="fo-big-btn" onClick={() => setCurrentView('trade')}>
-          🏀 Trade Center
+        <button className="fo-big-btn btn-trade" onClick={() => setCurrentView('trade')}>
+          <span className="btn-icon">🏀</span>
+          <span className="btn-text">Trade Center</span>
         </button>
-        <button className="fo-big-btn" onClick={() => setCurrentView('freeagents')}>
-          🔍 Free Agents
+        <button className="fo-big-btn btn-freeagents" onClick={() => setCurrentView('freeagents')}>
+          <span className="btn-icon">🔍</span>
+          <span className="btn-text">Free Agents</span>
         </button>
-        <button className="fo-big-btn" onClick={() => setCurrentView('lineup')}>
-          📋 Squad Lineup
+        <button className="fo-big-btn btn-lineup" onClick={() => setCurrentView('lineup')}>
+          <span className="btn-icon">📋</span>
+          <span className="btn-text">Squad Lineup</span>
         </button>
-        <button className="fo-big-btn" onClick={() => setCurrentView('finances')}>
-          💰 Finances
+        <button className="fo-big-btn btn-finances" onClick={() => setCurrentView('finances')}>
+          <span className="btn-icon">💰</span>
+          <span className="btn-text">Finances Hub</span>
         </button>
       </div>
 
-      {/* ── Highlight cards grid ── */}
-      <div className="fo-cards-grid">
-        {highlightCards.map((card) => (
-          <div key={card.id} className="fo-card">
-            <div className="fo-card-avatar">{card.image}</div>
-            <h3 className="fo-card-title">{card.title}</h3>
-            <p className="fo-card-desc">{card.description}</p>
-            <button className="fo-card-button" onClick={() => openModal(card.detailContent)}>
-              {card.actionLabel}
-            </button>
+      {/* Flashy Live Dashboard Panels */}
+      <div className="fo-dashboard-grid">
+        
+        {/* Panel 1: Standings & Record */}
+        <div className="fo-dash-card animated-border">
+          <div className="fo-card-header">
+            <h4>Standings & Form</h4>
+            <span className="live-indicator">LIVE</span>
           </div>
-        ))}
-      </div>
-
-      {/* ── Modal ── */}
-      {modalContent && (
-        <div className="fo-modal-overlay" onClick={closeModal}>
-          <div className="fo-modal-content" onClick={(e) => e.stopPropagation()}>
-            <button className="fo-modal-close" onClick={closeModal}>✕</button>
-            {modalContent}
+          <div className="fo-card-body">
+            <div className="big-stat-row">
+              <div className="stat-block">
+                <span className="stat-label">Record</span>
+                <span className="stat-value text-glow">{wins} - {losses}</span>
+              </div>
+              <div className="stat-block">
+                <span className="stat-label">Rank</span>
+                {/* <span className="stat-value">{teamConferenceRank}</span> */}
+              </div>
+            </div>
+            <div className="footer-metric">
+              <span>Win Percentage: <strong>{winPct}%</strong></span>
+              {/* <span>Streak: <strong className={currentStreak.startsWith('W') ? 'streak-win' : 'streak-loss'}>{currentStreak}</strong></span> */}
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Panel 2: Team Roster & Rotation */}
+        <div className="fo-dash-card">
+          <div className="fo-card-header">
+            <h4>Roster Depth</h4>
+          </div>
+          <div className="fo-card-body">
+            <div className="big-stat-row">
+              <div className="stat-block">
+                <span className="stat-label">Active Roster</span>
+                <span className="stat-value">{totalRosterCount} <small>/ 15</small></span>
+              </div>
+              <div className="stat-block">
+                <span className="stat-label">Team Chemistry</span>
+                <span className="stat-value text-accent">84%</span> {/* Placeholder */}
+              </div>
+            </div>
+            <div className="footer-metric">
+              <span>Injuries: <strong className="text-success">0 Active</strong></span>
+              <span>Primary Style: <strong>Pace & Space</strong></span> {/* Placeholder */}
+            </div>
+          </div>
+        </div>
+
+        {/* Panel 3: Financial Health */}
+        <div className="fo-dash-card">
+          <div className="fo-card-header">
+            <h4>Salary & Finances</h4>
+          </div>
+          <div className="fo-card-body">
+            <div className="big-stat-row">
+              <div className="stat-block">
+                <span className="stat-label">Cap Space</span>
+                <span className="stat-value text-money">$14.2M</span> {/* Placeholder */}
+              </div>
+            </div>
+            <div className="footer-metric">
+              <span>Total Payroll: <strong>$126.3M</strong></span> {/* Placeholder */}
+              <span>Luxury Tax: <strong className="text-warning">Under Cap</strong></span> {/* Placeholder */}
+            </div>
+          </div>
+        </div>
+
+        {/* Panel 4: Next Matchup / Scouting */}
+        <div className="fo-dash-card schedule-card">
+          <div className="fo-card-header">
+            <h4>Next Matchup</h4>
+          </div>
+          <div className="fo-card-body">
+            {nextUserGame ? (
+              <div className="matchup-active">
+                <div className="opponent-name">
+                  {/* {nextUserGame.opponent ?? nextUserGame.opponent_name ?? 'Unknown Opponent'} */}
+                </div>
+                {/* <div className="matchup-date">{nextUserGame.date ?? 'Tonight'}</div> */}
+              </div>
+            ) : (
+              <div className="matchup-placeholder">
+                <span className="vs-badge">VS</span>
+                <p>No immediate game scheduled. Advance the calendar to find your next opponent.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 };

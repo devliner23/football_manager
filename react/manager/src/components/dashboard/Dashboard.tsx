@@ -131,7 +131,7 @@ const Dashboard: React.FC = () => {
     <div className="dashboard">
       <header className="dashboard-header">
         <div className="header-content">
-          <h1>🏀 Basketball GM</h1>
+          <h1>🏀 Hardwood GM</h1>
           <div className="user-info">
             <span className="username">
               {user?.username || 'Coach'}
