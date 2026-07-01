@@ -192,3 +192,34 @@
   50% { opacity: 1; }
   100% { opacity: 0.6; }
 }
+
+
+/* Master Button Styling definitions */
+.glass-btn {
+  padding: 16px 24px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+/* Refactored Cyber Blue Glow Button */
+.btn-primary-blue-glow {
+  background: rgba(59, 130, 246, 0.12);
+  color: #cbd5e1;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.btn-primary-blue-glow:hover {
+  transform: translateY(-2px);
+  background: rgba(59, 130, 246, 0.25);
+  border-color: var(--neon-blue-solid);
+  color: #ffffff;
+  box-shadow: 0 8px 25px var(--neon-blue-glow);
+}

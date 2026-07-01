@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
 import { SavedGame, Team, Player } from '../../../shared/index';
 import GameResults from '../GameResults';
-import { TrendingUp, TrendingDown, Calendar, ArrowRight, User, Target, Play, Settings, ArrowRightLeft, Users, BarChart3 } from 'lucide-react';
+import { 
+  TrendingUp, 
+  TrendingDown, 
+  Calendar, 
+  ArrowRight, 
+  User, 
+  Target, 
+  Play, 
+  Settings, 
+  ArrowRightLeft, 
+  Users, 
+  BarChart3,
+  Award,
+  Shield,
+  Zap,
+  Activity
+} from 'lucide-react';
 import TradePanel from './tabComponents/TradePanel';
 import "./styles/OverviewTab.css";
-
-
 
 interface OverviewTabProps {
   game: SavedGame;
@@ -33,7 +47,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   allTeams
 }) => {
   const [showTradeModal, setShowTradeModal] = useState(false);
-
 
   const getPlayerName = (player: Player) => `${player.first_name} ${player.last_name}`;
 
@@ -66,242 +79,199 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       ast: (total.ast / count).toFixed(1),
     };
   };
-  const avg = teamAverages();
 
   if (!userTeam) {
     return (
       <div className="overview-container error-state">
         <div className="error-card">
-          <p>Team data not available. Please ensure the league is initialised correctly.</p>
+          <p>Active franchise profile data context could not be resolved.</p>
         </div>
       </div>
     );
   }
 
-  // Placeholder for next game – replace with real data if you have it
-  const nextGame = { opponent: 'TBD', date: 'Season in progress', venue: 'N/A' };
+  const averages = teamAverages();
+  const [wins = '0', losses = '0'] = record.split('-');
 
   return (
     <div className="overview-container">
       <div className="overview-grid">
-
-        {/* --- LEFT COLUMN: TEAM IDENTITY --- */}
-        <div className="overview-left-panel">
-          <div className="team-header">
+        
+        {/* ==================== 80% WIDTH TOP BANNER ==================== */}
+        <div className="overview-left-panel season-banner-premium">
+          <div className="banner-left-brand">
             <div className="team-avatar">🏀</div>
             <div className="team-info">
-              <h1 className="team-name">{userTeam.name}</h1>
+              <span className="season-badge">Season {game.current_season}</span>
+              <h2 className="team-name">{userTeam.name}</h2>
               <p className="team-meta">
-                <User className="icon-small" />
-                {userTeam.conference || 'N/A'} • {userTeam.division || 'N/A'}
+                <Shield className="icon-small" /> Front Office Operations Hub
               </p>
             </div>
           </div>
 
-          <div className="record-progress">
-            <TrendingUp size={16} strokeWidth={2} />
-            <div className="record-label">
-              <span>{record}</span>
-              <span className="record-pct">({winPct}%)</span>
+          {/* New Added Structured Information Fields */}
+          <div className="banner-center-stats">
+            <div className="banner-stat-block">
+              <span className="stat-block-label">Record Breakdown</span>
+              <span className="stat-block-value text-glow-blue">{wins}<span className="slash">/</span>{losses}</span>
+              <span className="stat-block-sub">{winPct} Win %</span>
+            </div>
+            
+            <div className="banner-stat-block">
+              <span className="stat-block-label">Roster Capacity</span>
+              <span className="stat-block-value">{userTeamPlayers.length} <span className="max-cap">/ 15</span></span>
+              <span className="stat-block-sub">Active Contracts</span>
+            </div>
+
+            <div className="banner-stat-block">
+              <span className="stat-block-label">Franchise Status</span>
+              <span className="stat-block-value status-indicator">
+                <Activity className="icon-pulse-green" /> Stable
+              </span>
+              <span className="stat-block-sub">Luxury Tax Compliant</span>
             </div>
           </div>
 
-<div className="quick-actions">
-  <button className="icon-btn">
-    <Play size={18} strokeWidth={2} />
-    <span>Sim Next Game</span>
-  </button>
-  <button className="icon-btn">
-    <Settings size={18} strokeWidth={2} />
-    <span>Adjust Lineup</span>
-  </button>
+          <div className="banner-right-actions">
+            <div className="record-progress">
+              <Target size={18} />
+              <div className="record-label">
+                <span>Current Standings Tracker</span>
+              </div>
+              <span className="record-pct">{record}</span>
+            </div>
 
-  {/* 🔄 TRANSFORMED TRADE BUTTON */}
-  <div className="icon-btn trade-btn">
-    <div className="btn-default-content">
-      <ArrowRightLeft size={18} strokeWidth={2} />
-      <span>Team Actions</span>
-    </div>
-    <div className="btn-hover-content">
-      <button
-        className="trade-action-icon"
-        aria-label="Trade Center"
-        onClick={() => {/* later: navigate to /trade */}}
-      >
-        <ArrowRightLeft size={18} strokeWidth={2} />
-      </button>
-      <button
-        className="trade-action-icon"
-        aria-label="Team Assets"
-        onClick={() => {/* later: navigate to /assets */}}
-      >
-        <Users size={18} strokeWidth={2} />
-      </button>
-      <button
-        className="trade-action-icon"
-        aria-label="League Trends"
-        onClick={() => {/* later: navigate to /trends */}}
-      >
-        <TrendingUp size={18} strokeWidth={2} />
-      </button>
-      <button
-        className="trade-action-icon"
-        aria-label="Trade Stats"
-        onClick={() => {/* later: navigate to /stats */}}
-      >
-        <BarChart3 size={18} strokeWidth={2} />
-      </button>
-    </div>
-  </div>
-</div>
+            <div className="quick-actions">
+              <button 
+                className="icon-btn trade-btn" 
+                onClick={() => setShowTradeModal(true)}
+              >
+                <div className="btn-default-content">
+                  <ArrowRightLeft size={16} />
+                  <span>Trade Desk</span>
+                </div>
+                <div className="btn-hover-content" onClick={(e) => e.stopPropagation()}>
+                  <div className="trade-action-icon" title="Propose Assets" onClick={() => setShowTradeModal(true)}>
+                    <Zap size={14} />
+                  </div>
+                  <div className="trade-action-icon" title="Negotiations" onClick={() => setShowTradeModal(true)}>
+                    <Users size={14} />
+                  </div>
+                </div>
+              </button>
+
+              <button className="icon-btn disabled" disabled>
+                <Settings size={16} />
+                <span>Roster Management</span>
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* --- CENTER COLUMN: TEAM STATS & LEADERS --- */}
-        <div className="overview-center-panel">
-          <div className="kpi-grid">
-            {[
-              { label: 'Points', value: avg.pts, icon: '🔥' },
-              { label: 'Rebounds', value: avg.reb, icon: '💪' },
-              { label: 'Assists', value: avg.ast, icon: '🎯' }
-            ].map((stat, idx) => (
-              <div key={idx} className="kpi-card">
-                <div className="kpi-header">
-                  <span className="kpi-label">{stat.label}</span>
-                  <span className="kpi-icon">{stat.icon}</span>
-                </div>
-                <div className="kpi-body">
-                  <span className="kpi-value">{stat.value}</span>
-                  <span className="kpi-trend kpi-trend-up">
-                    <TrendingUp className="icon-small" /> +0.2
-                  </span>
-                </div>
-              </div>
-            ))}
+        {/* ==================== 20% WIDTH VERTICAL KPI PANEL ==================== */}
+        <div className="overview-kpi-vertical-stack">
+          <div className="kpi-card">
+            <div className="kpi-header">
+              <span className="kpi-label">Team PPG</span>
+              <BarChart3 className="kpi-icon" />
+            </div>
+            <div className="kpi-value">{averages.pts}</div>
+            <div className="kpi-meta trend-up">
+              <TrendingUp size={12} /> vs League Avg
+            </div>
           </div>
 
-          <div className="team-leaders-card">
+          <div className="kpi-card">
+            <div className="kpi-header">
+              <span className="kpi-label">Team RPG</span>
+              <BarChart3 className="kpi-icon" />
+            </div>
+            <div className="kpi-value">{averages.reb}</div>
+            <div className="kpi-meta trend-up">
+              <TrendingUp size={12} /> Control
+            </div>
+          </div>
+
+          <div className="kpi-card">
+            <div className="kpi-header">
+              <span className="kpi-label">Team APG</span>
+              <BarChart3 className="kpi-icon" />
+            </div>
+            <div className="kpi-value">{averages.ast}</div>
+            <div className="kpi-meta trend-down">
+              <TrendingDown size={12} /> Efficiency
+            </div>
+          </div>
+        </div>
+
+        {/* ==================== EVENLY SPACED GRID LOWER ROW ==================== */}
+        <div className="overview-lower-flex-row">
+          
+          {/* 1. LEAGUE LEADERS */}
+          <div className="leaders-card lower-row-panel">
             <h3 className="card-title">
-              <Target className="icon-small" /> Team Leaders
+              <Award size={16} className="title-icon-inline" /> League Stat Leaders
             </h3>
-            {userTeamPlayers.length > 0 ? (
-              <div className="leader-list">
-                {[
-                  { stat: 'Points', value: leaderByStat('points') },
-                  { stat: 'Rebounds', value: leaderByStat('rebounds') },
-                  { stat: 'Assists', value: leaderByStat('assists') }
-                ].map((item, i) => (
-                  <div key={i} className="leader-item">
-                    <span className="leader-label">{item.stat}</span>
-                    <span className="leader-name">{item.value}</span>
-                  </div>
-                ))}
+            <div className="leader-list">
+              <div className="leader-item">
+                <span className="leader-label">Points</span>
+                <span className="leader-name">{leagueLeaders('points')[0]?.name || '-'}</span>
               </div>
-            ) : (
-              <div className="empty-state">No players on roster yet</div>
-            )}
+              <div className="leader-item">
+                <span className="leader-label">Rebounds</span>
+                <span className="leader-name">{leagueLeaders('rebounds')[0]?.name || '-'}</span>
+              </div>
+              <div className="leader-item">
+                <span className="leader-label">Assists</span>
+                <span className="leader-name">{leagueLeaders('assists')[0]?.name || '-'}</span>
+              </div>
+            </div>
           </div>
+
+          {/* 2. UPCOMING MATCHUP */}
+          <div className="next-game-card lower-row-panel">
+            <h3 className="card-title">
+              <Calendar size={16} className="title-icon-inline" /> Upcoming Schedule Matchup
+            </h3>
+            <span>Test</span>
+          </div>
+
+          {/* 3. TEAM LEADERS */}
+          <div className="leaders-card lower-row-panel">
+            <h3 className="card-title">
+              <User size={16} className="title-icon-inline" /> Franchise Roster Leaders
+            </h3>
+            <div className="leader-list">
+              <div className="leader-item">
+                <span className="leader-label">Scoring Leader</span>
+                <span className="leader-name">{leaderByStat('points')}</span>
+              </div>
+              <div className="leader-item">
+                <span className="leader-label">Paint Leader</span>
+                <span className="leader-name">{leaderByStat('rebounds')}</span>
+              </div>
+              <div className="leader-item">
+                <span className="leader-label">Playmaking Leader</span>
+                <span className="leader-name">{leaderByStat('assists')}</span>
+              </div>
+            </div>
+          </div>
+
         </div>
 
-        {/* --- RIGHT COLUMN: NEXT GAME & LEAGUE SNAPSHOT --- */}
-        <div className="overview-right-panel">
-          <div className="next-game-card">
-            <div className="next-game-header">
-              <div>
-                <p className="next-game-label">Next Match</p>
-                <p className="next-game-opponent">{nextGame.opponent}</p>
-              </div>
-              <Calendar className="icon-medium" />
-            </div>
-            <div className="next-game-details">
-              <p className="detail-item"><span className="dot" /> {nextGame.date}</p>
-              <p className="detail-item muted">{nextGame.venue}</p>
-            </div>
-          </div>
-
-          <div className="league-snapshot-card">
-            <h3 className="card-title">League Leaders</h3>
-            <div className="leader-snapshot-list">
-              {['points', 'rebounds', 'assists'].map((stat) => {
-                const top = leagueLeaders(stat as keyof Pick<Player, 'points' | 'rebounds' | 'assists'>)[0];
-                return top ? (
-                  <div key={stat} className="snapshot-item">
-                    <span className="snapshot-label">{stat}</span>
-                    <span className="snapshot-value">{top.name} <span className="snapshot-number">({top.value})</span></span>
-                  </div>
-                ) : null;
-              })}
-            </div>
-            <div className="snapshot-footer">
-              <a href="#" className="link-cyan">Full Leaderboard <ArrowRight className="icon-small" /></a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* --- BOTTOM: GAME RESULTS (always at the end) --- */}
-      <div className="overview-game-results">
-        <GameResults
-          key={refreshKey}
-          savedGameId={savedGameId}
-          onGameClick={onGameClick}
-        />
-      </div>
-
-
-
-            {showTradeModal && userTeam && (
-        <div
-          className="modal-overlay"
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundColor: 'rgba(0,0,0,0.6)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 1000,
-          }}
-          onClick={() => setShowTradeModal(false)} // close on backdrop click
-        >
-          <div
-            className="modal-content"
-            style={{
-              background: '#fff',
-              borderRadius: '8px',
-              padding: '20px',
-              width: '90%',
-              maxWidth: '1200px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              position: 'relative',
-            }}
-            onClick={e => e.stopPropagation()} // prevent closing when clicking inside
-          >
-            <button
-              onClick={() => setShowTradeModal(false)}
-              style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-                background: 'none',
-                border: 'none',
-                fontSize: '20px',
-                cursor: 'pointer',
-              }}
-            >
-              ✕
-            </button>
-            <TradePanel
+        {/* ==================== BOTTOM PANEL SIMULATOR ==================== */}
+        <div className="overview-bottom-panel">
+          <div className="results-wrapper-card">
+            <GameResults
+              key={refreshKey}
               savedGameId={savedGameId}
-              userTeamId={userTeam.id}
-              teams={allTeams.filter(t => t.id !== userTeam.id)}
+              onGameClick={onGameClick}
             />
           </div>
         </div>
-      )}
+
+      </div>
     </div>
   );
 };

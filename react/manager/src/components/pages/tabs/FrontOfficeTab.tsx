@@ -51,7 +51,7 @@ const FrontOfficeTab: React.FC<FrontOfficeTabProps> = ({
 
   // Sub‑view back navigation helper
   const renderBackButton = () => (
-    <button className="fo-back-btn" onClick={() => setCurrentView('hub')}>
+    <button className="glass-btn btn-primary-blue-glow" onClick={() => setCurrentView('hub')}>
       ← Back to Front Office Hub
     </button>
   );
