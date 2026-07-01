@@ -6,7 +6,7 @@ import NewGameForm from './NewGameForm';
 import SelectedGame from '../pages/SelectedGame';
 import { SavedGame } from '../../shared';
 import { RingLoader } from 'react-spinners'; // ← new import
-import './Dashboard.css';
+import './styles/Dashboard.css';
 
 const Dashboard: React.FC = () => {
   const { user, logout } = useAuth();
@@ -160,9 +160,9 @@ return (
           <section className="glass-panel main-panel animated-border-glow">
             {hasGames && latestGame ? (
               <div className="panel-inner">
-                <div className="panel-badge neon-blue">ACTIVE LEAGUE</div>
-                <h2 className="panel-title">Continue Journey</h2>
-                <p className="panel-subtitle">Resume command over your active basketball franchise.</p>
+                <div className="panel-badge neon-blue">CURRENT LEAGUE</div>
+                <h2 className="panel-title">{latestGame.name}</h2>
+                <p className="panel-subtitle">Keep it creamy and keep fuckin on these hoes.</p>
                 
                 <div className="panel-actions-grid">
                   <button 

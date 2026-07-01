@@ -1,48 +1,47 @@
-/* src/components/SelectedGame/tabs/StandingsTab.css */
+/* StandingsTab.css */
 
 /* ==========================================================================
    Base & Panel
    ========================================================================== */
+
 .standings-panel {
-  background: rgba(13, 17, 23, 0.85);
+  background: var(--glass-bg);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
   border-radius: 20px;
   padding: 24px;
-  color: #e1e4e8;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-    Ubuntu, sans-serif;
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 /* ==========================================================================
    Header
    ========================================================================== */
+
 .standings-header {
   margin-bottom: 32px;
 }
 
 .standings-title {
   font-size: 28px;
-  font-weight: 700;
+  font-weight: 800;
   margin: 0 0 20px 0;
   display: flex;
   align-items: center;
   gap: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--text-primary);
 }
 
 .title-icon {
-  -webkit-text-fill-color: initial;
   font-size: 32px;
+  filter: drop-shadow(0 0 8px var(--neon-blue-glow));
 }
 
 /* ==========================================================================
    Controls (Filters + View Switcher)
    ========================================================================== */
+
 .standings-controls {
   display: flex;
   flex-wrap: wrap;
@@ -63,54 +62,56 @@
 }
 
 .filter-label {
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  color: rgba(255, 255, 255, 0.5);
-  font-weight: 600;
+  color: var(--text-muted);
+  font-weight: 700;
 }
 
 .toggle-group {
   display: flex;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(9, 9, 11, 0.4);
   border-radius: 12px;
   padding: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
 }
 
 .toggle-btn {
   padding: 8px 16px;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
   border-radius: 8px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
 }
 
 .toggle-btn:hover {
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  background: var(--glass-highlight);
 }
 
 .toggle-btn.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--neon-blue-solid);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 15px var(--neon-blue-glow);
 }
 
 /* View Switcher */
+
 .view-switcher {
   display: flex;
   gap: 4px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(9, 9, 11, 0.4);
   border-radius: 12px;
   padding: 4px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
 }
 
 .view-btn {
@@ -120,23 +121,24 @@
   padding: 8px 16px;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
   border-radius: 8px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .view-btn:hover {
-  color: rgba(255, 255, 255, 0.9);
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  background: var(--glass-highlight);
 }
 
 .view-btn--active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--neon-blue-solid);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 15px var(--neon-blue-glow);
 }
 
 .view-btn-icon {
@@ -146,6 +148,7 @@
 /* ==========================================================================
    Content Area
    ========================================================================== */
+
 .standings-content {
   display: flex;
   flex-direction: column;
@@ -155,18 +158,19 @@
 /* ==========================================================================
    Division Card
    ========================================================================== */
+
 .division-card {
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 20px;
+  background: rgba(15, 23, 42, 0.25);
+  border-radius: 16px;
   padding: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: all 0.3s ease;
+  border: 1px solid var(--glass-border);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .division-card:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  background: rgba(15, 23, 42, 0.35);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
 }
 
 .division-card-header {
@@ -177,25 +181,25 @@
 }
 
 .conference-badge {
-  padding: 8px 16px;
-  background: rgba(102, 126, 234, 0.15);
-  border: 1px solid rgba(102, 126, 234, 0.3);
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #667eea;
+  padding: 6px 14px;
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--neon-blue-solid);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .division-badge {
-  padding: 8px 16px;
-  background: rgba(118, 75, 162, 0.15);
-  border: 1px solid rgba(118, 75, 162, 0.3);
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  color: #764ba2;
+  padding: 6px 14px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fcd34d;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -203,16 +207,17 @@
 .division-teams-count {
   margin-left: auto;
   padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.02);
   border-radius: 8px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  border: 1px solid var(--glass-border);
 }
 
 /* ==========================================================================
    Bars View (Rankings)
    ========================================================================== */
+
 .bars-view {
   display: flex;
   flex-direction: column;
@@ -223,46 +228,49 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 16px;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 12px;
-  border: 1px solid var(--team-border, rgba(255, 255, 255, 0.05));
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.01);
+  border-radius: 10px;
+  border: 1px solid var(--team-border, var(--glass-border));
   transition: all 0.2s ease;
   position: relative;
 }
 
 .bar-row:hover {
-  background: var(--team-glass, rgba(255, 255, 255, 0.05));
+  background: var(--team-glass, rgba(255, 255, 255, 0.04));
   transform: translateX(4px);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .bar-row--user {
-  background: rgba(102, 126, 234, 0.1);
-  border-color: rgba(102, 126, 234, 0.3);
+  background: rgba(59, 130, 246, 0.06);
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  box-shadow: inset 0 0 12px rgba(59, 130, 246, 0.05);
 }
 
 .bar-rank {
   width: 30px;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-muted);
   text-align: center;
 }
 
 .bar-abbrev {
   width: 40px;
   font-size: 13px;
-  font-weight: 600;
-  color: var(--team-color);
+  font-weight: 700;
+  color: var(--team-color, var(--text-primary));
 }
 
 .bar-track {
   flex: 1;
-  height: 16px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
+  height: 14px;
+  background: rgba(9, 9, 11, 0.6);
+  border-radius: 20px;
   overflow: hidden;
   display: flex;
+  border: 1px solid rgba(255, 255, 255, 0.03);
 }
 
 .bar-fill {
@@ -271,17 +279,17 @@
 }
 
 .bar-fill--win {
-  border-radius: 8px 0 0 8px;
+  border-radius: 20px 0 0 20px;
 }
 
 .bar-fill--loss {
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 20px 20px 0;
 }
 
 .bar-record {
   width: 60px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-primary);
   text-align: right;
 }
 
@@ -290,43 +298,47 @@
 }
 
 .bar-losses {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
 }
 
 .bar-pct {
   width: 60px;
   font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
+  color: var(--text-primary);
   text-align: right;
 }
 
 .bar-gb {
   width: 70px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-muted);
   text-align: right;
 }
 
 .bar-leader {
-  color: #4ade80;
-  font-weight: 700;
+  color: #10b981;
+  font-weight: 800;
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.2);
 }
 
 .bar-you {
-  padding: 2px 8px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  padding: 4px 8px;
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid var(--neon-blue-solid);
   border-radius: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  box-shadow: 0 0 10px var(--neon-blue-glow);
 }
 
 /* ==========================================================================
    Table View
    ========================================================================== */
+
 .table-view {
   overflow-x: auto;
 }
@@ -338,14 +350,14 @@
 }
 
 .standings-table thead th {
-  padding: 12px 8px;
+  padding: 14px 10px;
   text-align: left;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-weight: 700;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--glass-border);
   font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.75px;
 }
 
 .col-team {
@@ -354,9 +366,10 @@
 }
 
 .standings-table tbody td {
-  padding: 12px 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  padding: 14px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
   white-space: nowrap;
+  color: var(--text-primary);
 }
 
 .table-row {
@@ -364,293 +377,141 @@
 }
 
 .table-row:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .table-row--user {
-  background: rgba(102, 126, 234, 0.1);
+  background: rgba(59, 130, 246, 0.04);
 }
 
-.table-row--user:hover {
-  background: rgba(102, 126, 234, 0.15);
+.table-row--user td {
+  border-bottom-color: rgba(59, 130, 246, 0.2);
 }
 
+.table-row--user .td-teamName {
+  font-weight: 700;
+  color: var(--neon-blue-solid);
+}
+
+/* Column Specific Modifiers */
 .td-rank {
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
+  text-align: center;
   width: 30px;
 }
 
 .td-team {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.td-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.td-abbrev {
-  font-weight: 700;
-  color: var(--team-color);
-  width: 35px;
-}
-
-.td-name {
-  color: rgba(255, 255, 255, 0.8);
-  font-weight: 500;
-}
-
-.td-you {
-  margin-left: 6px;
-  padding: 1px 6px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 700;
-  color: white;
-  text-transform: uppercase;
-}
-
-.td-num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-.td-w {
-  color: #4ade80;
   font-weight: 600;
 }
 
-.td-l {
-  color: rgba(255, 255, 255, 0.45);
+.team-cell-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.team-logo-mini {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.td-wins,
+.td-losses {
+  font-weight: 600;
 }
 
 .td-pct {
+  font-weight: 700;
+}
+
+.td-gb {
+  color: var(--text-primary);
+}
+
+.td-gb--leader {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.td-conf,
+.td-div,
+.td-home,
+.td-away {
+  color: var(--text-muted);
+}
+
+.td-streak {
   font-weight: 600;
 }
 
-.td-split {
-  color: rgba(255, 255, 255, 0.65);
+.td-streak--win {
+  color: #10b981;
+}
+
+.td-streak--loss {
+  color: var(--neon-danger);
+}
+
+.td-diff {
+  font-weight: 700;
 }
 
 .td-diff--pos {
-  color: #4ade80;
-  font-weight: 600;
+  color: #10b981;
 }
 
 .td-diff--neg {
-  color: #f87171;
-  font-weight: 600;
+  color: var(--neon-danger);
 }
 
 .td-leader {
-  color: #4ade80;
+  color: #10b981;
   font-weight: 700;
-}
-
-/* ==========================================================================
-   Differential Scatter View
-   ========================================================================== */
-.diff-view {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.diff-empty {
-  padding: 32px;
-  text-align: center;
-  color: rgba(255, 255, 255, 0.4);
-  font-style: italic;
-}
-
-.diff-axis-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.5);
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-.diff-axis-label--y {
-  align-self: flex-start;
-  transform: rotate(-90deg) translateX(-50%);
-  transform-origin: left center;
-  margin-bottom: -20px;
-}
-
-.diff-chart-wrap {
-  display: flex;
-  width: 100%;
-  max-width: 500px;
-  aspect-ratio: 1 / 1;
-  position: relative;
-  margin: 0 auto;
-}
-
-.diff-y-ticks {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 0 8px 0 0;
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.diff-svg {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  overflow: visible;
-}
-
-.diff-x-ticks {
-  display: flex;
-  justify-content: space-between;
-  padding: 4px 0 0 0;
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.4);
-}
-
-.diff-axis-label--x {
-  align-self: center;
-}
-
-.bubble-group {
-  cursor: default;
-}
-
-.bubble-group text {
-  pointer-events: none;
-  user-select: none;
-  text-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
-}
-
-.diff-quadrants {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  max-width: 500px;
-  margin-top: 8px;
-  gap: 16px;
-}
-
-.diff-quad {
-  font-size: 11px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.diff-quad--good {
-  color: #4ade80;
-}
-
-.diff-quad--bad {
-  color: #f87171;
-}
-
-.diff-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
-  margin-top: 8px;
-}
-
-.diff-legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.diff-legend-item--user {
-  background: rgba(102, 126, 234, 0.15);
-  border-color: rgba(102, 126, 234, 0.3);
-}
-
-.diff-legend-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.diff-legend-abbr {
-  font-weight: 700;
-  font-size: 12px;
-}
-
-.diff-legend-diff {
-  font-size: 11px;
-  font-weight: 600;
-}
-
-.diff-legend-diff.pos {
-  color: #4ade80;
-}
-
-.diff-legend-diff.neg {
-  color: #f87171;
 }
 
 /* ==========================================================================
    Responsive
    ========================================================================== */
+
 @media (max-width: 768px) {
   .standings-panel {
     padding: 16px;
     border-radius: 12px;
   }
-
   .standings-title {
     font-size: 22px;
   }
-
   .title-icon {
     font-size: 26px;
   }
-
   .standings-controls {
     flex-direction: column;
+    align-items: stretch;
   }
-
   .filter-controls {
     flex-direction: column;
     gap: 16px;
   }
-
   .toggle-group {
     flex-wrap: wrap;
   }
-
   .toggle-btn,
   .view-btn {
     padding: 6px 12px;
     font-size: 12px;
+    flex: 1;
+    text-align: center;
+    justify-content: center;
   }
-
   .bars-view {
     gap: 8px;
   }
-
   .bar-row {
     flex-wrap: wrap;
     gap: 8px;
   }
-
   .bar-rank,
   .bar-abbrev,
   .bar-track,
@@ -659,15 +520,12 @@
   .bar-gb {
     flex: auto;
   }
-
   .standings-table {
     font-size: 12px;
   }
-
   .diff-chart-wrap {
     max-width: 100%;
   }
-
   .diff-axis-label--y {
     display: none;
   }
@@ -677,30 +535,27 @@
   .division-card {
     padding: 16px;
   }
-
   .division-card-header {
     flex-wrap: wrap;
   }
 }
 
 /* ==========================================================================
-   Scrollbar
+   Scrollbar overrides for clean presentation
    ========================================================================== */
-.standings-content::-webkit-scrollbar {
-  width: 6px;
+.table-view::-webkit-scrollbar {
   height: 6px;
 }
 
-.standings-content::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 3px;
+.table-view::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.standings-content::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
+.table-view::-webkit-scrollbar-thumb {
+  background: var(--glass-border);
+  border-radius: 10px;
 }
 
-.standings-content::-webkit-scrollbar-thumb:hover {
+.table-view::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }

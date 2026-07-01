@@ -4,6 +4,7 @@ const GameSimulationEngine = require('./gameSimulationEngine');
 const PlayerGenerator = require('./playerGenerator');
 const TeamArchetypeService = require('./teamArchetypeService');
 const LineupService = require("./lineupService");
+const playerProgression = require("./playerProgression");
 const { generateFreeAgentPool } = require("./freeAgentGenerator");
 
 const ROSTER_SIZE = 15;
@@ -426,6 +427,8 @@ class LeagueService {
     const { error: statsError } = await supabaseAdmin.from('player_game_stats').insert(allStats);
     if (statsError) throw new Error(`Failed to insert player stats: ${statsError.message}`);
 
+    await PlayerProgressionService.progressPlayersFromBoxScores(this.savedGameId, allStats);
+
     const { error: updateGameError } = await supabaseAdmin
       .from('games')
       .update({
@@ -703,6 +706,15 @@ class LeagueService {
 
     await this._upsertTeamStats(simResults, seasonId);
     await this._upsertPlayerSeasonStats(allBoxScores, seasonId);
+
+    const progression = await PlayerProgressionService.progressPlayersFromBoxScores(
+      this.savedGameId,
+      allBoxScores
+    );
+    console.log(
+      `📈 Progression: ${progression.playersProgressed} up, ` +
+      `${progression.playersRegressed} down (net Δ ${progression.totalDelta})`
+    );
 
     return simResults.map(({ game, result }) => ({
       gameId:     game.id,

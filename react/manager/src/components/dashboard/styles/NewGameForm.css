@@ -1,0 +1,207 @@
+/* ===== Glass Team Nameplate (your original + shimmer) ===== */
+.glass-team-name {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 20px;
+  border-radius: 16px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--team-color, #FF6B35);
+  border: 2px solid rgba(255,255,255,0.25);
+  box-shadow: 0 0 25px var(--team-color, #FF6B35), inset 0 1px 0 rgba(255,255,255,0.2);
+  margin-bottom: 20px;
+  width: 100%;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  position: relative;
+  overflow: hidden;
+}
+.glass-team-name::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -100%;
+  width: 100%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  animation: shimmer 3s infinite;
+}
+@keyframes shimmer {
+  to { left: 100%; }
+}
+
+/* ===== New Game Form – Dark Glass Container ===== */
+.new-game-form {
+  padding: 2rem;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.new-game-form::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  pointer-events: none;
+}
+
+/* Form header */
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+.form-header h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #ffffff 0%, #c0c0d0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.close-button {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(5px);
+}
+.close-button:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.4);
+}
+.close-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Form groups & labels */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Glass input wrappers */
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-wrapper:focus-within {
+  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+.input-icon {
+  padding: 0 12px;
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+select {
+  flex: 1;
+  background: transparent;
+  border: none;
+  padding: 14px 12px;
+  color: #fff;
+  font-size: 1rem;
+  font-family: inherit;
+  appearance: none;
+  outline: none;
+  cursor: pointer;
+}
+select option {
+  background: #1a1a2e;
+  color: #fff;
+}
+.dropdown-arrow {
+  padding: 0 12px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.8rem;
+  pointer-events: none;
+}
+
+/* Error message */
+.error-message {
+  background: rgba(255, 80, 80, 0.15);
+  border: 1px solid rgba(255, 80, 80, 0.3);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin: 1rem 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #ff6b6b;
+  font-weight: 500;
+}
+
+/* Form actions */
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 2rem;
+}
+.cancel-button,
+.create-button {
+  flex: 1;
+  padding: 14px 0;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.2s;
+  backdrop-filter: blur(5px);
+}
+.cancel-button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+.cancel-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+}
+.create-button {
+  background: linear-gradient(135deg, #6c5ce7, #a855f7);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  box-shadow: 0 4px 15px rgba(108, 92, 231, 0.4);
+}
+.create-button:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(108, 92, 231, 0.6);
+  transform: translateY(-1px);
+}
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}

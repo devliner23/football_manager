@@ -4,7 +4,7 @@ import { gameAPI } from '../../api/client';
 import { leagueAPI } from '../../api/leagueApi';
 import { SavedGame } from '../../shared';
 import NewGameTeamData from '../pages/tabs/tabComponents/NewGameTeamData';
-import './Dashboard.css';
+import './styles/NewGameForm.css';
 
 interface NewGameFormProps {
   onClose: () => void;

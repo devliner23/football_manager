@@ -16,6 +16,18 @@ interface ScheduleTabProps {
 
 type Tab = 'team-schedule' | 'league-schedule' | 'calendar';
 
+// ── Per-team record derived from completed games ────────────────────────────
+interface TeamRecord {
+  wins: number;
+  losses: number;
+  streak: number;
+  streakType: 'W' | 'L' | null;
+  last5: ('W' | 'L')[];
+  pointsFor: number;
+  pointsAgainst: number;
+  gamesPlayed: number;
+}
+
 const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate, currentTeam }) => {
   const [activeTab, setActiveTab] = useState<Tab>('team-schedule');
 
@@ -54,43 +66,137 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate,
     return map;
   }, [teams]);
 
+  // ── Flat, date-sorted list of every game in the schedule ──
+  const allGamesSorted = useMemo(() => {
+    const flat: GameResult[] = [];
+    Object.values(schedule).forEach(weekGames => flat.push(...weekGames));
+    flat.sort(
+      (a, b) => new Date(a.game_date || a.played_at || 0).getTime() - new Date(b.game_date || b.played_at || 0).getTime()
+    );
+    return flat;
+  }, [schedule]);
+
+  // ── Season-wide snapshot (progress, scoring, counts) ──
+  const seasonSummary = useMemo(() => {
+    let total = 0;
+    let completed = 0;
+    let totalPoints = 0;
+    let highestCombined = 0;
+    let highestCombinedGame: GameResult | null = null;
+
+    allGamesSorted.forEach(game => {
+      total++;
+      if (game.status === 'completed' && game.home_score != null && game.away_score != null) {
+        completed++;
+        const combined = game.home_score + game.away_score;
+        totalPoints += combined;
+        if (combined > highestCombined) {
+          highestCombined = combined;
+          highestCombinedGame = game;
+        }
+      }
+    });
+
+    const upcoming = total - completed;
+    const pctComplete = total > 0 ? (completed / total) * 100 : 0;
+    const avgCombinedPoints = completed > 0 ? totalPoints / completed : 0;
+
+    return { total, completed, upcoming, pctComplete, avgCombinedPoints, highestCombinedGame, highestCombined };
+  }, [allGamesSorted]);
+
+  // ── Win/loss records + streaks for every team, derived from completed games ──
+  const teamRecords = useMemo(() => {
+    const records: Record<string, TeamRecord> = {};
+    const ensure = (id: string) => {
+      if (!records[id]) {
+        records[id] = { wins: 0, losses: 0, streak: 0, streakType: null, last5: [], pointsFor: 0, pointsAgainst: 0, gamesPlayed: 0 };
+      }
+      return records[id];
+    };
+
+    allGamesSorted.forEach(game => {
+      if (game.status !== 'completed' || game.home_score == null || game.away_score == null) return;
+      const homeWon = game.home_score > game.away_score;
+
+      [
+        { id: game.home_team_id, won: homeWon, pf: game.home_score, pa: game.away_score },
+        { id: game.away_team_id, won: !homeWon, pf: game.away_score, pa: game.home_score },
+      ].forEach(({ id, won, pf, pa }) => {
+        const r = ensure(id);
+        r.gamesPlayed++;
+        r.pointsFor += pf;
+        r.pointsAgainst += pa;
+        won ? r.wins++ : r.losses++;
+
+        const resultChar: 'W' | 'L' = won ? 'W' : 'L';
+        r.last5.push(resultChar);
+        if (r.last5.length > 5) r.last5.shift();
+
+        if (r.streakType === resultChar) r.streak++;
+        else { r.streakType = resultChar; r.streak = 1; }
+      });
+    });
+
+    return records;
+  }, [allGamesSorted]);
+
   // ── Games grouped by date (YYYY‑MM‑DD) ──
   const gamesByDate = useMemo(() => {
     const map = new Map<string, GameResult[]>();
-    Object.values(schedule).forEach(weekGames => {
-      weekGames.forEach(game => {
-        const dateSource = game.game_date || game.played_at;
-        if (!dateSource) return;
-        const date = new Date(dateSource).toISOString().split('T')[0];
-        if (!map.has(date)) map.set(date, []);
-        map.get(date)!.push(game);
-      });
+    allGamesSorted.forEach(game => {
+      const dateSource = game.game_date || game.played_at;
+      if (!dateSource) return;
+      const date = new Date(dateSource).toISOString().split('T')[0];
+      if (!map.has(date)) map.set(date, []);
+      map.get(date)!.push(game);
     });
     return map;
-  }, [schedule]);
+  }, [allGamesSorted]);
 
   // ── All games for the managed team (sorted by date) ──
   const teamGames = useMemo(() => {
     if (!currentTeam) return [];
-    const allGames: GameResult[] = [];
-    Object.values(schedule).forEach(weekGames => {
-      weekGames.forEach(game => {
-        if (game.home_team_id === currentTeam || game.away_team_id === currentTeam) {
-          allGames.push(game);
-        }
-      });
-    });
-    allGames.sort(
-      (a, b) => new Date(a.game_date || a.played_at || 0).getTime() - new Date(b.game_date || b.played_at || 0).getTime()
+    return allGamesSorted.filter(
+      game => game.home_team_id === currentTeam || game.away_team_id === currentTeam
     );
-    return allGames;
-  }, [schedule, currentTeam]);
+  }, [allGamesSorted, currentTeam]);
+
+  const userRecord = currentTeam ? teamRecords[currentTeam] : undefined;
+  const nextTeamGame = useMemo(
+    () => teamGames.find(g => g.status !== 'completed') || null,
+    [teamGames]
+  );
+  const lastTeamGame = useMemo(
+    () => [...teamGames].reverse().find(g => g.status === 'completed') || null,
+    [teamGames]
+  );
+
+  // ── Days on the calendar / league-schedule dates that involve the user's team ──
+  const userGameDates = useMemo(() => {
+    const set = new Set<string>();
+    teamGames.forEach(game => {
+      const dateSource = game.game_date || game.played_at;
+      if (!dateSource) return;
+      set.add(new Date(dateSource).toISOString().split('T')[0]);
+    });
+    return set;
+  }, [teamGames]);
 
   // ── Daily games for the league‑schedule date ──
   const dailyGames = useMemo(() => {
     const key = gamesTabSelectedDate.toISOString().split('T')[0];
     return gamesByDate.get(key) || [];
   }, [gamesTabSelectedDate, gamesByDate]);
+
+  // ── Snapshot stats for the currently viewed league-schedule day ──
+  const dailySnapshot = useMemo(() => {
+    const completedToday = dailyGames.filter(g => g.status === 'completed' && g.home_score != null);
+    const totalPoints = completedToday.reduce((sum, g) => sum + (g.home_score || 0) + (g.away_score || 0), 0);
+    const avgPoints = completedToday.length > 0 ? totalPoints / completedToday.length : 0;
+    const featured =
+      dailyGames.find(g => g.home_team_id === currentTeam || g.away_team_id === currentTeam) || null;
+    return { total: dailyGames.length, completed: completedToday.length, avgPoints, featured };
+  }, [dailyGames, currentTeam]);
 
   // ── League Schedule date navigation ──
   const goToPreviousDay = () => {
@@ -152,6 +258,11 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate,
     return gamesByDate.get(key)?.length || 0;
   };
 
+  const isUserGameDay = (day: number | null): boolean => {
+    if (day === null) return false;
+    return userGameDates.has(getDateString(day));
+  };
+
   const handleCalendarDayClick = (day: number | null) => {
     if (day === null) return;
     const date = new Date(calendarYear, calendarMonthIndex, day);
@@ -176,28 +287,60 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate,
     setLeagueSelectedGame(null);
   };
 
+  // ── Small helpers ──
+  const formatShortDate = (game: GameResult | null) => {
+    if (!game) return null;
+    const src = game.game_date || game.played_at;
+    if (!src) return null;
+    return new Date(src).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
+
+  const opponentFor = (game: GameResult, teamId: string | null) => {
+    if (!teamId) return null;
+    const oppId = game.home_team_id === teamId ? game.away_team_id : game.home_team_id;
+    return teamMap.get(oppId) || null;
+  };
+
+  const isHomeGame = (game: GameResult, teamId: string | null) => teamId != null && game.home_team_id === teamId;
+
   // ── Render helpers ──
   const renderGameCard = (game: GameResult, isSelected: boolean, onClick: () => void) => {
     const home = teamMap.get(game.home_team_id);
     const away = teamMap.get(game.away_team_id);
+    const finished = game.status === 'completed' && game.home_score != null && game.away_score != null;
+    const homeWon = finished && game.home_score! > game.away_score!;
+    const involvesUser = currentTeam != null && (game.home_team_id === currentTeam || game.away_team_id === currentTeam);
+
     return (
       <div
         key={game.id}
-        className={`game-card-sidebar ${isSelected ? 'selected' : ''}`}
+        className={`game-card-sidebar ${isSelected ? 'selected' : ''} ${finished ? (homeWon ? 'result-home-win' : 'result-away-win') : ''} ${involvesUser ? 'involves-user' : ''}`}
         onClick={onClick}
         role="button"
         tabIndex={0}
       >
         <div className="game-card-content">
           <div className="game-teams">
-            <span className="team home">{home?.abbreviation || 'TBD'}</span>
+            <span className={`team home ${finished && homeWon ? 'winner-team' : ''}`}>
+              {home?.abbreviation || 'TBD'}
+              {teamRecords[game.home_team_id] && (
+                <span className="team-inline-record">
+                  {teamRecords[game.home_team_id].wins}-{teamRecords[game.home_team_id].losses}
+                </span>
+              )}
+            </span>
             <span className="vs">vs</span>
-            <span className="team away">{away?.abbreviation || 'TBD'}</span>
+            <span className={`team away ${finished && !homeWon ? 'winner-team' : ''}`}>
+              {away?.abbreviation || 'TBD'}
+              {teamRecords[game.away_team_id] && (
+                <span className="team-inline-record">
+                  {teamRecords[game.away_team_id].wins}-{teamRecords[game.away_team_id].losses}
+                </span>
+              )}
+            </span>
           </div>
           <div className="game-score">
-            {game.status === 'completed' && game.home_score != null
-              ? `${game.home_score} - ${game.away_score}`
-              : '—'}
+            {finished ? `${game.home_score} - ${game.away_score}` : '—'}
           </div>
           <span className={`game-status status-${game.status}`}>{game.status}</span>
         </div>
@@ -223,33 +366,115 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate,
       <div className="tab-content">
         {/* ─── Team Schedule ─── */}
         {activeTab === 'team-schedule' && (
-          <div className="games-two-col">
-            <div className="games-left">
-              <div className="team-schedule-header">
-                <h3>Your Team's Schedule</h3>
-                {!currentTeam && <p className="no-games">No team selected.</p>}
+          <>
+            {!currentTeam && (
+              <div className="games-left">
+                <p className="no-games">No team selected.</p>
               </div>
-              {currentTeam && teamGames.length === 0 && (
-                <p className="no-games">No games found for this team.</p>
-              )}
-              {currentTeam && teamGames.length > 0 && (
-                <div className="daily-games-list">
-                  {teamGames.map(game => renderGameCard(
-                    game,
-                    teamSelectedGame?.id === game.id,
-                    () => setTeamSelectedGame(game)
-                  ))}
+            )}
+
+            {currentTeam && (
+              <div className="team-hero-row">
+                <div className="hero-card hero-record-card">
+                  <span className="hero-card-label">Record</span>
+                  <span className="hero-card-value">
+                    {userRecord ? `${userRecord.wins}-${userRecord.losses}` : '0-0'}
+                  </span>
+                  <span className="hero-card-sub">
+                    {userRecord && userRecord.gamesPlayed > 0
+                      ? `${((userRecord.wins / userRecord.gamesPlayed) * 100).toFixed(1)}% win rate`
+                      : 'No games played yet'}
+                  </span>
+                  {userRecord && userRecord.streakType && (
+                    <span className={`streak-badge streak-${userRecord.streakType === 'W' ? 'win' : 'loss'}`}>
+                      {userRecord.streakType}{userRecord.streak} streak
+                    </span>
+                  )}
+                  {userRecord && userRecord.last5.length > 0 && (
+                    <div className="last5-row">
+                      {userRecord.last5.map((r, i) => (
+                        <span key={i} className={`last5-pip ${r === 'W' ? 'pip-win' : 'pip-loss'}`}>{r}</span>
+                      ))}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <div className="games-right">
-              <GameSnapshot
-                game={teamSelectedGame}
-                homeTeam={teamSelectedGame ? (teamMap.get(teamSelectedGame.home_team_id) ?? null) : null}
-                awayTeam={teamSelectedGame ? (teamMap.get(teamSelectedGame.away_team_id) ?? null) : null}
-              />
-            </div>
-          </div>
+
+                <div className="hero-card hero-next-card">
+                  <span className="hero-card-label">Next Game</span>
+                  {nextTeamGame ? (
+                    <>
+                      <span className="hero-card-value hero-card-value--matchup">
+                        {isHomeGame(nextTeamGame, currentTeam) ? 'vs' : '@'}{' '}
+                        {opponentFor(nextTeamGame, currentTeam)?.abbreviation || 'TBD'}
+                      </span>
+                      <span className="hero-card-sub">{formatShortDate(nextTeamGame) || 'Date TBD'}</span>
+                      <span className="hero-card-tag">{isHomeGame(nextTeamGame, currentTeam) ? 'Home' : 'Away'}</span>
+                    </>
+                  ) : (
+                    <span className="hero-card-sub">No games remaining</span>
+                  )}
+                </div>
+
+                <div className="hero-card hero-last-card">
+                  <span className="hero-card-label">Last Result</span>
+                  {lastTeamGame ? (
+                    <>
+                      <span
+                        className={`hero-card-value hero-card-value--matchup ${
+                          (isHomeGame(lastTeamGame, currentTeam)
+                            ? (lastTeamGame.home_score || 0) > (lastTeamGame.away_score || 0)
+                            : (lastTeamGame.away_score || 0) > (lastTeamGame.home_score || 0))
+                            ? 'text-win'
+                            : 'text-loss'
+                        }`}
+                      >
+                        {isHomeGame(lastTeamGame, currentTeam)
+                          ? (lastTeamGame.home_score || 0) > (lastTeamGame.away_score || 0) ? 'W' : 'L'
+                          : (lastTeamGame.away_score || 0) > (lastTeamGame.home_score || 0) ? 'W' : 'L'}{' '}
+                        {isHomeGame(lastTeamGame, currentTeam) ? 'vs' : '@'}{' '}
+                        {opponentFor(lastTeamGame, currentTeam)?.abbreviation || 'TBD'}
+                      </span>
+                      <span className="hero-card-sub">
+                        {lastTeamGame.home_score} - {lastTeamGame.away_score} · {formatShortDate(lastTeamGame)}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="hero-card-sub">No games completed yet</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {currentTeam && (
+              <div className="games-two-col">
+                <div className="games-left">
+                  <div className="team-schedule-header">
+                    <h3>Full Schedule</h3>
+                    <span className="section-count-badge">{teamGames.length} games</span>
+                  </div>
+                  {teamGames.length === 0 && (
+                    <p className="no-games">No games found for this team.</p>
+                  )}
+                  {teamGames.length > 0 && (
+                    <div className="daily-games-list">
+                      {teamGames.map(game => renderGameCard(
+                        game,
+                        teamSelectedGame?.id === game.id,
+                        () => setTeamSelectedGame(game)
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="games-right">
+                  <GameSnapshot
+                    game={teamSelectedGame}
+                    homeTeam={teamSelectedGame ? (teamMap.get(teamSelectedGame.home_team_id) ?? null) : null}
+                    awayTeam={teamSelectedGame ? (teamMap.get(teamSelectedGame.away_team_id) ?? null) : null}
+                  />
+                </div>
+              </div>
+            )}
+          </>
         )}
 
         {/* ─── League Schedule ─── */}
@@ -291,6 +516,34 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate,
                   </button>
                 </div>
               </div>
+
+              {gamesTabViewMode === 'daily' && (
+                <div className="day-snapshot-bar">
+                  <div className="day-snapshot-stat">
+                    <span className="day-snapshot-value">{dailySnapshot.total}</span>
+                    <span className="day-snapshot-label">Games</span>
+                  </div>
+                  <div className="day-snapshot-stat">
+                    <span className="day-snapshot-value">{dailySnapshot.completed}</span>
+                    <span className="day-snapshot-label">Completed</span>
+                  </div>
+                  <div className="day-snapshot-stat">
+                    <span className="day-snapshot-value">
+                      {dailySnapshot.avgPoints > 0 ? dailySnapshot.avgPoints.toFixed(1) : '—'}
+                    </span>
+                    <span className="day-snapshot-label">Avg Total</span>
+                  </div>
+                  {dailySnapshot.featured && (
+                    <div className="day-snapshot-featured">
+                      <span className="day-snapshot-label">Your Team Plays</span>
+                      <span className="day-snapshot-value day-snapshot-value--small">
+                        {teamMap.get(dailySnapshot.featured.home_team_id)?.abbreviation || 'TBD'} vs{' '}
+                        {teamMap.get(dailySnapshot.featured.away_team_id)?.abbreviation || 'TBD'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {gamesTabViewMode === 'daily' ? (
                 <div className="daily-games-list">
@@ -344,16 +597,21 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate,
                 ▶
               </button>
             </div>
+            <div className="calendar-legend">
+              <span className="legend-item"><span className="legend-dot dot-games" /> Games scheduled</span>
+              <span className="legend-item"><span className="legend-dot dot-user" /> Your team plays</span>
+            </div>
             <div className="calendar-grid">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                 <div key={day} className="calendar-day-header">{day}</div>
               ))}
               {calendarDays.map((day, idx) => {
                 const count = gameCountForDay(day);
+                const userDay = isUserGameDay(day);
                 return (
                   <div
                     key={idx}
-                    className={`calendar-day ${day === null ? 'empty' : ''} ${count > 0 ? 'has-games' : ''}`}
+                    className={`calendar-day ${day === null ? 'empty' : ''} ${count > 0 ? 'has-games' : ''} ${userDay ? 'user-game-day' : ''}`}
                     onClick={() => handleCalendarDayClick(day)}
                   >
                     {day && (

@@ -261,10 +261,10 @@
    to have transparent/glass-friendly backgrounds */
 .game-content-left > *,
 .game-content-right > * {
-  background: var(--bg-glass);
+  /* background: var(--bg-glass);
   backdrop-filter: blur(20px);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius);
+  border-radius: var(--radius); */
   padding: 1.25rem;
   color: var(--text-primary);
 }

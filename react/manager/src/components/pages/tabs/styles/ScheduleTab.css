@@ -1,28 +1,44 @@
 /* ============================================================
-   ScheduleTab – Dark Modern Glass Theme (Refined)
+   ScheduleTab – Dark Glass Theme (aligned with Dashboard.css)
+   Uses the same design tokens as the dashboard shell so the tab
+   feels like one continuous product. Falls back to literal
+   values if Dashboard.css's :root block isn't loaded on this
+   route.
    ============================================================ */
 
-/* ---------- Container & Root ---------- */
 .schedule-tab-container {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --stx-bg-main: var(--bg-main, #09090b);
+  --stx-glass-bg: rgba(8, 9, 13, 0.72);
+  --stx-glass-border: var(--glass-border, rgba(255, 255, 255, 0.07));
+  --stx-glass-highlight: var(--glass-highlight, rgba(255, 255, 255, 0.02));
+  --stx-text-primary: var(--text-primary, #f4f4f5);
+  --stx-text-muted: var(--text-muted, #8b8b93);
+  --stx-blue: var(--neon-blue, #3b82f6);
+  --stx-blue-glow: rgba(59, 130, 246, 0.16);
+  --stx-blue-solid: var(--neon-blue-solid, #60a5fa);
+  --stx-danger: var(--neon-danger, #ef4444);
+  --stx-danger-glow: rgba(239, 68, 68, 0.14);
+  --stx-win: #22c55e;
+  --stx-win-glow: rgba(34, 197, 94, 0.14);
+
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   max-width: 1100px;
   margin: 2rem auto;
   padding: 0 1.5rem;
-  color: #e0e0e0;
+  color: var(--stx-text-primary);
 }
 
-/* ---------- Glass Morphism Tab Bar ---------- */
+/* ============================================================
+   Tab Bar
+   ============================================================ */
 .tab-bar {
   display: flex;
   justify-content: flex-start;
-  gap: 0.25rem;
-  padding: 0.25rem;
-  background: rgba(30, 30, 40, 0.3);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  gap: 0.2rem;
+  padding: 0.2rem;
+  background: var(--stx-glass-bg);
+  border: 1px solid var(--stx-glass-border);
+  border-radius: 6px;
   width: fit-content;
   margin-bottom: 1.5rem;
 }
@@ -33,8 +49,8 @@
   padding: 0.55rem 1.4rem;
   font-size: 0.9rem;
   font-weight: 500;
-  color: #b0b0c0;
-  border-radius: 8px;
+  color: var(--stx-text-muted);
+  border-radius: 4px;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
   letter-spacing: 0.02em;
@@ -46,11 +62,10 @@
 }
 
 .tab-item.active {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(59, 130, 246, 0.14);
   color: #ffffff;
-  font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-weight: 700;
+  border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 /* ---------- Tab Content Wrapper ---------- */
@@ -58,27 +73,130 @@
   margin-top: 0.25rem;
 }
 
-/* ---------- Full Placeholder ---------- */
-.placeholder-full {
-  background: rgba(25, 25, 35, 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 12px;
-  padding: 3rem 2rem;
-  text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+/* ============================================================
+   Team Schedule – Hero Row
+   ============================================================ */
+.team-hero-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
 }
 
-.placeholder-full h2 {
-  font-size: 1.8rem;
-  margin-bottom: 0.5rem;
+.hero-card {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--stx-glass-border);
+  border-radius: 6px;
+  padding: 1.1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-record-card {
+  border-left: 3px solid var(--stx-blue-solid);
+}
+
+.hero-next-card {
+  border-left: 3px solid #d97706;
+}
+
+.hero-last-card {
+  border-left: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+.hero-card-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--stx-text-muted);
+}
+
+.hero-card-value {
+  font-size: 1.9rem;
+  font-weight: 800;
   color: #ffffff;
+  letter-spacing: -0.5px;
 }
 
-.placeholder-full p {
-  font-size: 0.95rem;
-  color: #a0a0b0;
+.hero-card-value--matchup {
+  font-size: 1.35rem;
+}
+
+.hero-card-sub {
+  font-size: 0.78rem;
+  color: var(--stx-text-muted);
+}
+
+.hero-card-tag {
+  align-self: flex-start;
+  margin-top: 0.3rem;
+  padding: 2px 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--stx-glass-border);
+  color: var(--stx-text-primary);
+}
+
+.text-win { color: var(--stx-win); }
+.text-loss { color: var(--stx-danger); }
+
+.streak-badge {
+  align-self: flex-start;
+  margin-top: 0.35rem;
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 3px;
+  letter-spacing: 0.3px;
+}
+
+.streak-win {
+  background: rgba(34, 197, 94, 0.1);
+  color: var(--stx-win);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+}
+
+.streak-loss {
+  background: rgba(239, 68, 68, 0.08);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.last5-row {
+  display: flex;
+  gap: 4px;
+  margin-top: 0.5rem;
+}
+
+.last5-pip {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.pip-win {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--stx-win);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.pip-loss {
+  background: rgba(239, 68, 68, 0.1);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.25);
 }
 
 /* ============================================================
@@ -93,15 +211,36 @@
 
 /* ---------- Left Column – Game List ---------- */
 .games-left {
-  background: rgba(25, 25, 35, 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
   padding: 1.25rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--stx-glass-border);
   max-height: 80vh;
   overflow-y: auto;
+}
+
+.team-schedule-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.team-schedule-header h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--stx-text-primary);
+}
+
+.section-count-badge {
+  padding: 3px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--stx-text-muted);
+  border: 1px solid var(--stx-glass-border);
 }
 
 /* Controls */
@@ -109,38 +248,24 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.1rem;
   flex-wrap: wrap;
   gap: 0.6rem;
 }
 
-.date-selector {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.date-selector label {
-  font-weight: 500;
-  color: #b0b0c0;
-  font-size: 0.85rem;
-}
-
 .date-input {
   padding: 0.45rem 0.7rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  color: #e0e0e0;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  border-radius: 4px;
+  border: 1px solid var(--stx-glass-border);
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--stx-text-primary);
   font-size: 0.85rem;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .date-input:focus {
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--stx-blue-solid);
 }
 
 .view-toggle-inline {
@@ -149,21 +274,71 @@
 }
 
 .view-toggle-inline button {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--stx-glass-border);
   padding: 0.4rem 1rem;
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 0.8rem;
-  color: #b0b0c0;
+  color: var(--stx-text-muted);
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
 }
 
 .view-toggle-inline button.active {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(59, 130, 246, 0.14);
+  border-color: rgba(59, 130, 246, 0.3);
   color: #ffffff;
+  font-weight: 700;
+}
+
+/* ---------- Day Snapshot Bar (League Schedule, daily view) ---------- */
+.day-snapshot-bar {
+  display: flex;
+  align-items: center;
+  gap: 1.4rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid var(--stx-glass-border);
+  border-radius: 4px;
+  flex-wrap: wrap;
+}
+
+.day-snapshot-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+}
+
+.day-snapshot-value {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.day-snapshot-value--small {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--stx-blue-solid);
+}
+
+.day-snapshot-label {
+  font-size: 0.65rem;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--stx-text-muted);
+}
+
+.day-snapshot-featured {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  padding-left: 1rem;
+  border-left: 1px solid var(--stx-glass-border);
 }
 
 /* Daily Game Cards */
@@ -175,59 +350,78 @@
 
 .no-games {
   text-align: center;
-  color: #808090;
+  color: var(--stx-text-muted);
   font-style: italic;
 }
 
 .game-card-sidebar {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
   padding: 0.7rem 0.9rem;
   cursor: pointer;
   transition: background 0.2s, border-color 0.2s;
-  border: 1px solid transparent;
+  border: 1px solid var(--stx-glass-border);
+  border-left: 3px solid transparent;
 }
 
 .game-card-sidebar.selected {
-  border-color: #4a8cf7;
-  background: rgba(74, 140, 247, 0.08);
+  border-color: var(--stx-blue-solid);
+  background: rgba(59, 130, 246, 0.08);
 }
 
 .game-card-sidebar:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.game-card-sidebar.involves-user {
+  border-left-color: rgba(245, 158, 11, 0.7);
+}
+
+.game-card-sidebar.result-home-win .team.home,
+.game-card-sidebar.result-away-win .team.away {
+  color: var(--stx-win);
 }
 
 .game-card-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  color: #e0e0e0;
+  color: var(--stx-text-primary);
   font-size: 0.9rem;
 }
 
 .game-card-content .game-teams {
   display: flex;
-  align-items: center;
-  gap: 0.3rem;
+  flex-direction: column;
+  gap: 2px;
   font-weight: 500;
 }
 
 .game-card-content .team.home,
 .game-card-content .team.away {
   color: #d0d0e0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.team-inline-record {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--stx-text-muted);
+}
+
+.winner-team {
+  font-weight: 700;
 }
 
 .game-card-content .vs {
-  font-size: 0.7rem;
-  color: #7a7a8a;
-  font-weight: 400;
+  display: none;
 }
 
 .game-card-content .game-score {
-  font-weight: 700;
-  font-size: 1rem;
+  font-weight: 800;
+  font-size: 1.05rem;
   color: #ffffff;
 }
 
@@ -235,10 +429,14 @@
   font-size: 0.65rem;
   text-transform: uppercase;
   padding: 0.15rem 0.4rem;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #b0b0c0;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--stx-text-muted);
 }
+
+.status-completed { color: #6ee7a0; background: rgba(34, 197, 94, 0.08); }
+.status-scheduled { color: #e8b84b; background: rgba(217, 119, 6, 0.1); }
+.status-in_progress { color: #f2908c; background: rgba(239, 68, 68, 0.08); }
 
 /* ---------- Right Column – Mini Calendar & Game Snapshot ---------- */
 .games-right {
@@ -249,21 +447,18 @@
 
 /* Mini Calendar */
 .mini-calendar {
-  background: rgba(25, 25, 35, 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
   padding: 0.9rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--stx-glass-border);
 }
 
 .mini-cal-title {
   margin: 0 0 0.4rem;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
-  color: #d0d0e0;
+  color: var(--stx-text-primary);
 }
 
 .mini-weekday-header,
@@ -277,7 +472,7 @@
 .mini-weekday {
   font-size: 0.65rem;
   font-weight: 500;
-  color: #7a7a8a;
+  color: var(--stx-text-muted);
   padding: 0.15rem 0;
 }
 
@@ -291,19 +486,23 @@
   font-size: 0.7rem;
   cursor: default;
   position: relative;
-  color: #a0a0b0;
+  color: var(--stx-text-muted);
   transition: background 0.15s;
 }
 
 .mini-day.has-games {
   cursor: pointer;
-  font-weight: 600;
-  background: rgba(255, 255, 255, 0.04);
-  color: #e0e0e0;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--stx-text-primary);
+}
+
+.mini-day.has-games:hover {
+  background: rgba(59, 130, 246, 0.1);
 }
 
 .mini-day.today {
-  border: 1px solid #4a8cf7;
+  border: 1px solid var(--stx-blue-solid);
 }
 
 .mini-day.empty {
@@ -318,19 +517,16 @@
   position: absolute;
   bottom: 1px;
   font-size: 0.5rem;
-  color: #4a8cf7;
+  color: var(--stx-blue-solid);
   font-weight: 700;
 }
 
 /* Game Snapshot */
 .game-snapshot {
-  background: rgba(25, 25, 35, 0.5);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
   padding: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--stx-glass-border);
 }
 
 .game-snapshot.empty {
@@ -341,7 +537,7 @@
 
 .game-snapshot.empty p {
   text-align: center;
-  color: #6b7280;
+  color: var(--stx-text-muted);
   font-style: italic;
   margin: 0;
 }
@@ -349,8 +545,8 @@
 .snapshot-title {
   margin: 0 0 0.6rem;
   font-size: 0.9rem;
-  font-weight: 600;
-  color: #d0d0e0;
+  font-weight: 700;
+  color: var(--stx-text-primary);
 }
 
 .snapshot-teams {
@@ -367,27 +563,27 @@
 
 .snapshot-abbr {
   display: block;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 1.2rem;
   color: #ffffff;
 }
 
 .snapshot-name {
   font-size: 0.65rem;
-  color: #9a9aae;
+  color: var(--stx-text-muted);
 }
 
 .snapshot-vs {
   font-size: 0.75rem;
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: 700;
+  color: var(--stx-text-muted);
   margin: 0 0.4rem;
 }
 
 .snapshot-score {
   text-align: center;
   font-size: 1.3rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #ffffff;
   margin-bottom: 0.6rem;
 }
@@ -397,16 +593,16 @@
   font-size: 0.7rem;
   text-transform: uppercase;
   padding: 0.2rem;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #b0b0c0;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--stx-text-muted);
   margin-bottom: 0.4rem;
 }
 
 .snapshot-date {
   font-size: 0.7rem;
   text-align: center;
-  color: #8a8a9a;
+  color: var(--stx-text-muted);
 }
 
 /* ---------- Weekly List (GamesListView) ---------- */
@@ -417,10 +613,10 @@
 }
 
 .week-group {
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
+  border: 1px solid var(--stx-glass-border);
+  border-radius: 4px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(0, 0, 0, 0.25);
 }
 
 .week-header {
@@ -429,9 +625,9 @@
   align-items: center;
   padding: 0.6rem 0.8rem;
   cursor: pointer;
-  font-weight: 600;
-  color: #d0d0e0;
-  background: rgba(255, 255, 255, 0.04);
+  font-weight: 700;
+  color: var(--stx-text-primary);
+  background: rgba(255, 255, 255, 0.03);
   transition: background 0.2s;
 }
 
@@ -441,7 +637,7 @@
 
 .week-toggle-icon {
   font-size: 1rem;
-  color: #8a8a9a;
+  color: var(--stx-text-muted);
 }
 
 .week-games-container {
@@ -458,7 +654,7 @@
 }
 
 .day-box-header {
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 0.4rem;
   color: #c0c0d0;
   font-size: 0.8rem;
@@ -468,9 +664,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.4rem 0;
+  padding: 0.4rem 0.4rem;
   cursor: pointer;
-  border-radius: 6px;
+  border-radius: 3px;
   transition: background 0.15s;
 }
 
@@ -483,12 +679,12 @@
   align-items: center;
   gap: 0.3rem;
   font-weight: 500;
-  color: #e0e0e0;
+  color: var(--stx-text-primary);
   font-size: 0.85rem;
 }
 
 .day-game-score {
-  font-weight: 700;
+  font-weight: 800;
   color: #ffffff;
   font-size: 0.9rem;
 }
@@ -497,23 +693,18 @@
   font-size: 0.65rem;
   text-transform: uppercase;
   padding: 0.15rem 0.4rem;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  color: #b0b0c0;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--stx-text-muted);
 }
-
-/* Status colors */
-.status-completed { color: #a0e0a0; }
-.status-upcoming { color: #f0c060; }
-.status-live { color: #ff7070; }
 
 /* ---------- Modal ---------- */
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(4, 4, 7, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -521,18 +712,16 @@
 }
 
 .day-modal {
-  background: rgba(30, 30, 40, 0.85);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  background: #060608;
+  border-radius: 6px;
+  border: 1px solid var(--stx-glass-border);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7);
   padding: 1.5rem;
   max-width: 600px;
   width: 90%;
   max-height: 80vh;
   overflow-y: auto;
-  color: #e0e0e0;
+  color: var(--stx-text-primary);
 }
 
 .modal-header {
@@ -540,11 +729,13 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--stx-glass-border);
+  padding-bottom: 1rem;
 }
 
 .modal-title {
   font-size: 1.25rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #ffffff;
   margin: 0;
 }
@@ -552,7 +743,7 @@
 .modal-close {
   background: none;
   border: none;
-  color: #a0a0b0;
+  color: var(--stx-text-muted);
   font-size: 1.3rem;
   cursor: pointer;
   transition: color 0.2s;
@@ -581,8 +772,8 @@
 }
 
 .modal-game-row:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.25);
 }
 
 .modal-game-teams {
@@ -596,7 +787,7 @@
 }
 
 .team-abbr-full {
-  font-weight: 700;
+  font-weight: 800;
   font-size: 1rem;
   color: #ffffff;
 }
@@ -604,12 +795,12 @@
 .team-name {
   display: block;
   font-size: 0.65rem;
-  color: #8a8a9a;
+  color: var(--stx-text-muted);
 }
 
 .modal-vs {
-  font-weight: 600;
-  color: #6b7280;
+  font-weight: 700;
+  color: var(--stx-text-muted);
 }
 
 .modal-game-info {
@@ -618,25 +809,31 @@
 
 .modal-score-big {
   font-size: 1.1rem;
-  font-weight: 700;
+  font-weight: 800;
   color: #ffffff;
 }
 
-/* ---------- Calendar Full View (New) ---------- */
+/* ---------- Calendar Full View ---------- */
 .calendar-full-view {
-  padding: 0;
+  background: var(--stx-glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--stx-glass-border);
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.5), inset 0 1px 0 var(--stx-glass-highlight);
 }
 
 .calendar-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.6rem;
 }
 
 .calendar-nav button {
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--stx-glass-border);
   color: #e2e8f0;
   padding: 0.35rem 0.7rem;
   border-radius: 6px;
@@ -646,14 +843,38 @@
 }
 
 .calendar-nav button:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(59, 130, 246, 0.18);
 }
 
 .calendar-month-label {
   font-size: 1.1rem;
-  font-weight: 600;
+  font-weight: 700;
   color: #f1f5f9;
 }
+
+.calendar-legend {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: var(--stx-text-muted);
+}
+
+.legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot-games { background: var(--stx-blue-solid); }
+.dot-user { background: #f59e0b; }
 
 .calendar-grid {
   display: grid;
@@ -662,13 +883,13 @@
   background: rgba(255, 255, 255, 0.04);
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--stx-glass-border);
 }
 
 .calendar-day-header {
   padding: 0.5rem;
   text-align: center;
-  font-weight: 600;
+  font-weight: 700;
   color: #94a3b8;
   background: rgba(255, 255, 255, 0.04);
   font-size: 0.75rem;
@@ -694,22 +915,26 @@
 }
 
 .calendar-day.has-games {
-  background: rgba(99, 102, 241, 0.1);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.calendar-day.user-game-day {
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.5);
 }
 
 .calendar-day:hover:not(.empty) {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .day-number {
-  font-weight: 600;
+  font-weight: 700;
   color: #e2e8f0;
   font-size: 0.8rem;
   margin-bottom: 2px;
 }
 
 .day-dot {
-  background: #6366f1;
+  background: var(--stx-blue);
   color: #fff;
   border-radius: 50%;
   width: 18px;
@@ -721,16 +946,8 @@
   font-weight: 700;
 }
 
-/* Team schedule header (if any) */
-.team-schedule-header {
-  margin-bottom: 0.8rem;
-}
-
-.team-schedule-header h3 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #d0d0e0;
+.calendar-day.user-game-day .day-dot {
+  background: #f59e0b;
 }
 
 /* Scrollbar */
@@ -763,7 +980,7 @@
 
 .date-nav-btn {
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--stx-glass-border);
   color: #c0c0d0;
   width: 32px;
   height: 32px;
@@ -778,7 +995,7 @@
 }
 
 .date-nav-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(59, 130, 246, 0.18);
   color: #ffffff;
 }
 
@@ -786,4 +1003,27 @@
   width: 120px;
   text-align: center;
   font-size: 0.85rem;
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 900px) {
+  .season-overview-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .team-hero-row {
+    grid-template-columns: 1fr;
+  }
+
+  .games-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .season-overview-bar {
+    grid-template-columns: 1fr 1fr;
+  }
 }

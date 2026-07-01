@@ -480,6 +480,156 @@
     "foreign_column_name": null
   },
   {
+    "table_name": "player_progression",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "uuid_generate_v4()",
+    "is_primary_key": true,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "player_progression",
+    "column_name": "player_id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": null,
+    "is_primary_key": false,
+    "foreign_table_name": "players",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "player_progression",
+    "column_name": "saved_game_id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": null,
+    "is_primary_key": false,
+    "foreign_table_name": "saved_games",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "player_progression",
+    "column_name": "game_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null,
+    "is_primary_key": false,
+    "foreign_table_name": "games",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "player_progression",
+    "column_name": "season_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null,
+    "is_primary_key": false,
+    "foreign_table_name": "seasons",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "player_progression",
+    "column_name": "overall_before",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "is_primary_key": false,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "player_progression",
+    "column_name": "overall_after",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": null,
+    "is_primary_key": false,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "player_progression",
+    "column_name": "traits_before",
+    "data_type": "jsonb",
+    "is_nullable": "NO",
+    "column_default": "'{}'::jsonb",
+    "is_primary_key": false,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "player_progression",
+    "column_name": "traits_after",
+    "data_type": "jsonb",
+    "is_nullable": "NO",
+    "column_default": "'{}'::jsonb",
+    "is_primary_key": false,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "player_progression",
+    "column_name": "delta",
+    "data_type": "jsonb",
+    "is_nullable": "NO",
+    "column_default": "'{}'::jsonb",
+    "is_primary_key": false,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "player_progression",
+    "column_name": "progression_type",
+    "data_type": "text",
+    "is_nullable": "NO",
+    "column_default": "'game'::text",
+    "is_primary_key": false,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "player_progression",
+    "column_name": "age_at_event",
+    "data_type": "integer",
+    "is_nullable": "YES",
+    "column_default": null,
+    "is_primary_key": false,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "player_progression",
+    "column_name": "performance_score",
+    "data_type": "numeric",
+    "is_nullable": "YES",
+    "column_default": "0",
+    "is_primary_key": false,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "player_progression",
+    "column_name": "notes",
+    "data_type": "text",
+    "is_nullable": "YES",
+    "column_default": null,
+    "is_primary_key": false,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "player_progression",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()",
+    "is_primary_key": false,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
     "table_name": "player_season_stats",
     "column_name": "id",
     "data_type": "uuid",
@@ -733,7 +883,7 @@
     "table_name": "players",
     "column_name": "team_id",
     "data_type": "uuid",
-    "is_nullable": "NO",
+    "is_nullable": "YES",
     "column_default": null,
     "is_primary_key": false,
     "foreign_table_name": "teams",
@@ -845,156 +995,6 @@
     "data_type": "timestamp with time zone",
     "is_nullable": "NO",
     "column_default": "now()",
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "saved_games",
-    "column_name": "id",
-    "data_type": "uuid",
-    "is_nullable": "NO",
-    "column_default": "uuid_generate_v4()",
-    "is_primary_key": true,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "saved_games",
-    "column_name": "user_id",
-    "data_type": "uuid",
-    "is_nullable": "NO",
-    "column_default": null,
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "saved_games",
-    "column_name": "name",
-    "data_type": "text",
-    "is_nullable": "NO",
-    "column_default": null,
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "saved_games",
-    "column_name": "managed_club_id",
-    "data_type": "uuid",
-    "is_nullable": "YES",
-    "column_default": null,
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "saved_games",
-    "column_name": "difficulty",
-    "data_type": "text",
-    "is_nullable": "NO",
-    "column_default": "'pro'::text",
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "saved_games",
-    "column_name": "current_season",
-    "data_type": "integer",
-    "is_nullable": "NO",
-    "column_default": "1",
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "saved_games",
-    "column_name": "current_game_date",
-    "data_type": "timestamp with time zone",
-    "is_nullable": "YES",
-    "column_default": "now()",
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "saved_games",
-    "column_name": "is_auto_save",
-    "data_type": "boolean",
-    "is_nullable": "NO",
-    "column_default": "false",
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "saved_games",
-    "column_name": "game_state",
-    "data_type": "jsonb",
-    "is_nullable": "NO",
-    "column_default": "'{}'::jsonb",
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "saved_games",
-    "column_name": "last_played",
-    "data_type": "timestamp with time zone",
-    "is_nullable": "YES",
-    "column_default": "now()",
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "saved_games",
-    "column_name": "created_at",
-    "data_type": "timestamp with time zone",
-    "is_nullable": "NO",
-    "column_default": "now()",
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "saved_games",
-    "column_name": "updated_at",
-    "data_type": "timestamp with time zone",
-    "is_nullable": "NO",
-    "column_default": "now()",
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "seasons",
-    "column_name": "id",
-    "data_type": "uuid",
-    "is_nullable": "NO",
-    "column_default": "uuid_generate_v4()",
-    "is_primary_key": true,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "seasons",
-    "column_name": "saved_game_id",
-    "data_type": "uuid",
-    "is_nullable": "NO",
-    "column_default": null,
-    "is_primary_key": false,
-    "foreign_table_name": "saved_games",
-    "foreign_column_name": "id"
-  },
-  {
-    "table_name": "seasons",
-    "column_name": "season_number",
-    "data_type": "integer",
-    "is_nullable": "NO",
-    "column_default": "1",
     "is_primary_key": false,
     "foreign_table_name": null,
     "foreign_column_name": null
