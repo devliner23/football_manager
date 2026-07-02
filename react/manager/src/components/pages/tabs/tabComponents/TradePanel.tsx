@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Player, Team } from '../../../../shared/index';
-import './TradePanel.css';
+import './styles/TradePanel.css';
 
 interface TradePanelProps {
   savedGameId: string;

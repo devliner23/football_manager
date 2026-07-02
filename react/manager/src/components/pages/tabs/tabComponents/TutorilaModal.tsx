@@ -9,7 +9,7 @@ import {
   Calendar,
   X,
 } from 'lucide-react';
-import './TutorialModal.css';
+import './styles/TutorialModal.css';
 
 interface TutorialModalProps {
   visible: boolean;

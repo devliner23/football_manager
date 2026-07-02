@@ -424,7 +424,7 @@
 }
 
 /* Sliding trade layout engine mechanics */
-.icon-btn.trade-btn {
+.icon-btn{
   position: relative;
   padding: 0;
   width: 130px;
@@ -522,4 +522,312 @@
 @keyframes pulse {
   0% { opacity: 0.6; transform: scale(0.95); }
   100% { opacity: 1; transform: scale(1.05); }
+}
+
+
+/* ==========================
+   BANNER – MAIN CONTAINER
+   ========================== */
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 4px solid #3b82f6;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+  color: #f4f4f5;
+}
+
+/* ----- BRAND (left column) ----- */
+.banner__brand {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  min-width: 240px;
+  flex-shrink: 0;
+}
+
+.banner__avatar {
+  width: 64px;
+  height: 64px;
+  margin: 0;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.15);
+}
+
+.banner__season {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #60a5fa;
+  background: rgba(59, 130, 246, 0.15);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.banner__team-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 4px 0;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+
+.banner__meta {
+  font-size: 0.85rem;
+  color: #a1a1aa;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+/* ----- STATS (center) ----- */
+.banner__stats {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  padding: 12px 24px;
+  border-radius: 14px;
+}
+
+.stats-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.stats-block__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #71717a;
+  margin-bottom: 2px;
+}
+
+.stats-block__value {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #f4f4f5;
+}
+
+.stats-block__value--glow {
+  color: #60a5fa;
+  text-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+.stats-block__slash {
+  color: #3f3f46;
+  margin: 0 2px;
+}
+
+.stats-block__max {
+  font-size: 0.85rem;
+  color: #52525b;
+}
+
+.stats-block__value--status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #10b981 !important;
+}
+
+.stats-block__sub {
+  font-size: 0.75rem;
+  color: #a1a1aa;
+}
+
+/* ----- ACTIONS (right column) ----- */
+.banner__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  flex-shrink: 0;
+  align-self: center;
+  justify-content: center; 
+  width: 100%;
+}
+
+/* Standings tracker */
+.standings-tracker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.standings-tracker svg {
+  color: #60a5fa;
+}
+
+.standings-tracker__pct {
+  font-weight: 700;
+  color: #fff;
+  background: rgba(59, 130, 246, 0.2);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* Buttons */
+.actions-group {
+  display: flex;
+  gap: 8px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 10px;
+  color: #e4e4e7;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.btn:not(:disabled):hover {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: #60a5fa;
+  color: #fff;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+}
+
+.btn--disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Trade button with sliding hover effect */
+.btn--trade {
+  position: relative;
+  padding: 0;
+  width: 350px;
+  height: 52px;
+  overflow: hidden;
+}
+
+.btn__content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn__content--default {
+  gap: 6px;
+  opacity: 1;
+}
+
+.btn__content--hover {
+  opacity: 0;
+  transform: translateY(10px);
+  background: rgba(17, 16, 41, 0.8);
+  gap: 12px;
+}
+
+.btn--trade:hover .btn__content--default {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.btn--trade:hover .btn__content--hover {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.trade-sub-action {
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #a1a1aa;
+  cursor: pointer;
+}
+
+.trade-sub-action:hover {
+  color: #fff;
+  background: #3b82f6;
+  border-color: #60a5fa;
+}
+
+/* ----- ICONS ----- */
+.icon--small {
+  width: 14px;
+  height: 14px;
+}
+
+.icon--pulse {
+  width: 14px;
+  height: 14px;
+  color: #10b981;
+  animation: pulse 2s infinite alternate;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.6; transform: scale(0.95); }
+  100% { opacity: 1; transform: scale(1.05); }
+}
+
+/* ----- RESPONSIVE ADJUSTMENTS ----- */
+@media (max-width: 1200px) {
+  .banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .banner__stats {
+    justify-content: space-between;
+  }
+  .banner__actions {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .banner__stats {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  .banner__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }

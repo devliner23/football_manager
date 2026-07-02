@@ -1,404 +1,295 @@
-/* ==========================================================================
-   LineupTab.css
-   Dark Glass Theme – Subdued, no neon
-   ========================================================================== */
+/* src/components/pages/tabs/styles/LineupTab.css */
 
-:root {
-    --glass-bg: rgba(18, 22, 30, 0.75);
-    --glass-border: rgba(255, 255, 255, 0.06);
-    --panel-bg: rgba(26, 30, 40, 0.85);
-    --text: #eaeef5;
-    --text-muted: #8892a6;
-    --accent-blue: #6e8fc9;
-    --accent-gold: #d4b67a;
-    --accent-green: #5f9b7a;
-    --accent-red: #bf6a73;
-    --radius: 16px;
-    --transition: 0.2s ease;
+.lineup-dashboard-panel {
+  width: 100%;
+  margin-top: 12px;
 }
 
-/* ── Main panel ── */
-.lineup-panel {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    padding: 28px;
-    border-radius: var(--radius);
-    background: var(--panel-bg);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid var(--glass-border);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+.error-panel-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px;
 }
 
-/* ── Header ── */
-.lineup-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
+/* Header Adjustments */
+.lineup-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 24px;
 }
 
-.lineup-header-left {
-    display: flex;
-    align-items: center;
-    gap: 16px;
+/* Minutes Allocation Gauge Widget */
+.minutes-gauge-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--glass-border);
+  padding: 12px 20px;
+  border-radius: 12px;
+  min-width: 150px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  transition: border-color 0.3s ease;
 }
 
-.lineup-title {
-    margin: 0;
-    color: var(--text);
-    font-size: 1.35rem;
-    font-weight: 600;
-    letter-spacing: 0.3px;
+.gauge-value-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 4px;
 }
 
-.lineup-header-icon {
-    color: var(--accent-blue);
+.gauge-total {
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
-.lineup-mode-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 4px 12px;
-    border-radius: 999px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.3px;
-    text-transform: uppercase;
+.gauge-max {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
-.lineup-mode-badge--auto {
-    background: rgba(110, 143, 201, 0.2);
-    color: var(--accent-blue);
+/* Status Banners */
+.lineup-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+  margin-top: 0;
+  animation: modalScaleUp 0.2s ease-out;
 }
 
-.lineup-mode-badge--custom {
-    background: rgba(95, 155, 122, 0.2);
-    color: var(--accent-green);
+.banner-success {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: #a7f3d0;
 }
 
-/* ── Buttons ── */
-.lineup-header-actions {
-    display: flex;
-    gap: 12px;
+/* Vertical Continuous Stack Roster Design */
+.roster-vertical-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  margin-bottom: 32px;
 }
 
-.lineup-header-actions button {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 16px;
-    border: none;
-    border-radius: 10px;
-    color: #fff;
-    cursor: pointer;
-    font-weight: 500;
-    font-size: 0.85rem;
-    transition: var(--transition);
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+.section-title-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  padding-bottom: 8px;
 }
 
-.lineup-reset-btn {
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text-muted);
-}
-.lineup-reset-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+.section-title-wrapper h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.2px;
 }
 
-.lineup-save-btn {
-    background: var(--accent-blue);
-    color: #fff;
-}
-.lineup-save-btn:hover {
-    background: #5f83b8;
-    box-shadow: 0 4px 16px rgba(110, 143, 201, 0.25);
-}
-.lineup-save-btn--ok {
-    background: var(--accent-green);
-}
-.lineup-save-btn--ok:hover {
-    background: #4d8a6b;
-}
-.lineup-save-btn--disabled {
-    opacity: 0.4;
-    pointer-events: none;
+.player-rows-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-/* ── Budget bar ── */
-.lineup-budget {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 8px 0;
-}
-
-.lineup-budget-labels {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.85rem;
-}
-
-.lineup-budget-title {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--text-muted);
-}
-
-.lineup-budget-total {
-    font-weight: 600;
-    transition: color 0.2s;
-}
-
-.lineup-budget-track {
-    height: 6px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
-    overflow: hidden;
-}
-
-.lineup-budget-fill {
-    height: 100%;
-    border-radius: 999px;
-    transition: width 0.3s, background 0.3s;
-}
-
-.lineup-budget-warning {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: 10px;
-    color: var(--accent-red);
-    font-size: 0.75rem;
-}
-
-/* ── Sections ── */
-.lineup-section {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-.lineup-section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.lineup-section-label {
-    color: var(--text);
-    font-weight: 600;
-    font-size: 0.95rem;
-}
-
-.lineup-section-count {
-    color: var(--text-muted);
-    font-size: 0.8rem;
-}
-
-/* ── Player grid ── */
-.lineup-cards {
-    display: grid;
-    gap: 12px;
-}
-
-/* ── Player card ── */
+/* Glassmorphism Player Cards */
 .lineup-player-card {
-    display: grid;
-    grid-template-columns: 45px 55px 1fr 80px;
-    align-items: center;
-    gap: 16px;
-    padding: 12px 18px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.035);
-    border: 1px solid rgba(255, 255, 255, 0.04);
-    transition: var(--transition);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.2s ease;
 }
 
 .lineup-player-card:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .lineup-player-card--starter {
-    border-left: 3px solid var(--accent-blue);
+  background: rgba(59, 130, 246, 0.02);
 }
 
 .lineup-player-card--empty {
-    opacity: 0.5;
+  border-style: dashed;
+  background: transparent;
+  opacity: 0.6;
 }
 
+.lineup-player-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Slot Labels (PG, SG, B1, etc) */
 .lineup-slot-label {
-    font-weight: 600;
-    font-size: 0.9rem;
-    color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 6px;
+  min-width: 36px;
+  text-align: center;
+  letter-spacing: 0.5px;
 }
 
-.lineup-slot-label--empty {
-    color: var(--text-muted);
+.empty-label {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-muted) !important;
 }
 
-.lineup-position-badge {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    padding: 4px 10px;
-    border-radius: 999px;
-    border: 1px solid;
-    font-weight: 600;
-    font-size: 0.7rem;
-    letter-spacing: 0.5px;
-}
-
-.lineup-player-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+.lineup-player-meta {
+  display: flex;
+  flex-direction: column;
 }
 
 .lineup-player-name {
-    color: var(--text);
-    font-weight: 500;
-    font-size: 0.9rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
-.lineup-rating {
-    display: inline-block;
-    padding: 1px 8px;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 0.75rem;
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-muted);
+.empty-text {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.lineup-player-pos-tag {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.lineup-player-stats {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Tiered Custom Ratings Badges */
+.lineup-rating-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
 
 .lineup-rating--elite {
-    color: var(--accent-blue);
-    background: rgba(110, 143, 201, 0.15);
+  background: rgba(245, 158, 11, 0.15);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.3);
 }
 
 .lineup-rating--good {
-    color: var(--accent-gold);
-    background: rgba(212, 182, 122, 0.15);
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
 }
 
 .lineup-rating--average {
-    color: var(--text-muted);
-    background: rgba(255, 255, 255, 0.04);
+  background: rgba(148, 163, 184, 0.1);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.2);
 }
 
-/* ── Minutes input ── */
-.lineup-minutes-input-wrap {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    justify-content: flex-end;
+/* Minutes Digital Form Numeric Input */
+.lineup-minutes-input-wrapper {
+  display: flex;
+  align-items: center;
+  background: rgba(9, 9, 11, 0.6);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  transition: focus-within 0.2s ease;
+}
+
+.lineup-minutes-input-wrapper:focus-within {
+  border-color: var(--neon-blue-solid);
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.15);
+}
+
+.input-clock-icon {
+  color: var(--text-muted);
+  margin-right: 6px;
 }
 
 .lineup-minutes-input {
-    width: 48px;
-    padding: 6px 4px;
-    text-align: center;
-    border: none;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.06);
-    color: var(--text);
-    font-weight: 500;
-    font-size: 0.9rem;
-    transition: var(--transition);
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  width: 32px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  padding: 4px 0;
 }
 
-.lineup-minutes-input:focus {
-    outline: 1px solid var(--accent-blue);
-    background: rgba(255, 255, 255, 0.08);
+/* Clear standard spinner up-down UI controls */
+.lineup-minutes-input::-webkit-outer-spin-button,
+.lineup-minutes-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
-.lineup-minutes-input::-webkit-inner-spin-button,
-.lineup-minutes-input::-webkit-outer-spin-button {
-    opacity: 0.4;
+.input-unit-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: 2px;
 }
 
-.lineup-minutes-unit {
-    color: var(--text-muted);
-    font-size: 0.7rem;
+/* Action Controls Row Custom Modifications */
+.lineup-actions-footer {
+  margin-bottom: 20px;
 }
 
-/* ── Error ── */
-.lineup-error {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    border-radius: 12px;
-    color: var(--accent-red);
-    background: rgba(191, 106, 115, 0.12);
-    border: 1px solid rgba(191, 106, 115, 0.2);
+/* Loading Module Overlay */
+.lineup-loading-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 60px 0;
+  gap: 16px;
 }
 
-.lineup-error-retry {
-    background: rgba(255, 255, 255, 0.08);
-    border: none;
-    padding: 4px 14px;
-    border-radius: 8px;
-    color: var(--text);
-    cursor: pointer;
-    font-weight: 500;
-    transition: var(--transition);
-}
-.lineup-error-retry:hover {
-    background: rgba(255, 255, 255, 0.16);
+.lineup-loading-text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  letter-spacing: 0.5px;
 }
 
-/* ── Skeleton ── */
-.lineup-skeleton-wrap {
-    display: grid;
-    gap: 12px;
+/* Core System Keyframe Utilities */
+.spin-animation {
+  animation: spinTransform 1s linear infinite;
 }
 
-.lineup-skeleton-card {
-    height: 60px;
-    border-radius: 12px;
-    background: linear-gradient(90deg, #232a36 25%, #2e3644 50%, #232a36 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+@keyframes spinTransform {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
-@keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-}
-
-/* ── Misc ── */
-.lineup-spinning {
-    animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-.lineup-empty-state {
-    display: flex;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .lineup-header-flex {
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 60px 20px;
-    color: var(--text-muted);
-    gap: 12px;
-    text-align: center;
-}
-
-.lineup-empty-placeholder {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--text-muted);
-    font-size: 0.85rem;
+    align-items: stretch;
+  }
+  .minutes-gauge-card {
+    text-align: left;
+  }
+  .gauge-value-row {
+    justify-content: flex-start;
+  }
 }

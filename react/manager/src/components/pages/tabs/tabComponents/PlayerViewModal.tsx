@@ -5,7 +5,7 @@ import {
   Activity, TrendingUp, GitCompare, Target,
   Eye, PlusCircle, ArrowUpRight
 } from 'lucide-react';
-import "./PlayerViewModal.css";
+import "./styles/PlayerViewModal.css";
 
 interface PlayerViewModalProps {
   player: Player;

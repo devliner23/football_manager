@@ -4,6 +4,7 @@ import { Team, Player, StandingsRow } from '../../../api/leagueApi';
 import TradePanel from './tabComponents/TradePanel';
 import FreeAgentsTab from './FreeAgentTab';
 import LineupTab from './LineupTab';
+import FinancePanel from './tabComponents/FinancePanel';
 import './styles/FrontOfficeTab.css';
 
 interface FrontOfficeTabProps {
@@ -86,10 +87,10 @@ const FrontOfficeTab: React.FC<FrontOfficeTabProps> = ({
             />
           )}
           {currentView === 'finances' && (
-            <div className="fo-placeholder-screen">
-              <h2>Finances Hub</h2>
-              <p>Salary cap breakdown, contracts, and revenue tracking coming soon.</p>
-            </div>
+            <FinancePanel
+              savedGameId={savedGameId}
+              userTeamId={userTeamId}
+            />
           )}
         </div>
       </div>

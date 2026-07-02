@@ -15,6 +15,7 @@ export interface Player {
   saved_game_id: string;
   first_name: string;
   last_name: string;
+  full_name: string;
   position: Position;
   age: number;
   height: number;           // in inches

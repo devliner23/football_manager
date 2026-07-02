@@ -61,6 +61,94 @@ export interface SetLineupPayload {
   minutesTargets?: Record<string, number>;
 }
 
+export interface TeamFinanceSummary {
+  id: string;
+  name: string;
+  city: string;
+  abbreviation: string;
+  totalPayroll: number;
+  salaryCapSpace: number;
+  capHitPercent: string;
+  luxuryTaxThreshold: number;
+  playersUnderContract: number;
+  topEarner: {
+    playerName: string;
+    overall: number;
+    salary: number;
+  } | null;
+}
+
+export interface TeamFinanceDetail {
+  team: {
+    id: string;
+    name: string;
+    city: string;
+    abbreviation: string;
+    conference: string;
+    division: string;
+  };
+  finances: {
+    totalPayroll: number;
+    salaryCap: number;
+    capSpace: number;
+    luxuryTaxSpace: number;
+    numberOfContracts: number;
+    highestPaidPlayer: {
+      playerId: string;
+      name: string;
+      position: string;
+      overall: number;
+      age: number;
+      salary: number;
+      yearsRemaining: number;
+    } | null;
+    expiringContracts: Array<{
+      playerId: string;
+      name: string;
+      position: string;
+      overall: number;
+      salary: number;
+      yearsRemaining: number;
+    }>;
+  };
+  contracts: Array<{
+    contractId: string;
+    playerId: string;
+    playerName: string;
+    position: string;
+    overall: number;
+    age: number;
+    salary: number;
+    yearsRemaining: number;
+    totalYears: number;
+  }>;
+}
+
+export interface LeagueFinanceSummary {
+  totalTeams: number;
+  totalLeaguePayroll: number;
+  averageTeamPayroll: number;
+  highestPayrollTeam: {
+    id: string;
+    name: string;
+    payroll: number;
+  } | null;
+  lowestPayrollTeam: {
+    id: string;
+    name: string;
+    payroll: number;
+  } | null;
+  totalPlayersUnderContract: number;
+  averagePlayerSalary: number;
+  top5HighestPaid: Array<{
+    playerName: string;
+    overall: number;
+    team: string;
+    salary: number;
+  }>;
+}
+
+
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -237,11 +325,7 @@ export const leagueAPI = {
     }
     return response.data.data;
   },
- 
-  /**
-   * Save a custom lineup for the user's managed team.
-   * starters must be exactly 5 player IDs.
-   */
+
   setLineup: async (
     savedGameId: string,
     teamId: string,
@@ -256,10 +340,7 @@ export const leagueAPI = {
     }
     return response.data.data;
   },
- 
-  /**
-   * Wipe any customization and regenerate the auto lineup from roster ratings.
-   */
+
   resetLineup: async (savedGameId: string, teamId: string): Promise<LineupData> => {
     const response = await api.post<ApiResponse<LineupData>>(
       `/api/lineup/${savedGameId}/${teamId}/auto`
@@ -268,6 +349,27 @@ export const leagueAPI = {
       throw new Error(response.data.error || 'Failed to reset lineup');
     }
     return response.data.data;
+  },
+
+  getTeamFinances: async (savedGameId: string) => {
+    const response = await api.get<ApiResponse<TeamFinanceSummary[]>>(
+      `/api/league/${savedGameId}/finance/teams`
+    );
+    return extractData(response);
+  },
+
+  getTeamFinanceDetail: async (savedGameId: string, teamId: string) => {
+    const response = await api.get<ApiResponse<TeamFinanceDetail>>(
+      `/api/league/${savedGameId}/finance/teams/${teamId}`
+    );
+    return extractData(response);
+  },
+
+  getLeagueFinanceSummary: async (savedGameId: string) => {
+    const response = await api.get<ApiResponse<LeagueFinanceSummary>>(
+      `/api/league/${savedGameId}/finance/league-summary`
+    );
+    return extractData(response);
   },
 };
 

@@ -80,19 +80,23 @@ class PlayerGenerator {
     const age = this.generateAge(isStar, rosterIndex);
     const height = this.generateHeight(position);
     const weight = this.generateWeight();
+    const first_name = this.generateFirstName();
+    const last_name = this.generateLastName();
+    const full_name = this.generateFullName();
 
     return {
       saved_game_id: this.savedGameId,
       team_id: teamId,
-      first_name: this.generateFirstName(),
-      last_name: this.generateLastName(),
+      first_name: first_name,
+      last_name: last_name,
+      full_name: full_name,
       position: position,
       age: age,
       height: height,
       weight: weight,
       overall_rating: rating,
       potential_rating: potential,
-      traits: traits, // directly JSONB
+      traits: traits, 
     };
   }
 
@@ -229,6 +233,10 @@ class PlayerGenerator {
 
   generateLastName() {
     return this.lastNames[Math.floor(Math.random() * this.lastNames.length)];
+  }
+
+  generateFullName(first_name, last_name) {
+    return `${first_name} ${last_name}`
   }
 
   // ---------- utility ----------

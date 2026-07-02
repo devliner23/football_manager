@@ -38,4 +38,8 @@ router.post('/saved-games/:savedGameId/trades/:tradeId/accept', leagueController
 router.post('/saved-games/:savedGameId/trades/:tradeId/reject', leagueController.rejectTrade);
 router.delete('/saved-games/:savedGameId/trades/:tradeId', leagueController.cancelTrade);
 
+router.get ('/:savedGameId/finance/teams',          leagueController.getTeamFinances);
+router.get ('/:savedGameId/finance/teams/:teamId',  leagueController.getTeamFinanceDetail);
+router.get ('/:savedGameId/finance/league-summary', leagueController.getLeagueFinanceSummary);
+
 module.exports = router;

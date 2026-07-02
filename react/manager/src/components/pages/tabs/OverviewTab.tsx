@@ -98,76 +98,109 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       <div className="overview-grid">
         
         {/* ==================== 80% WIDTH TOP BANNER ==================== */}
-        <div className="overview-left-panel season-banner-premium">
-          <div className="banner-left-brand">
-            <div className="team-avatar">🏀</div>
-            <div className="team-info">
-              <span className="season-badge">Season {game.current_season}</span>
-              <h2 className="team-name">{userTeam.name}</h2>
-              <p className="team-meta">
-                <Shield className="icon-small" /> Front Office Operations Hub
+        <header className="banner">
+          {/* Left: Team identity */}
+          <div className="banner__brand">
+            <figure className="banner__avatar" aria-hidden="true">
+              🏀
+            </figure>
+            <div className="banner__identity">
+              <span className="banner__season">Season {game.current_season}</span>
+              <h2 className="banner__team-name">{userTeam.name}</h2>
+              <p className="banner__meta">
+                <Shield className="icon icon--small" />
+                Front Office Operations Hub
               </p>
             </div>
           </div>
 
-          {/* New Added Structured Information Fields */}
-          <div className="banner-center-stats">
-            <div className="banner-stat-block">
-              <span className="stat-block-label">Record Breakdown</span>
-              <span className="stat-block-value text-glow-blue">{wins}<span className="slash">/</span>{losses}</span>
-              <span className="stat-block-sub">{winPct} Win %</span>
-            </div>
-            
-            <div className="banner-stat-block">
-              <span className="stat-block-label">Roster Capacity</span>
-              <span className="stat-block-value">{userTeamPlayers.length} <span className="max-cap">/ 15</span></span>
-              <span className="stat-block-sub">Active Contracts</span>
-            </div>
-
-            <div className="banner-stat-block">
-              <span className="stat-block-label">Franchise Status</span>
-              <span className="stat-block-value status-indicator">
-                <Activity className="icon-pulse-green" /> Stable
+          {/* Center: Key statistics */}
+          <section className="banner__stats">
+            <div className="stats-block">
+              <span className="stats-block__label">Record Breakdown</span>
+              <span className="stats-block__value stats-block__value--glow">
+                {wins}<span className="stats-block__slash">/</span>{losses}
               </span>
-              <span className="stat-block-sub">Luxury Tax Compliant</span>
-            </div>
-          </div>
-
-          <div className="banner-right-actions">
-            <div className="record-progress">
-              <Target size={18} />
-              <div className="record-label">
-                <span>Current Standings Tracker</span>
-              </div>
-              <span className="record-pct">{record}</span>
+              <span className="stats-block__sub">{winPct} Win %</span>
             </div>
 
-            <div className="quick-actions">
-              <button 
-                className="icon-btn trade-btn" 
+            <div className="stats-block">
+              <span className="stats-block__label">Roster Capacity</span>
+              <span className="stats-block__value">
+                {userTeamPlayers.length} <span className="stats-block__max">/ 15</span>
+              </span>
+              <span className="stats-block__sub">Active Contracts</span>
+            </div>
+
+            <div className="stats-block">
+              <span className="stats-block__label">Franchise Status</span>
+              <span className="stats-block__value stats-block__value--status">
+                <Activity className="icon icon--pulse" />
+                Stable
+              </span>
+              <span className="stats-block__sub">Luxury Tax Compliant</span>
+            </div>
+          </section>
+
+          {/* Right: Actions & standings tracker */}
+          <aside className="banner__actions">
+
+
+            <div className="actions-group">
+              <button
+                className="btn btn--trade"
                 onClick={() => setShowTradeModal(true)}
               >
-                <div className="btn-default-content">
+                <span className="btn__content btn__content--default">
                   <ArrowRightLeft size={16} />
-                  <span>Trade Desk</span>
-                </div>
-                <div className="btn-hover-content" onClick={(e) => e.stopPropagation()}>
-                  <div className="trade-action-icon" title="Propose Assets" onClick={() => setShowTradeModal(true)}>
-                    <Zap size={14} />
-                  </div>
-                  <div className="trade-action-icon" title="Negotiations" onClick={() => setShowTradeModal(true)}>
-                    <Users size={14} />
-                  </div>
-                </div>
-              </button>
-
-              <button className="icon-btn disabled" disabled>
-                <Settings size={16} />
-                <span>Roster Management</span>
+                  Quick Actions
+                </span>
+                <span className="btn__content btn__content--hover">
+                  <span
+                    className="trade-sub-action"
+                    title="Propose Assets"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowTradeModal(true);
+                    }}
+                  >
+                    <Zap size={18} />
+                  </span>
+                  <span
+                    className="trade-sub-action"
+                    title="Negotiations"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowTradeModal(true);
+                    }}
+                  >
+                    <Users size={18} />
+                  </span>
+                                    <span
+                    className="trade-sub-action"
+                    title="Negotiations"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowTradeModal(true);
+                    }}
+                  >
+                    <Calendar size={18} />
+                  </span>
+                                    <span
+                    className="trade-sub-action"
+                    title="Negotiations"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowTradeModal(true);
+                    }}
+                  >
+                    <TrendingUp size={18} />
+                  </span>
+                </span>
               </button>
             </div>
-          </div>
-        </div>
+          </aside>
+        </header>
 
         {/* ==================== 20% WIDTH VERTICAL KPI PANEL ==================== */}
         <div className="overview-kpi-vertical-stack">

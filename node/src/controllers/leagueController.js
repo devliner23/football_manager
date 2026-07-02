@@ -2,6 +2,7 @@
 const { supabaseAdmin }      = require('../config/supabase');
 const LeagueService          = require('../services/leagueService');
 const TeamArchetypeService   = require('../services/teamArchetypeService');
+const FinanceService         = require("../services/financeService");
 
 const SORTABLE_PLAYER_COLUMNS = new Set([
   'overall_rating', 'potential_rating', 'age', 'height', 'weight',
@@ -771,7 +772,43 @@ const leagueController = {
     } catch (err) {
       next(err);
     }
-  }
+  },
+
+  async getTeamFinances(req, res) {
+    try {
+      const data = await FinanceService.getAllTeamFinances(req.params.savedGameId);
+      res.json({ success: true, data });
+    } catch (err) {
+      console.error('Error fetching team finances:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  async getTeamFinanceDetail(req, res) {
+    try {
+      const data = await FinanceService.getTeamFinanceDetail(
+        req.params.savedGameId,
+        req.params.teamId
+      );
+      if (!data) {
+        return res.status(404).json({ success: false, error: 'Team not found' });
+      }
+      res.json({ success: true, data });
+    } catch (err) {
+      console.error('Error fetching team finance detail:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
+
+  async getLeagueFinanceSummary(req, res) {
+    try {
+      const data = await FinanceService.getLeagueFinanceSummary(req.params.savedGameId);
+      res.json({ success: true, data });
+    } catch (err) {
+      console.error('Error fetching league finance summary:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  },
 };
   
 

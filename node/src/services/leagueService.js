@@ -5,6 +5,7 @@ const PlayerGenerator = require('./playerGenerator');
 const TeamArchetypeService = require('./teamArchetypeService');
 const LineupService = require("./lineupService");
 const playerProgression = require("./playerProgression");
+const FinanceService = require("./financeService");
 const { generateFreeAgentPool } = require("./freeAgentGenerator");
 
 const ROSTER_SIZE = 15;
@@ -310,7 +311,7 @@ class LeagueService {
    * @param {string} managedClubName - team name chosen by the user
    * @param {string} userArchetype   - archetype ID chosen by the user (optional)
    */
-  async initializeLeague(season = 1, managedClubName = null, userArchetype = null) {
+async initializeLeague(season = 1, managedClubName = null, userArchetype = null) {
     const existingTeams = await this.getTeams();
     if (existingTeams.length > 0) {
       throw new Error(`League already initialized for saved game ${this.savedGameId}`);
@@ -354,7 +355,22 @@ class LeagueService {
       seasonRecord     = await this.createSeason(season);
       await this.createSeasonStats(teams, seasonRecord.id);
       const gamesCount = await this.generateSchedule(teams, seasonRecord.id);
-      const faCount = await this.createFreeAgents(season);
+      const faCount    = await this.createFreeAgents(season);
+
+      // ====================================================================
+      // 🔥 FINANCE SYSTEM LOGIC INJECTION
+      // ====================================================================
+      console.log(`[Finance] Initializing salaries, contracts, and team salary caps...`);
+      const financeResult = await FinanceService.initializeLeagueFinances(
+        this.savedGameId, 
+        teams, 
+        players
+      );
+      
+      if (!financeResult.success) {
+        throw new Error("Financial setup failed during league initialization.");
+      }
+      // ====================================================================
 
       // 5. Persist metadata to the saved_game row
       const currentState = (await this._getGameState()) || {};
@@ -381,6 +397,7 @@ class LeagueService {
         freeAgentsCreated:   faCount.length, 
         gamesCreated:   gamesCount,
         userArchetype:  validUserArchetype,
+        financesInitialized: true
       };
     } catch (err) {
       if (teams)        await this.rollbackLeague();
