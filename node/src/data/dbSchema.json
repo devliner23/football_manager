@@ -1,5 +1,95 @@
 [
   {
+    "table_name": "contracts",
+    "column_name": "id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": "uuid_generate_v4()",
+    "is_primary_key": true,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "contracts",
+    "column_name": "saved_game_id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": null,
+    "is_primary_key": false,
+    "foreign_table_name": "saved_games",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "contracts",
+    "column_name": "player_id",
+    "data_type": "uuid",
+    "is_nullable": "NO",
+    "column_default": null,
+    "is_primary_key": false,
+    "foreign_table_name": "players",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "contracts",
+    "column_name": "team_id",
+    "data_type": "uuid",
+    "is_nullable": "YES",
+    "column_default": null,
+    "is_primary_key": false,
+    "foreign_table_name": "teams",
+    "foreign_column_name": "id"
+  },
+  {
+    "table_name": "contracts",
+    "column_name": "salary",
+    "data_type": "numeric",
+    "is_nullable": "NO",
+    "column_default": "0.00",
+    "is_primary_key": false,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "contracts",
+    "column_name": "years_remaining",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": "1",
+    "is_primary_key": false,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "contracts",
+    "column_name": "total_years",
+    "data_type": "integer",
+    "is_nullable": "NO",
+    "column_default": "1",
+    "is_primary_key": false,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "contracts",
+    "column_name": "created_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()",
+    "is_primary_key": false,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
+    "table_name": "contracts",
+    "column_name": "updated_at",
+    "data_type": "timestamp with time zone",
+    "is_nullable": "NO",
+    "column_default": "now()",
+    "is_primary_key": false,
+    "foreign_table_name": null,
+    "foreign_column_name": null
+  },
+  {
     "table_name": "game_logs",
     "column_name": "id",
     "data_type": "uuid",
@@ -905,96 +995,6 @@
     "data_type": "text",
     "is_nullable": "NO",
     "column_default": null,
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "players",
-    "column_name": "position",
-    "data_type": "text",
-    "is_nullable": "NO",
-    "column_default": null,
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "players",
-    "column_name": "age",
-    "data_type": "integer",
-    "is_nullable": "NO",
-    "column_default": null,
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "players",
-    "column_name": "height",
-    "data_type": "integer",
-    "is_nullable": "NO",
-    "column_default": null,
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "players",
-    "column_name": "weight",
-    "data_type": "integer",
-    "is_nullable": "NO",
-    "column_default": null,
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "players",
-    "column_name": "overall_rating",
-    "data_type": "integer",
-    "is_nullable": "NO",
-    "column_default": null,
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "players",
-    "column_name": "potential_rating",
-    "data_type": "integer",
-    "is_nullable": "NO",
-    "column_default": null,
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "players",
-    "column_name": "traits",
-    "data_type": "jsonb",
-    "is_nullable": "NO",
-    "column_default": "'{}'::jsonb",
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "players",
-    "column_name": "created_at",
-    "data_type": "timestamp with time zone",
-    "is_nullable": "NO",
-    "column_default": "now()",
-    "is_primary_key": false,
-    "foreign_table_name": null,
-    "foreign_column_name": null
-  },
-  {
-    "table_name": "players",
-    "column_name": "updated_at",
-    "data_type": "timestamp with time zone",
-    "is_nullable": "NO",
-    "column_default": "now()",
     "is_primary_key": false,
     "foreign_table_name": null,
     "foreign_column_name": null

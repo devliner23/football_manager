@@ -369,7 +369,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
         {/* Loading overlay (kept from original) */}
         {loading && (
             <div className="game-loading-overlay">
-            <RingLoader color="#4A90D9" size={120} />
+            <div className="pulse-ring-loader"></div>
             </div>
         )}
 

@@ -604,6 +604,7 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate,
         )}
 
         {/* ─── League Schedule ─── */}
+{/* ─── League Schedule ─── */}
         {activeTab === 'league-schedule' && (
           <div className="games-two-col">
             <div className="games-left">
@@ -682,7 +683,6 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate,
         )}
 
         {/* ─── Calendar ─── */}
-{/* ─── Calendar ─── */}
         {activeTab === 'calendar' && (
           <div className="cal-wrap">
             {/* ── Summary strip (mirrors Team Schedule) ── */}

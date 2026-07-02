@@ -106,7 +106,7 @@ const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="loading-overlay">
-        <RingLoader color="#4A90D9" loading={loading} size={120} />
+        <div className="pulse-ring-loader"></div>
       </div>
     );
   }
@@ -126,8 +126,7 @@ const Dashboard: React.FC = () => {
   const latestGame = getLatestGame();
   const hasGames = savedGames.length > 0;
 
-  // ── Main dashboard ──
-return (
+  return (
     <div className="dark-glass-dashboard">
       {/* Top Navigation Bar */}
       <header className="dashboard-navbar">

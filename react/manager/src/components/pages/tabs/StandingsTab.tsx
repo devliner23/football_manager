@@ -25,10 +25,10 @@ function teamColor(name: string) {
   }
   const h = Math.abs(hash % 360);
   return {
-    main:   `hsl(${h}, 65%, 58%)`,
-    dim:    `hsl(${h}, 55%, 38%)`,
-    glass:  `hsla(${h}, 65%, 58%, 0.18)`,
-    border: `hsla(${h}, 65%, 58%, 0.35)`,
+    main:   `hsl(${h}, 38%, 62%)`,
+    dim:    `hsl(${h}, 28%, 38%)`,
+    glass:  `hsla(${h}, 38%, 62%, 0.10)`,
+    border: `hsla(${h}, 38%, 62%, 0.22)`,
   };
 }
 
