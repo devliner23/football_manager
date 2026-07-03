@@ -1,17 +1,176 @@
 // services/financeService.js
 const { supabaseAdmin } = require('../config/supabase');
 
+// ── League Financial Constants ─────────────────────────────────────────────
+// Modeled loosely on real-world salary structures. No second-apron logic —
+// only a standard cap and a single luxury tax line with progressive brackets.
+
+const SALARY_CAP        = 140_500_000;   // soft cap
+const LUXURY_TAX_LINE    = 170_800_000;   // tax apron (first apron only, no second apron)
+
+// Rookie-scale / veteran minimum salary by "years of experience" (age - 19, capped 0-10)
+const MIN_SALARY_SCALE = [
+  1_160_000, // 0 yrs (rookie)
+  1_874_000, // 1
+  2_087_000, // 2
+  2_166_000, // 3
+  2_296_000, // 4
+  2_467_000, // 5
+  2_667_000, // 6
+  2_867_000, // 7
+  3_067_000, // 8
+  3_267_000, // 9
+  3_623_000, // 10+
+];
+
+// Progressive luxury tax brackets — $ owed per $1 over the tax line, applied
+// incrementally to each slice (mirrors how real luxury tax scales work).
+const LUXURY_TAX_BRACKETS = [
+  { upTo: 5_000_000,  rate: 1.50 },
+  { upTo: 10_000_000, rate: 1.75 },
+  { upTo: 15_000_000, rate: 2.50 },
+  { upTo: 20_000_000, rate: 3.25 },
+  { upTo: Infinity,   rate: 3.75 }, // + 0.50 for every additional $5M beyond this handled below
+];
+
 class FinanceService {
-  /* 
-  * Initializes financial contracts and payrolls for a newly created league.
-   * Static method – call it directly on the class: FinanceService.initializeLeagueFinances(...)
+
+  // ── Salary helpers ─────────────────────────────────────────────────────
+
+  /**
+   * Veteran-minimum salary for a player of a given age, scaled by
+   * approximate years of experience (age 19 = rookie).
+   */
+  static getMinSalaryForAge(age) {
+    const experience = Math.max(0, Math.min((age || 19) - 19, MIN_SALARY_SCALE.length - 1));
+    return MIN_SALARY_SCALE[experience];
+  }
+
+  /**
+   * Determine a player's base salary from their overall rating, using tiers
+   * that approximate real max/starter/rotation/minimum pay bands, expressed
+   * as a percentage of the salary cap where relevant (max contracts scale
+   * with the cap, minimums scale with experience).
+   */
+  static getBaseSalary(overall, age) {
+    const minSalary = FinanceService.getMinSalaryForAge(age);
+
+    if (overall >= 90) {
+      // Superstar / max tier — 27%-35% of the cap depending on rating
+      const pct = 0.27 + Math.min(overall - 90, 9) * 0.009; // caps near 0.35
+      return Math.round(SALARY_CAP * pct);
+    }
+    if (overall >= 84) {
+      // All-Star tier
+      const pct = 0.16 + (overall - 84) * 0.018;
+      return Math.round(SALARY_CAP * pct);
+    }
+    if (overall >= 78) {
+      // Quality starter tier
+      const pct = 0.07 + (overall - 78) * 0.015;
+      return Math.round(SALARY_CAP * pct);
+    }
+    if (overall >= 70) {
+      // Rotation player tier
+      const pct = 0.02 + (overall - 70) * 0.006;
+      return Math.round(Math.max(SALARY_CAP * pct, minSalary * 1.3));
+    }
+    // Bench / fringe roster tier — hovers around the veteran minimum
+    return Math.round(minSalary * (1 + Math.max(0, overall - 60) * 0.01));
+  }
+
+  /**
+   * Contract length, weighted toward realistic distributions:
+   * stars on winning teams sign long-term deals, older/fringe players sign
+   * short "prove-it" or minimum-scale deals.
+   */
+  static getContractYears(overall, age) {
+    let pool;
+    if (overall >= 90) {
+      pool = age <= 30 ? [4, 4, 5, 5, 5] : [1, 2, 3, 3];
+    } else if (overall >= 84) {
+      pool = age <= 31 ? [3, 3, 4, 4, 5] : [1, 2, 2, 3];
+    } else if (overall >= 78) {
+      pool = age <= 32 ? [2, 3, 3, 4] : [1, 1, 2, 2];
+    } else if (overall >= 70) {
+      pool = age <= 28 ? [1, 2, 2, 3] : [1, 1, 2];
+    } else {
+      pool = age <= 25 ? [1, 1, 2, 2] : [1, 1];
+    }
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  /**
+   * Progressive luxury tax owed on payroll above the tax line. Uses
+   * incremental brackets (not a flat rate on the whole overage), then adds
+   * $0.50/$1 for every further $5M once past the top defined bracket —
+   * intentionally excludes second-apron restrictions/penalties.
+   */
+  static calculateLuxuryTax(totalPayroll) {
+    const overage = totalPayroll - LUXURY_TAX_LINE;
+    if (overage <= 0) return 0;
+
+    let remaining = overage;
+    let taxOwed   = 0;
+    let previousCap = 0;
+
+    for (const bracket of LUXURY_TAX_BRACKETS) {
+      const bracketSize = bracket.upTo - previousCap;
+      const taxableInBracket = Math.min(remaining, bracketSize === Infinity ? remaining : bracketSize);
+
+      if (bracket.upTo === Infinity) {
+        // Beyond the last defined bracket: base rate, +0.50 per additional $5M chunk
+        const chunks = Math.floor(remaining / 5_000_000);
+        let rate = bracket.rate;
+        let owedHere = 0;
+        let left = remaining;
+        let chunkIndex = 0;
+        while (left > 0) {
+          const chunkAmount = Math.min(left, 5_000_000);
+          owedHere += chunkAmount * (rate + chunkIndex * 0.50);
+          left -= chunkAmount;
+          chunkIndex++;
+        }
+        taxOwed += owedHere;
+        remaining = 0;
+        break;
+      } else {
+        taxOwed += taxableInBracket * bracket.rate;
+        remaining -= taxableInBracket;
+        previousCap = bracket.upTo;
+        if (remaining <= 0) break;
+      }
+    }
+
+    return Math.round(taxOwed);
+  }
+
+  static buildCapSummary(totalPayroll) {
+    const capSpace     = SALARY_CAP - totalPayroll;
+    const isOverCap     = totalPayroll > SALARY_CAP;
+    const isOverTax      = totalPayroll > LUXURY_TAX_LINE;
+    const luxuryTaxOwed = isOverTax ? FinanceService.calculateLuxuryTax(totalPayroll) : 0;
+
+    return {
+      salaryCap: SALARY_CAP,
+      luxuryTaxLine: LUXURY_TAX_LINE,
+      capSpace,
+      isOverCap,
+      isOverLuxuryTax: isOverTax,
+      luxuryTaxOwed,
+    };
+  }
+
+  // ── League initialization ────────────────────────────────────────────
+
+  /**
+   * Initializes financial contracts and payrolls for a newly created league.
    * @param {string} savedGameId
    * @param {Array} teams
    * @param {Array} players
    */
   static async initializeLeagueFinances(savedGameId, teams, players) {
     try {
-      const BASE_MIN_SALARY = 1100000;
       const contractsToInsert = [];
 
       const teamPayrollMap = {};
@@ -23,28 +182,15 @@ class FinanceService {
         if (!player.team_id) continue;
 
         const overall = player.overall_rating;
-        let baseSalary = BASE_MIN_SALARY;
-        let maxYears = 2;
+        const age     = player.age;
 
-        if (overall >= 90) {
-          baseSalary = 35000000 + (overall - 90) * 1250000;
-          maxYears = 5;
-        } else if (overall >= 80) {
-          baseSalary = 18000000 + (overall - 80) * 1200000;
-          maxYears = 4;
-        } else if (overall >= 70) {
-          baseSalary = 5000000 + (overall - 70) * 1000000;
-          maxYears = 3;
-        } else {
-          baseSalary = BASE_MIN_SALARY + (overall - 60) * 300000;
-          maxYears = 2;
-        }
+        const baseSalary = FinanceService.getBaseSalary(overall, age);
+        const years       = FinanceService.getContractYears(overall, age);
 
+        // Small realistic variance (+/- 5%) so identical-rated players
+        // don't all sign for the exact same number.
         const variance = (Math.random() * 0.1) - 0.05;
         const finalizedSalary = Math.round(baseSalary * (1 + variance));
-
-        let years = Math.floor(Math.random() * maxYears) + 1;
-        if (player.age > 33 && years > 2) years = 2;
 
         contractsToInsert.push({
           saved_game_id: savedGameId,
@@ -52,7 +198,7 @@ class FinanceService {
           team_id: player.team_id,
           salary: finalizedSalary,
           years_remaining: years,
-          total_years: years
+          total_years: years,
         });
 
         if (teamPayrollMap[player.team_id] !== undefined) {
@@ -68,16 +214,15 @@ class FinanceService {
         if (contractErr) throw contractErr;
       }
 
-      const STANDARD_CAP = 140500000;
       const teamUpdates = Object.keys(teamPayrollMap).map(async (teamId) => {
         const payroll = teamPayrollMap[teamId];
-        const capSpace = STANDARD_CAP - payroll;
+        const capSpace = SALARY_CAP - payroll;
 
         return supabaseAdmin
           .from('teams')
           .update({
             total_payroll: payroll,
-            salary_cap_space: capSpace
+            salary_cap_space: capSpace,
           })
           .eq('id', teamId);
       });
@@ -93,10 +238,9 @@ class FinanceService {
 
   /**
    * Get financial summaries for all teams.
-   * Returns array of objects with payroll, cap space, top earner, etc.
+   * Returns array of objects with payroll, cap space, luxury tax, top earner, etc.
    */
   static async getAllTeamFinances(savedGameId) {
-    // 1. Fetch all teams for this saved game
     const { data: teams, error: teamErr } = await supabaseAdmin
       .from('teams')
       .select('id, name, city, abbreviation, total_payroll, salary_cap_space')
@@ -107,7 +251,6 @@ class FinanceService {
 
     const teamIds = teams.map(t => t.id);
 
-    // 2. Get contract counts per team (simple aggregate)
     const { data: contracts, error: contractErr } = await supabaseAdmin
       .from('contracts')
       .select('team_id, salary, player_id')
@@ -116,9 +259,8 @@ class FinanceService {
 
     if (contractErr) throw new Error(`Failed to fetch contracts: ${contractErr.message}`);
 
-    // 3. Count contracts and find top earner per team
     const teamContractCount = {};
-    const teamTopEarner = {};   // { teamId: { playerId, salary } }
+    const teamTopEarner = {};
     const playerIds = new Set();
 
     for (const c of contracts) {
@@ -129,7 +271,6 @@ class FinanceService {
       playerIds.add(c.player_id);
     }
 
-    // 4. Fetch player names/ratings for top earners
     let playerMap = {};
     if (playerIds.size > 0) {
       const { data: players, error: playerErr } = await supabaseAdmin
@@ -142,33 +283,37 @@ class FinanceService {
       }
     }
 
-    const STANDARD_CAP = 140500000;
-
     return teams.map(team => {
-      const topEarner = teamTopEarner[team.id];
+      const topEarner  = teamTopEarner[team.id];
       const playerInfo = topEarner ? playerMap[topEarner.playerId] : null;
+      const payroll    = team.total_payroll || 0;
+      const capSummary = FinanceService.buildCapSummary(payroll);
+
       return {
         id: team.id,
         name: team.name,
         city: team.city,
         abbreviation: team.abbreviation,
-        totalPayroll: team.total_payroll || 0,
-        salaryCapSpace: team.salary_cap_space || 0,
-        capHitPercent: ((team.total_payroll / STANDARD_CAP) * 100).toFixed(1),
-        luxuryTaxThreshold: STANDARD_CAP,
+        totalPayroll: payroll,
+        salaryCapSpace: capSummary.capSpace,
+        capHitPercent: ((payroll / SALARY_CAP) * 100).toFixed(1),
+        salaryCap: SALARY_CAP,
+        luxuryTaxThreshold: LUXURY_TAX_LINE,
+        isOverCap: capSummary.isOverCap,
+        isOverLuxuryTax: capSummary.isOverLuxuryTax,
+        luxuryTaxOwed: capSummary.luxuryTaxOwed,
         playersUnderContract: teamContractCount[team.id] || 0,
         topEarner: playerInfo ? {
-          playerName: playerInfo.name,
+          playerName: playerInfo.full_name,
           overall: playerInfo.overall_rating,
-          salary: topEarner.salary
-        } : null
+          salary: topEarner.salary,
+        } : null,
       };
     });
   }
 
   // ---------- Single Team Detailed View ----------
   static async getTeamFinanceDetail(savedGameId, teamId) {
-    // 1. Fetch team info
     const { data: team, error: teamErr } = await supabaseAdmin
       .from('teams')
       .select('*')
@@ -177,7 +322,6 @@ class FinanceService {
       .single();
     if (teamErr || !team) return null;
 
-    // 2. Fetch all contracts for this team
     const { data: contracts, error: contractErr } = await supabaseAdmin
       .from('contracts')
       .select('id, salary, years_remaining, total_years, player_id')
@@ -186,7 +330,6 @@ class FinanceService {
       .order('salary', { ascending: false });
     if (contractErr) throw new Error(`Failed to load contracts: ${contractErr.message}`);
 
-    // 3. Fetch all players for these contracts in one go
     const playerIds = contracts.map(c => c.player_id);
     let playersMap = {};
     if (playerIds.length > 0) {
@@ -200,7 +343,6 @@ class FinanceService {
       }
     }
 
-    // 4. Build contract objects with player data merged
     const contractList = contracts.map(c => {
       const player = playersMap[c.player_id] || {};
       return {
@@ -212,17 +354,14 @@ class FinanceService {
         age: player.age || 0,
         salary: c.salary,
         yearsRemaining: c.years_remaining,
-        totalYears: c.total_years
+        totalYears: c.total_years,
       };
     });
 
     const totalPayroll = contracts.reduce((sum, c) => sum + c.salary, 0);
-    const STANDARD_CAP = 140500000;
-    const capSpace = STANDARD_CAP - totalPayroll;
+    const capSummary   = FinanceService.buildCapSummary(totalPayroll);
 
-    // Highest paid player
-    const highest = contractList[0] || null;
-    // Expiring contracts (years remaining <= 1)
+    const highest  = contractList[0] || null;
     const expiring = contractList.filter(c => c.yearsRemaining <= 1);
 
     return {
@@ -232,13 +371,16 @@ class FinanceService {
         city: team.city,
         abbreviation: team.abbreviation,
         conference: team.conference,
-        division: team.division
+        division: team.division,
       },
       finances: {
         totalPayroll,
-        salaryCap: STANDARD_CAP,
-        capSpace,
-        luxuryTaxSpace: capSpace,  // adjust when luxury tax is added
+        salaryCap: SALARY_CAP,
+        capSpace: capSummary.capSpace,
+        isOverCap: capSummary.isOverCap,
+        luxuryTaxLine: LUXURY_TAX_LINE,
+        isOverLuxuryTax: capSummary.isOverLuxuryTax,
+        luxuryTaxOwed: capSummary.luxuryTaxOwed,
         numberOfContracts: contractList.length,
         highestPaidPlayer: highest ? {
           playerId: highest.playerId,
@@ -247,7 +389,7 @@ class FinanceService {
           overall: highest.overall,
           age: highest.age,
           salary: highest.salary,
-          yearsRemaining: highest.yearsRemaining
+          yearsRemaining: highest.yearsRemaining,
         } : null,
         expiringContracts: expiring.map(c => ({
           playerId: c.playerId,
@@ -255,82 +397,87 @@ class FinanceService {
           position: c.position,
           overall: c.overall,
           salary: c.salary,
-          yearsRemaining: c.yearsRemaining
-        }))
+          yearsRemaining: c.yearsRemaining,
+        })),
       },
-      contracts: contractList
+      contracts: contractList,
     };
   }
 
-static async getLeagueFinanceSummary(savedGameId) {
-  // 1. All teams with payroll
-  const { data: teams, error: teamErr } = await supabaseAdmin
-    .from('teams')
-    .select('id, name, abbreviation, total_payroll')
-    .eq('saved_game_id', savedGameId);
-  if (teamErr) throw new Error(`Failed to fetch teams: ${teamErr.message}`);
+  static async getLeagueFinanceSummary(savedGameId) {
+    const { data: teams, error: teamErr } = await supabaseAdmin
+      .from('teams')
+      .select('id, name, abbreviation, total_payroll')
+      .eq('saved_game_id', savedGameId);
+    if (teamErr) throw new Error(`Failed to fetch teams: ${teamErr.message}`);
 
-  // 2. Contracts with player data in one query (using foreign key relationship)
-  const { data: contracts, error: contractErr } = await supabaseAdmin
-    .from('contracts')
-    .select(`
-      salary,
-      player_id,
-      team_id,
-      players ( full_name, overall_rating, team_id )
-    `)
-    .eq('saved_game_id', savedGameId);
-  if (contractErr) throw new Error(`Failed to fetch contracts: ${contractErr.message}`);
+    const { data: contracts, error: contractErr } = await supabaseAdmin
+      .from('contracts')
+      .select(`
+        salary,
+        player_id,
+        team_id,
+        players ( full_name, overall_rating, team_id )
+      `)
+      .eq('saved_game_id', savedGameId);
+    if (contractErr) throw new Error(`Failed to fetch contracts: ${contractErr.message}`);
 
-  // 3. Build team map and process data
-  const teamMap = {};
-  teams.forEach(t => { teamMap[t.id] = t.name; });
+    const teamMap = {};
+    teams.forEach(t => { teamMap[t.id] = t.name; });
 
-  // Compute totals
-  const totalPayroll = teams.reduce((sum, t) => sum + (t.total_payroll || 0), 0);
-  const averagePayroll = teams.length ? totalPayroll / teams.length : 0;
+    const totalPayroll   = teams.reduce((sum, t) => sum + (t.total_payroll || 0), 0);
+    const averagePayroll = teams.length ? totalPayroll / teams.length : 0;
 
-  // Highest/lowest payroll teams
-  const sortedByPayroll = [...teams].sort((a, b) => (b.total_payroll || 0) - (a.total_payroll || 0));
-  const highestPayrollTeam = sortedByPayroll[0] ? {
-    id: sortedByPayroll[0].id,
-    name: sortedByPayroll[0].name,
-    payroll: sortedByPayroll[0].total_payroll || 0
-  } : null;
-  const lowestPayrollTeam = sortedByPayroll[sortedByPayroll.length - 1] ? {
-    id: sortedByPayroll[sortedByPayroll.length - 1].id,
-    name: sortedByPayroll[sortedByPayroll.length - 1].name,
-    payroll: sortedByPayroll[sortedByPayroll.length - 1].total_payroll || 0
-  } : null;
+    const sortedByPayroll = [...teams].sort((a, b) => (b.total_payroll || 0) - (a.total_payroll || 0));
+    const highestPayrollTeam = sortedByPayroll[0] ? {
+      id: sortedByPayroll[0].id,
+      name: sortedByPayroll[0].name,
+      payroll: sortedByPayroll[0].total_payroll || 0,
+    } : null;
+    const lowestPayrollTeam = sortedByPayroll[sortedByPayroll.length - 1] ? {
+      id: sortedByPayroll[sortedByPayroll.length - 1].id,
+      name: sortedByPayroll[sortedByPayroll.length - 1].name,
+      payroll: sortedByPayroll[sortedByPayroll.length - 1].total_payroll || 0,
+    } : null;
 
-  const totalContracts = contracts.length;
-  const totalSalary = contracts.reduce((sum, c) => sum + c.salary, 0);
-  const averageSalary = totalContracts ? totalSalary / totalContracts : 0;
+    // Luxury tax standing across the league
+    const teamsOverTax = teams.filter(t => (t.total_payroll || 0) > LUXURY_TAX_LINE);
+    const totalLeagueTaxCollected = teamsOverTax.reduce(
+      (sum, t) => sum + FinanceService.calculateLuxuryTax(t.total_payroll || 0),
+      0
+    );
 
-  // Top 5 highest paid players
-  const sortedContracts = [...contracts].sort((a, b) => b.salary - a.salary);
-  const top5 = sortedContracts.slice(0, 5).map(c => {
-    const player = c.players || {};  // nested player data
-    const teamName = player.team_id ? teamMap[player.team_id] : 'Unknown';
+    const totalContracts = contracts.length;
+    const totalSalary    = contracts.reduce((sum, c) => sum + c.salary, 0);
+    const averageSalary  = totalContracts ? totalSalary / totalContracts : 0;
+
+    const sortedContracts = [...contracts].sort((a, b) => b.salary - a.salary);
+    const top5 = sortedContracts.slice(0, 5).map(c => {
+      const player   = c.players || {};
+      const teamName = player.team_id ? teamMap[player.team_id] : 'Unknown';
+      return {
+        playerName: player.full_name || 'Unknown',
+        overall: player.overall_rating || 0,
+        team: teamName,
+        salary: c.salary,
+      };
+    });
+
     return {
-      playerName: player.full_name || 'Unknown',
-      overall: player.overall_rating || 0,
-      team: teamName,
-      salary: c.salary
+      salaryCap: SALARY_CAP,
+      luxuryTaxLine: LUXURY_TAX_LINE,
+      totalTeams: teams.length,
+      totalLeaguePayroll: totalPayroll,
+      averageTeamPayroll: Math.round(averagePayroll),
+      highestPayrollTeam,
+      lowestPayrollTeam,
+      teamsOverLuxuryTax: teamsOverTax.length,
+      totalLeagueLuxuryTaxCollected: totalLeagueTaxCollected,
+      totalPlayersUnderContract: totalContracts,
+      averagePlayerSalary: Math.round(averageSalary),
+      top5HighestPaid: top5,
     };
-  });
-
-  return {
-    totalTeams: teams.length,
-    totalLeaguePayroll: totalPayroll,
-    averageTeamPayroll: Math.round(averagePayroll),
-    highestPayrollTeam,
-    lowestPayrollTeam,
-    totalPlayersUnderContract: totalContracts,
-    averagePlayerSalary: Math.round(averageSalary),
-    top5HighestPaid: top5
-  };
-}
+  }
 }
 
 module.exports = FinanceService;

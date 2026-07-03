@@ -24,7 +24,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   if (loading) {
     return (
       <div className="loading-screen">
-        <BackgroundOrbs />
         <div className="loading-spinner"></div>
         <p>Loading...</p>
       </div>

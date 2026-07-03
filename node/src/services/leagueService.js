@@ -4,7 +4,7 @@ const GameSimulationEngine = require('./gameSimulationEngine');
 const PlayerGenerator = require('./playerGenerator');
 const TeamArchetypeService = require('./teamArchetypeService');
 const LineupService = require("./lineupService");
-const playerProgression = require("./playerProgression");
+const playerProgressionService = require("./playerProgression");
 const FinanceService = require("./financeService");
 const { generateFreeAgentPool } = require("./freeAgentGenerator");
 
@@ -445,7 +445,7 @@ class LeagueService {
     const { error: statsError } = await supabaseAdmin.from('player_game_stats').insert(allStats);
     if (statsError) throw new Error(`Failed to insert player stats: ${statsError.message}`);
 
-    await PlayerProgressionService.progressPlayersFromBoxScores(this.savedGameId, allStats);
+    await playerProgressionService.progressPlayersFromBoxScores(this.savedGameId, allStats);
 
     const { error: updateGameError } = await supabaseAdmin
       .from('games')
@@ -725,7 +725,7 @@ class LeagueService {
     await this._upsertTeamStats(simResults, seasonId);
     await this._upsertPlayerSeasonStats(allBoxScores, seasonId);
 
-    const progression = await PlayerProgressionService.progressPlayersFromBoxScores(
+    const progression = await playerProgressionService.progressPlayersFromBoxScores(
       this.savedGameId,
       allBoxScores
     );

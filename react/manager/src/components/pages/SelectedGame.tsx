@@ -152,10 +152,10 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
         gameAPI.getGame(game.id),
       ]);
 
-      if (teamsData)    setTeams(teamsData);
-      if (playersData)  setPlayers(playersData);
-      if (standingsData) setStandings(standingsData);
-      if (scheduleData) setSchedule(scheduleData);
+      if (teamsData)    setTeams([...teamsData]);
+      if (playersData)  setPlayers([...playersData]);
+      if (standingsData) setStandings([...standingsData]);
+      if (scheduleData) setSchedule({...scheduleData});
 
       // Update next user game
       if (nextGameData?.seasonComplete) {

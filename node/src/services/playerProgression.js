@@ -95,9 +95,15 @@ class playerProgressionService {
    * @param {Array}  boxScores      - flat array of player_game_stats rows
    *                                  (the same shape LeagueService.mapBoxScore produces,
    *                                  i.e. { player_id, team_id, minutes_played, points, fgm, fga, ... })
+   * @param {Object} [meta]
+   * @param {string} [meta.seasonId]        - stamps season_id on each progression row
+   * @param {string} [meta.gameId]          - stamps game_id (only meaningful for single-game calls)
+   * @param {string} [meta.progressionType] - 'game' | 'week' | 'batch' | 'season' (defaults to 'game')
    * @returns {Object} summary { playersProgressed, playersRegressed, totalDelta }
    */
-  static async progressPlayersFromBoxScores(savedGameId, boxScores) {
+  static async progressPlayersFromBoxScores(savedGameId, boxScores, meta = {}) {
+    const { seasonId = null, gameId = null, progressionType = 'game' } = meta;
+
     if (!boxScores || boxScores.length === 0) {
       return { playersProgressed: 0, playersRegressed: 0, totalDelta: 0 };
     }
@@ -121,6 +127,7 @@ class playerProgressionService {
 
     // 3. Compute updates
     const updates = [];
+    const progressionRows = [];
     let totalDelta = 0;
     let up = 0, down = 0;
 
@@ -128,24 +135,57 @@ class playerProgressionService {
       const agg = perPlayer[player.id];
       if (!agg || agg.games === 0) continue;
 
+      const tsBefore = { ...(player.traits || {}) };
+      const overallBefore = player.overall_rating || 60;
+
       const { traits: newTraits, ratingDelta } = this._computePlayerDelta(player, agg);
-      const newOverall = clampRating(Math.round((player.overall_rating || 60) + ratingDelta));
+      const newOverall = clampRating(Math.round(overallBefore + ratingDelta));
 
       totalDelta += ratingDelta;
       if (ratingDelta > 0.001) up++;
       else if (ratingDelta < -0.001) down++;
 
       updates.push({
-        id:               player.id,
-        team_id:          player.team_id,
-        traits:           newTraits,
-        overall_rating:   newOverall,
-        // potential_rating is a soft ceiling and can itself creep slightly
-        // for very young breakout performers — handled in _computePlayerDelta via traits only.
+        id:             player.id,
+        team_id:        player.team_id,
+        traits:         newTraits,
+        overall_rating: newOverall,
+      });
+
+      // ── Build a delta object for just the trait keys that actually moved ──
+      const traitDelta = {};
+      for (const key of TRAIT_KEYS) {
+        const before = tsBefore[key] ?? 50;
+        const after  = newTraits[key] ?? 50;
+        if (Math.abs(after - before) > 0.01) {
+          traitDelta[key] = Math.round((after - before) * 100) / 100;
+        }
+      }
+
+      progressionRows.push({
+        player_id:          player.id,
+        saved_game_id:      savedGameId,
+        game_id:            gameId,
+        season_id:          seasonId,
+        overall_before:     overallBefore,
+        overall_after:      newOverall,
+        traits_before:      tsBefore,
+        traits_after:       newTraits,
+        delta: {
+          overall: Math.round((newOverall - overallBefore) * 100) / 100,
+          traits:  traitDelta,
+        },
+        progression_type:   progressionType,
+        age_at_event:       player.age || null,
+        performance_score:  Math.round(
+          ((agg.points + agg.rebounds + agg.assists + agg.steals + agg.blocks - agg.turnovers) /
+            Math.max(1, agg.games)) * 100
+        ) / 100,
+        notes: `Progressed from ${agg.games} game(s), avg ${Math.round(agg.minutes / agg.games)} min/gm`,
       });
     }
 
-    // 4. Batch upsert (chunks of 100 to match existing service conventions)
+    // 4. Batch upsert players (chunks of 100 to match existing service conventions)
     const BATCH = 100;
     for (let i = 0; i < updates.length; i += BATCH) {
       const chunk = updates.slice(i, i + BATCH);
@@ -161,11 +201,25 @@ class playerProgressionService {
       ));
     }
 
+    // ── Insert history rows into player_progression ──
+    for (let i = 0; i < progressionRows.length; i += BATCH) {
+      const chunk = progressionRows.slice(i, i + BATCH);
+      const { error: progError } = await supabaseAdmin
+        .from('player_progression')
+        .insert(chunk);
+      if (progError) {
+        // Don't let history-logging failures block the sim itself —
+        // surface it loudly but keep going.
+        console.error('Failed to insert player_progression rows:', progError.message);
+      }
+    }
+
     return {
       playersProgressed: up,
       playersRegressed:  down,
       totalDelta:        Math.round(totalDelta * 1000) / 1000,
       playersUpdated:    updates.length,
+      historyRowsWritten: progressionRows.length,
     };
   }
 
