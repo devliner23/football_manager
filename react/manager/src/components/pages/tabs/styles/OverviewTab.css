@@ -761,7 +761,6 @@
   font-size: 1.5rem;
   font-weight: 800;
   letter-spacing: -0.5px;
-  margin-top: 10px;
   color: #fff;
 }
 
@@ -771,7 +770,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 0;
+  margin-top: 10px;
 }
 
 /* Vertical divider between brand and league info */

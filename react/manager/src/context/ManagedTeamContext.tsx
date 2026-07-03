@@ -6,6 +6,7 @@ export interface ManagedTeamContextValue {
   savedGameId: string;
   managedClubId: string | null;
   userTeam: Team | undefined;
+  userArchetype: string | null;
   loading: boolean;
 }
 

@@ -604,7 +604,6 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate,
         )}
 
         {/* ─── League Schedule ─── */}
-{/* ─── League Schedule ─── */}
         {activeTab === 'league-schedule' && (
           <div className="games-two-col">
             <div className="games-left">

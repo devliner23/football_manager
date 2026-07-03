@@ -311,7 +311,7 @@ class LeagueService {
    * @param {string} managedClubName - team name chosen by the user
    * @param {string} userArchetype   - archetype ID chosen by the user (optional)
    */
-async initializeLeague(season = 1, managedClubName = null, userArchetype = null) {
+  async initializeLeague(season = 1, managedClubName = null, userArchetype = null) {
     const existingTeams = await this.getTeams();
     if (existingTeams.length > 0) {
       throw new Error(`League already initialized for saved game ${this.savedGameId}`);
@@ -405,6 +405,7 @@ async initializeLeague(season = 1, managedClubName = null, userArchetype = null)
       throw err;
     }
   }
+
 
   // ── Single-game simulation ────────────────────────────────────────────────
 
@@ -1112,49 +1113,48 @@ async getFreeAgents({ position, minOverall, limit = 100, offset = 0 } = {}) {
   return data || [];
 }
  
-// ── Release a player ──────────────────────────────────────────────────────────
  
-/**
- * Release a player from their team, making them a free agent.
- * - Sets team_id to null.
- * - Season stats are preserved (they keep their history).
- * - Validates the player belongs to this saved game.
- *
- * @param {string} playerId
- * @returns {Object} updated player row
- */
-async releasePlayer(playerId) {
-  // 1. Confirm player exists in this save
-  const { data: player, error: fetchError } = await supabaseAdmin
-    .from('players')
-    .select('id, team_id, first_name, last_name, saved_game_id')
-    .eq('id', playerId)
-    .eq('saved_game_id', this.savedGameId)
-    .single();
- 
-  if (fetchError || !player) {
-    throw new Error('Player not found in this saved game');
+  /**
+   * Release a player from their team, making them a free agent.
+   * - Sets team_id to null.
+   * - Season stats are preserved (they keep their history).
+   * - Validates the player belongs to this saved game.
+   *
+   * @param {string} playerId
+   * @returns {Object} updated player row
+   */
+  async releasePlayer(playerId) {
+    // 1. Confirm player exists in this save
+    const { data: player, error: fetchError } = await supabaseAdmin
+      .from('players')
+      .select('id, team_id, first_name, last_name, saved_game_id')
+      .eq('id', playerId)
+      .eq('saved_game_id', this.savedGameId)
+      .single();
+  
+    if (fetchError || !player) {
+      throw new Error('Player not found in this saved game');
+    }
+    if (player.team_id === null) {
+      throw new Error('Player is already a free agent');
+    }
+  
+    // 2. Check roster size won't break — not required here (releasing is always ok)
+  
+    // 3. Set team_id to null
+    const { data: updated, error: updateError } = await supabaseAdmin
+      .from('players')
+      .update({ team_id: null })
+      .eq('id', playerId)
+      .eq('saved_game_id', this.savedGameId)
+      .select()
+      .single();
+  
+    if (updateError) throw new Error(`Failed to release player: ${updateError.message}`);
+  
+    console.log(`🔓 Released ${player.first_name} ${player.last_name} to free agency`);
+    return updated;
   }
-  if (player.team_id === null) {
-    throw new Error('Player is already a free agent');
-  }
- 
-  // 2. Check roster size won't break — not required here (releasing is always ok)
- 
-  // 3. Set team_id to null
-  const { data: updated, error: updateError } = await supabaseAdmin
-    .from('players')
-    .update({ team_id: null })
-    .eq('id', playerId)
-    .eq('saved_game_id', this.savedGameId)
-    .select()
-    .single();
- 
-  if (updateError) throw new Error(`Failed to release player: ${updateError.message}`);
- 
-  console.log(`🔓 Released ${player.first_name} ${player.last_name} to free agency`);
-  return updated;
-}
  
 // ── Sign a free agent ─────────────────────────────────────────────────────────
  

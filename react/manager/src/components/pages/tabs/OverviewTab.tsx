@@ -148,7 +148,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
               🏀
             </figure>
             <div className="banner__identity">
-              <span className="banner__season">Season {game.current_season}</span>
               <p className="banner__meta">
                 {userTeam.city}
               </p>

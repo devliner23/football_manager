@@ -71,57 +71,74 @@ return (
           </div>
         </div>
 
-        <h3>Highest Paid Player</h3>
-        {finances.highestPaidPlayer ? (
-          <div className="highest-paid">
-            <span>{finances.highestPaidPlayer.name}</span>
-            <span>{formatCurrency(finances.highestPaidPlayer.salary)}</span>
-          </div>
-        ) : (
-          <p className="finance-no-data">No player under contract.</p>
-        )}
+        {/* Highlight: Highest Paid Player */}
+        <div className="finance-panel__card">
+          <h3 className="finance-panel__title">Highest Paid Player</h3>
+          {finances.highestPaidPlayer ? (
+            <div className="highest-paid">
+              <span className="highest-paid__name">
+                {finances.highestPaidPlayer.name}
+              </span>
+              <span className="highest-paid__salary">
+                {formatCurrency(finances.highestPaidPlayer.salary)}
+              </span>
+            </div>
+          ) : (
+            <p className="finance-panel__empty">No player under contract.</p>
+          )}
+        </div>
 
+        {/* Expiring Contracts */}
         {finances.expiringContracts.length > 0 && (
-          <div className="expiring-contracts">
-            <h4>Expiring Contracts</h4>
-            <ul>
-              {finances.expiringContracts.map(c => (
-                <li key={c.playerId}>
-                  {c.name} ({c.position}) – {formatCurrency(c.salary)} ({c.yearsRemaining}yr left)
+          <div className="finance-panel__card">
+            <h4 className="finance-panel__subtitle">Expiring Contracts</h4>
+            <ul className="expiring-list">
+              {finances.expiringContracts.map((c) => (
+                <li key={c.playerId} className="expiring-list__item">
+                  <span className="expiring-list__player">
+                    {c.name} <span className="expiring-list__pos">({c.position})</span>
+                  </span>
+                  <span className="expiring-list__details">
+                    {formatCurrency(c.salary)} &middot; {c.yearsRemaining}yr left
+                  </span>
                 </li>
               ))}
             </ul>
           </div>
         )}
-      </section>
 
-      {/* Full Contract List */}
-      <section className="finance-panel-section">
-        <h3>All Contracts</h3>
-        <table className="contracts-table">
-          <thead>
-            <tr>
-              <th>Player</th>
-              <th>Pos</th>
-              <th>OVR</th>
-              <th>Age</th>
-              <th>Salary</th>
-              <th>Years</th>
-            </tr>
-          </thead>
-          <tbody>
-            {teamDetail.contracts.map(c => (
-              <tr key={c.contractId}>
-                <td>{c.playerName}</td>
-                <td>{c.position}</td>
-                <td>{c.overall}</td>
-                <td>{c.age}</td>
-                <td>{formatCurrency(c.salary)}</td>
-                <td>{c.yearsRemaining}/{c.totalYears}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {/* Full Contract Table */}
+        <div className="finance-panel__card finance-panel__card--full">
+          <h3 className="finance-panel__title">All Contracts</h3>
+          <div className="contract-table-wrapper">
+            <table className="contract-table">
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Pos</th>
+                  <th>OVR</th>
+                  <th>Age</th>
+                  <th>Salary</th>
+                  <th>Years</th>
+                </tr>
+              </thead>
+              <tbody>
+                {teamDetail.contracts.map((c) => (
+                  <tr key={c.contractId}>
+                    <td>{c.playerName}</td>
+                    <td>{c.position}</td>
+                    <td>{c.overall}</td>
+                    <td>{c.age}</td>
+                    <td>{formatCurrency(c.salary)}</td>
+                    <td>
+                      {c.yearsRemaining}/{c.totalYears}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </section>
 
       {/* League Summary */}

@@ -51,10 +51,25 @@ const teams: Team[] = [
   { city: 'Washington', name: 'Monuments', primaryColor: '#002B5C' },
 ];
 
+const ARCHETYPES = [
+  { id: '3-and-D', label: '3&D Specialists', icon: '🎯', description: 'Elite shooting & perimeter D' },
+  { id: 'post-heavy', label: 'Post Heavy', icon: '🏋️', description: 'Dominant inside scoring & boards' },
+  { id: 'small-ball', label: 'Small Ball', icon: '⚡', description: 'Speed, skill, positionless' },
+  { id: 'defensive-minded', label: 'Defensive Minded', icon: '🔒', description: 'Lockdown defence' },
+  { id: 'run-and-gun', label: 'Run & Gun', icon: '🏃', description: 'Fast pace, elite playmaking' },
+  { id: 'inside-out', label: 'Inside-Out', icon: '🔄', description: 'Balanced post + perimeter' },
+  { id: 'youth-movement', label: 'Youth Movement', icon: '🌟', description: 'Young & high potential' },
+  { id: 'veteran-leadership', label: 'Veteran Leadership', icon: '👴', description: 'Experience over athleticism' },
+  { id: 'pace-and-space', label: 'Pace & Space', icon: '🌌', description: 'Modern spacing & ball movement' },
+  { id: 'grit-and-grind', label: 'Grit & Grind', icon: '💪', description: 'Physical, tough rebounding' },
+  { id: 'positionless', label: 'Positionless', icon: '♾️', description: 'Versatile switchable length' },
+];
+
 const NewGameForm: React.FC<NewGameFormProps> = ({ onClose, onGameCreated }) => {
   const [formData, setFormData] = useState({
     managed_club_id: '',
     difficulty: 'pro' as 'rookie' | 'pro' | 'all_star' | 'hall_of_fame',
+    archetype: 'inside-out'
   });
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
@@ -63,21 +78,21 @@ const NewGameForm: React.FC<NewGameFormProps> = ({ onClose, onGameCreated }) => 
   const selectedTeam = teams.find((t) => t.name === formData.managed_club_id);
 
   useEffect(() => {
-  if (formData.managed_club_id) {
-    // Example: fetch from a local JSON file or an API
-    fetch('/api/teams')  // or import teams.json directly
-      .then(res => res.json())
-      .then(allTeams => {
-        const found = allTeams.find(
-          (t: any) => t.name === formData.managed_club_id
-        );
-        setTeamData(found || null);
-      })
-      .catch(() => setTeamData(null));
-  } else {
-    setTeamData(null);
-  }
-}, [formData.managed_club_id]);
+    if (formData.managed_club_id) {
+      // Example: fetch from a local JSON file or an API
+      fetch('/api/teams')  // or import teams.json directly
+        .then(res => res.json())
+        .then(allTeams => {
+          const found = allTeams.find(
+            (t: any) => t.name === formData.managed_club_id
+          );
+          setTeamData(found || null);
+        })
+        .catch(() => setTeamData(null));
+    } else {
+      setTeamData(null);
+    }
+  }, [formData.managed_club_id]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     // unchanged
@@ -100,6 +115,7 @@ const NewGameForm: React.FC<NewGameFormProps> = ({ onClose, onGameCreated }) => 
         await leagueAPI.initializeLeague(savedGame.id, {
           season: 1,
           managedClub: formData.managed_club_id,
+          userArchetype: formData.archetype,
         });
         onGameCreated(savedGame);
       } else {
@@ -185,6 +201,28 @@ const NewGameForm: React.FC<NewGameFormProps> = ({ onClose, onGameCreated }) => 
               <option value="pro">Pro</option>
               <option value="all_star">All-Star</option>
               <option value="hall_of_fame">Hall of Fame</option>
+            </select>
+            <span className="dropdown-arrow">▾</span>
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="archetype">Team Archetype</label>
+          <div className="input-wrapper">
+            <span className="input-icon">🎭</span>
+            <select
+              id="archetype"
+              value={formData.archetype}
+              onChange={(e) =>
+                setFormData({ ...formData, archetype: e.target.value })
+              }
+              disabled={loading}
+            >
+              {ARCHETYPES.map((arch) => (
+                <option key={arch.id} value={arch.id}>
+                  {arch.icon} {arch.label} – {arch.description}
+                </option>
+              ))}
             </select>
             <span className="dropdown-arrow">▾</span>
           </div>

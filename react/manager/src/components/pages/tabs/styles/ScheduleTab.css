@@ -576,16 +576,11 @@
 }
 
 .day-modal {
-  background: rgba(30, 30, 40, 0.85);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
   padding: 1.5rem;
   max-width: 600px;
   width: 90%;
-  max-height: 80vh;
+  min-height: 60vh;
   overflow-y: auto;
   color: #e0e0e0;
 }

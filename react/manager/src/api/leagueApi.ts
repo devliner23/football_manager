@@ -224,9 +224,9 @@ export const leagueAPI = {
   // ── League Management ──────────────────────────────────────
   initializeLeague: async (
     savedGameId: string, 
-    options: { season?: number; managedClub: string }
+    options: { season?: number; managedClub: string, userArchetype: string }
   ) => {
-    const { season = 1, managedClub } = options;
+    const { season = 1, managedClub, userArchetype } = options;
 
     const response = await api.post<ApiResponse<{ 
       season: number;
@@ -235,7 +235,8 @@ export const leagueAPI = {
       gamesCreated: number;
     }>>(`/api/league/${savedGameId}/initialize`, {
       season,
-      managedClubName: managedClub   // ← Correct payload key
+      managedClubName: managedClub, 
+      userArchetype: userArchetype
     });
 
     return extractData(response);
