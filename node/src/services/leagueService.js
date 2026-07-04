@@ -46,7 +46,7 @@ function mapBoxScore(b, teamId, gameId, savedGameId) {
 }
 
 // ── LEAGUE SERVICE ────────────────────────────────────────────────────────────
-class LeagueService {
+class leagueService {
   constructor(savedGameId) {
     if (!savedGameId) throw new Error('LeagueService requires a savedGameId');
     this.savedGameId = savedGameId;
@@ -445,7 +445,11 @@ class LeagueService {
     const { error: statsError } = await supabaseAdmin.from('player_game_stats').insert(allStats);
     if (statsError) throw new Error(`Failed to insert player stats: ${statsError.message}`);
 
-    await playerProgressionService.progressPlayersFromBoxScores(this.savedGameId, allStats);
+    await playerProgressionService.progressPlayersFromBoxScores(this.savedGameId, allStats, {
+      seasonId,
+      gameId,
+      progressionType: 'game',
+    });
 
     const { error: updateGameError } = await supabaseAdmin
       .from('games')
@@ -506,7 +510,7 @@ class LeagueService {
       .eq('week', weekNumber);
     if (gamesError) throw new Error(`Failed to fetch week games: ${gamesError.message}`);
 
-    const results = await this._bulkSimulateGames(weekGames, seasonId);
+    const results = await this._bulkSimulateGames(weekGames, seasonId, 'week');
 
     const currentState = await this._getGameState();
     await supabaseAdmin
@@ -642,7 +646,7 @@ class LeagueService {
       };
     }
 
-    const results = await this._bulkSimulateGames(gamesToSim, seasonId);
+    const results = await this._bulkSimulateGames(gamesToSim, seasonId, 'batch');
 
     const currentState = await this._getGameState();
     await supabaseAdmin
@@ -669,7 +673,7 @@ class LeagueService {
 
   // ── PRIVATE: core bulk-simulation logic ──────────────────────────────────
 
-  async _bulkSimulateGames(games, seasonId) {
+  async _bulkSimulateGames(games, seasonId, progressionType = 'batch') {
     if (!games?.length) return [];
 
     const teamIds = [...new Set(games.flatMap(g => [g.home_team_id, g.away_team_id]))];
@@ -727,7 +731,8 @@ class LeagueService {
 
     const progression = await playerProgressionService.progressPlayersFromBoxScores(
       this.savedGameId,
-      allBoxScores
+      allBoxScores,
+      { seasonId, progressionType }
     );
     console.log(
       `📈 Progression: ${progression.playersProgressed} up, ` +
@@ -1028,7 +1033,7 @@ class LeagueService {
       return { gamesSimulated: 0, gamesRemaining: 0, complete: true, results: [] };
     }
 
-    const results = await this._bulkSimulateGames(games, seasonId);
+    const results = await this._bulkSimulateGames(games, seasonId, 'batch');
 
     const maxSimDate   = games[games.length - 1].game_date;
     const currentState = await this._getGameState();
@@ -1241,11 +1246,13 @@ async signFreeAgent(playerId, teamId) {
    */
   async proposeTrade(savedGameId, proposingTeamId, receivingTeamId, playerIdsFromProposer, playerIdsFromReceiver) {
     // 1. Validate teams belong to the same saved game
-    const teams = await db.query(
-      `SELECT id FROM teams WHERE id IN ($1, $2) AND saved_game_id = $3`,
-      [proposingTeamId, receivingTeamId, savedGameId]
-    );
-    if (teams.rowCount !== 2) {
+    const { data: teams, error: teamsError } = await supabaseAdmin
+      .from('teams')
+      .select('id')
+      .in('id', [proposingTeamId, receivingTeamId])
+      .eq('saved_game_id', savedGameId);
+    if (teamsError) throw new Error(`Failed to validate teams: ${teamsError.message}`);
+    if (!teams || teams.length !== 2) {
       throw new Error('One or both teams do not belong to this saved game.');
     }
 
@@ -1255,17 +1262,18 @@ async signFreeAgent(playerId, teamId) {
       throw new Error('Must include at least one player from each team.');
     }
 
-    const players = await db.query(
-      `SELECT id, team_id, overall_rating, potential_rating, age FROM players
-       WHERE id = ANY($1::uuid[]) AND saved_game_id = $2`,
-      [allPlayerIds, savedGameId]
-    );
-    if (players.rowCount !== allPlayerIds.length) {
+    const { data: players, error: playersError } = await supabaseAdmin
+      .from('players')
+      .select('id, team_id, overall_rating, potential_rating, age')
+      .in('id', allPlayerIds)
+      .eq('saved_game_id', savedGameId);
+    if (playersError) throw new Error(`Failed to validate players: ${playersError.message}`);
+    if (!players || players.length !== allPlayerIds.length) {
       throw new Error('Some players not found in this saved game.');
     }
 
     const playerMap = {};
-    players.rows.forEach(p => { playerMap[p.id] = p; });
+    players.forEach(p => { playerMap[p.id] = p; });
 
     // Verify team ownership
     for (const pid of playerIdsFromProposer) {
@@ -1280,15 +1288,15 @@ async signFreeAgent(playerId, teamId) {
     }
 
     // 3. Check for existing pending trades involving any of these players (optional, to avoid conflicts)
-    const pendingConflicts = await db.query(
-      `SELECT 1 FROM trade_players tp
-       JOIN trades t ON tp.trade_id = t.id
-       WHERE tp.player_id = ANY($1::uuid[])
-         AND t.saved_game_id = $2
-         AND t.status = 'pending'`,
-      [allPlayerIds, savedGameId]
+    const { data: pendingTradePlayers, error: pendingError } = await supabaseAdmin
+      .from('trade_players')
+      .select('player_id, trade:trade_id ( id, status, saved_game_id )')
+      .in('player_id', allPlayerIds);
+    if (pendingError) throw new Error(`Failed to check pending trades: ${pendingError.message}`);
+    const hasPendingConflict = (pendingTradePlayers || []).some(
+      tp => tp.trade && tp.trade.saved_game_id === savedGameId && tp.trade.status === 'pending'
     );
-    if (pendingConflicts.rowCount > 0) {
+    if (hasPendingConflict) {
       throw new Error('One or more players are already involved in a pending trade.');
     }
 
@@ -1298,27 +1306,38 @@ async signFreeAgent(playerId, teamId) {
     const evaluation = evaluateTrade(proposingPlayersData, receivingPlayersData);
 
     // 5. Insert trade record
-    const tradeResult = await db.query(
-      `INSERT INTO trades (saved_game_id, proposing_team_id, receiving_team_id, status)
-       VALUES ($1, $2, $3, 'pending') RETURNING *`,
-      [savedGameId, proposingTeamId, receivingTeamId]
-    );
-    const trade = tradeResult.rows[0];
+    const { data: trade, error: tradeInsertError } = await supabaseAdmin
+      .from('trades')
+      .insert({
+        saved_game_id:      savedGameId,
+        proposing_team_id:  proposingTeamId,
+        receiving_team_id:  receivingTeamId,
+        status:             'pending',
+      })
+      .select()
+      .single();
+    if (tradeInsertError) throw new Error(`Failed to create trade: ${tradeInsertError.message}`);
 
     // 6. Insert trade players
-    const tradePlayerValues = [];
-    const now = new Date().toISOString();
+    const tradePlayerRows = [
+      ...playerIdsFromProposer.map(pid => ({
+        trade_id:     trade.id,
+        player_id:    pid,
+        from_team_id: proposingTeamId,
+        to_team_id:   receivingTeamId,
+      })),
+      ...playerIdsFromReceiver.map(pid => ({
+        trade_id:     trade.id,
+        player_id:    pid,
+        from_team_id: receivingTeamId,
+        to_team_id:   proposingTeamId,
+      })),
+    ];
 
-    for (const pid of playerIdsFromProposer) {
-      tradePlayerValues.push(`('${trade.id}', '${pid}', '${proposingTeamId}', '${receivingTeamId}')`);
-    }
-    for (const pid of playerIdsFromReceiver) {
-      tradePlayerValues.push(`('${trade.id}', '${pid}', '${receivingTeamId}', '${proposingTeamId}')`);
-    }
-
-    await db.query(
-      `INSERT INTO trade_players (trade_id, player_id, from_team_id, to_team_id) VALUES ${tradePlayerValues.join(', ')}`
-    );
+    const { error: tradePlayersError } = await supabaseAdmin
+      .from('trade_players')
+      .insert(tradePlayerRows);
+    if (tradePlayersError) throw new Error(`Failed to insert trade players: ${tradePlayersError.message}`);
 
     // 7. If AI accepts immediately, complete the trade
     if (evaluation.accepted) {
@@ -1340,37 +1359,41 @@ async signFreeAgent(playerId, teamId) {
    * @param {boolean} requireAuthority - if true, only receiving team can accept
    */
   async acceptTrade(tradeId, savedGameId, requireAuthority = true) {
-    const tradeResult = await db.query(
-      `SELECT * FROM trades WHERE id = $1 AND saved_game_id = $2 AND status = 'pending'`,
-      [tradeId, savedGameId]
-    );
-    if (tradeResult.rowCount === 0) {
+    const { data: trade, error: tradeError } = await supabaseAdmin
+      .from('trades')
+      .select('*')
+      .eq('id', tradeId)
+      .eq('saved_game_id', savedGameId)
+      .eq('status', 'pending')
+      .single();
+    if (tradeError || !trade) {
       throw new Error('Trade not found or not pending.');
     }
-    const trade = tradeResult.rows[0];
 
-    // If requireAuthority, verify caller is the receiving team (could be enforced at controller level)
-    // but we pass it here for flexibility.
+    // If requireAuthority, verify caller is the receiving team (enforced at controller level).
 
     // Get all trade players
-    const tradePlayers = await db.query(
-      `SELECT * FROM trade_players WHERE trade_id = $1`,
-      [tradeId]
-    );
+    const { data: tradePlayers, error: tpError } = await supabaseAdmin
+      .from('trade_players')
+      .select('*')
+      .eq('trade_id', tradeId);
+    if (tpError) throw new Error(`Failed to load trade players: ${tpError.message}`);
 
     // Perform the swap: update player team_id
-    for (const tp of tradePlayers.rows) {
-      await db.query(
-        `UPDATE players SET team_id = $1, updated_at = now() WHERE id = $2`,
-        [tp.to_team_id, tp.player_id]
-      );
+    for (const tp of (tradePlayers || [])) {
+      const { error: updateError } = await supabaseAdmin
+        .from('players')
+        .update({ team_id: tp.to_team_id, updated_at: new Date().toISOString() })
+        .eq('id', tp.player_id);
+      if (updateError) throw new Error(`Failed to move player ${tp.player_id}: ${updateError.message}`);
     }
 
     // Mark trade as completed
-    await db.query(
-      `UPDATE trades SET status = 'completed', updated_at = now() WHERE id = $1`,
-      [tradeId]
-    );
+    const { error: completeError } = await supabaseAdmin
+      .from('trades')
+      .update({ status: 'completed', updated_at: new Date().toISOString() })
+      .eq('id', tradeId);
+    if (completeError) throw new Error(`Failed to mark trade completed: ${completeError.message}`);
 
     return { ...trade, status: 'completed' };
   }
@@ -1379,73 +1402,71 @@ async signFreeAgent(playerId, teamId) {
    * Reject a pending trade.
    */
   async rejectTrade(tradeId, savedGameId) {
-    const result = await db.query(
-      `UPDATE trades SET status = 'rejected', updated_at = now()
-       WHERE id = $1 AND saved_game_id = $2 AND status = 'pending' RETURNING *`,
-      [tradeId, savedGameId]
-    );
-    if (result.rowCount === 0) throw new Error('Trade not found or not pending.');
-    return result.rows[0];
+    const { data, error } = await supabaseAdmin
+      .from('trades')
+      .update({ status: 'rejected', updated_at: new Date().toISOString() })
+      .eq('id', tradeId)
+      .eq('saved_game_id', savedGameId)
+      .eq('status', 'pending')
+      .select()
+      .single();
+    if (error || !data) throw new Error('Trade not found or not pending.');
+    return data;
   }
 
   /**
    * Cancel a trade (proposing team or system).
    */
   async cancelTrade(tradeId, savedGameId) {
-    const result = await db.query(
-      `UPDATE trades SET status = 'cancelled', updated_at = now()
-       WHERE id = $1 AND saved_game_id = $2 AND status = 'pending' RETURNING *`,
-      [tradeId, savedGameId]
-    );
-    if (result.rowCount === 0) throw new Error('Trade not found or not pending.');
-    return result.rows[0];
+    const { data, error } = await supabaseAdmin
+      .from('trades')
+      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+      .eq('id', tradeId)
+      .eq('saved_game_id', savedGameId)
+      .eq('status', 'pending')
+      .select()
+      .single();
+    if (error || !data) throw new Error('Trade not found or not pending.');
+    return data;
   }
 
   /**
    * Get all trades for a saved game (optionally filtered by team).
    */
   async getTrades(savedGameId, teamId = null) {
-    let query = `SELECT t.*,
-                        json_agg(json_build_object(
-                          'player_id', tp.player_id,
-                          'from_team_id', tp.from_team_id,
-                          'to_team_id', tp.to_team_id
-                        )) as players
-                 FROM trades t
-                 LEFT JOIN trade_players tp ON t.id = tp.trade_id
-                 WHERE t.saved_game_id = $1`;
-    const params = [savedGameId];
+    let query = supabaseAdmin
+      .from('trades')
+      .select(`
+        *,
+        players:trade_players ( player_id, from_team_id, to_team_id )
+      `)
+      .eq('saved_game_id', savedGameId)
+      .order('created_at', { ascending: false });
 
     if (teamId) {
-      query += ` AND (t.proposing_team_id = $2 OR t.receiving_team_id = $2)`;
-      params.push(teamId);
+      query = query.or(`proposing_team_id.eq.${teamId},receiving_team_id.eq.${teamId}`);
     }
 
-    query += ` GROUP BY t.id ORDER BY t.created_at DESC`;
-
-    const result = await db.query(query, params);
-    return result.rows;
+    const { data, error } = await query;
+    if (error) throw new Error(`Failed to load trades: ${error.message}`);
+    return data || [];
   }
 
   /**
    * Get a single trade by ID with its players.
    */
   async getTradeById(tradeId, savedGameId) {
-    const result = await db.query(
-      `SELECT t.*,
-              json_agg(json_build_object(
-                'player_id', tp.player_id,
-                'from_team_id', tp.from_team_id,
-                'to_team_id', tp.to_team_id
-              )) as players
-       FROM trades t
-       LEFT JOIN trade_players tp ON t.id = tp.trade_id
-       WHERE t.id = $1 AND t.saved_game_id = $2
-       GROUP BY t.id`,
-      [tradeId, savedGameId]
-    );
-    if (result.rowCount === 0) throw new Error('Trade not found.');
-    return result.rows[0];
+    const { data, error } = await supabaseAdmin
+      .from('trades')
+      .select(`
+        *,
+        players:trade_players ( player_id, from_team_id, to_team_id )
+      `)
+      .eq('id', tradeId)
+      .eq('saved_game_id', savedGameId)
+      .single();
+    if (error || !data) throw new Error('Trade not found.');
+    return data;
   }
 
   async _getLineupsForTeams(teamIds) {
@@ -1458,4 +1479,4 @@ async signFreeAgent(playerId, teamId) {
 };
 
 
-module.exports = LeagueService;
+module.exports = leagueService;

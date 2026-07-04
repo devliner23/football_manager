@@ -38,6 +38,7 @@ interface OverviewTabProps {
   refreshKey: number;
   onGameClick: (gameId: string) => void;
   allTeams: Team[];
+  onSimulateToDate: (date: string) => void;
 }
 
 const OverviewTab: React.FC<OverviewTabProps> = ({
@@ -50,7 +51,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   savedGameId,
   refreshKey,
   onGameClick,
-  allTeams
+  allTeams,
+  onSimulateToDate
 }) => {
   const [showTradeModal, setShowTradeModal] = useState(false);
 
@@ -122,6 +124,21 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       reb: (total.reb / count).toFixed(1),
       ast: (total.ast / count).toFixed(1),
     };
+  };
+
+  const daysUntil = useMemo(() => {
+    if (!nextUserGame?.game_date) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const gameDay = new Date(nextUserGame.game_date);
+    gameDay.setHours(0, 0, 0, 0);
+    return Math.round((gameDay.getTime() - today.getTime()) / 86400000);
+  }, [nextUserGame]);
+
+  const handleSimulateToNextGame = () => {
+    if (!nextUserGame?.game_date || !onSimulateToDate) return;
+    const formatted = new Date(nextUserGame.game_date).toISOString().slice(0, 10);
+    onSimulateToDate(formatted); // single date string → backend simulate route
   };
 
   if (!userTeam) {
@@ -358,25 +375,35 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
           </div>
 
-          {/* 2. UPCOMING MATCHUP */}
-          <div className="next-game-card lower-row-panel">
-            <h3 className="card-title">
-              <Calendar size={16} className="title-icon-inline" /> Upcoming Schedule Matchup
-            </h3>
+          <div className="next-game-card lower-row-panel next-game-card--enhanced">
+            <div className="matchup-card-header">
+              <h3 className="card-title">
+                <Calendar size={16} className="title-icon-inline" />&nbsp; Upcoming
+              </h3>
+              {nextUserGame && daysUntil !== null && (
+                <span className="card-title">
+                  &nbsp; {daysUntil <= 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `In ${daysUntil} days`}
+                </span>
+              )}
+            </div>
 
             {nextUserGame ? (
               (() => {
                 const isHome = nextUserGame.isHome;
                 const opponent = isHome ? nextUserGame.away_team : nextUserGame.home_team;
                 const self = isHome ? nextUserGame.home_team : nextUserGame.away_team;
+                const oppRecord = null;
+                const sameConference = null;
+
                 return (
-                  <div className="matchup-live">
+                  <div className="matchup-live matchup-live--enhanced">
                     <div className="matchup-teams-row">
                       <div className="matchup-team-block">
                         <div className="matchup-avatar matchup-avatar--self">
                           {self?.abbreviation || userTeam.abbreviation}
                         </div>
                         <span className="matchup-team-label">{self?.name || userTeam.name}</span>
+                        <span className="matchup-team-record">{wins}-{losses}</span>
                       </div>
 
                       <div className="matchup-vs-col">
@@ -385,6 +412,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                           {isHome ? 'HOME' : 'AWAY'}
                         </span>
                         <span className="matchup-vs-text">VS</span>
+                        <span className="matchup-vs-sub">
+                          {leagueGamesBeforeCount > 0 ? `${leagueGamesBeforeCount} league games first` : 'Next up'}
+                        </span>
                       </div>
 
                       <div className="matchup-team-block">
@@ -392,6 +422,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                           {opponent?.abbreviation || '???'}
                         </div>
                         <span className="matchup-team-label">{opponent?.name || 'TBD'}</span>
+                        {oppRecord && <span className="matchup-team-record">{oppRecord}</span>}
                       </div>
                     </div>
 
@@ -407,12 +438,22 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                           : 'Date TBD'}
                       </span>
                       <span className="matchup-meta-item">
-                        <Flame size={13} />
-                        {leagueGamesBeforeCount > 0
-                          ? `${leagueGamesBeforeCount} league games first`
-                          : 'Next game up'}
+                        <Trophy size={13} />
+                        {opponent ? (sameConference ? 'Conference Matchup' : 'Interconference') : 'Matchup TBD'}
                       </span>
                     </div>
+
+                    <button
+                      className="matchup-sim-btn"
+                      disabled={!nextUserGame.game_date}
+                      onClick={handleSimulateToNextGame}
+                    >
+                      <span>Simulate to {new Date(nextUserGame.game_date).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                          })}</span>
+                      <ArrowRight size={14} />
+                    </button>
                   </div>
                 );
               })()

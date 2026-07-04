@@ -1,275 +1,265 @@
-/* ========================= */
-/* SIDEBAR ROOT (more grounded) */
-/* ========================= */
+/* =========================================================
+   GAME SIDEBAR — restyled to match Dashboard.css theme
+   (deep-slate glass, neon-blue accents, column layout)
+   ========================================================= */
 
-.game-sidebar-container {
+.glass-sidebar {
   width: 100%;
   height: 100%;
-  padding: 1rem 0.9rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 20px;
+  padding: 20px 16px;
+  color: var(--text-primary, #f4f4f5);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
 /* ========================= */
-/* COMPACT SECTIONS (LESS BUBBLY) */
+/* SHARED GLASS PANEL        */
 /* ========================= */
 
-.game-sidebar-section {
-  border-radius: 10px;
-  padding: 0.75rem;
-  backdrop-filter: blur(6px);
-  transition: border 0.15s ease;
+.glass-sidebar-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--glass-bg, rgba(15, 23, 42, 0.45));
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 12px 30px -12px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.15s ease;
 }
 
-.game-sidebar-section:hover {
-  border-color: rgba(99, 102, 241, 0.2);
+.glass-sidebar-panel:hover {
+  border-color: rgba(59, 130, 246, 0.25);
 }
 
-/* ========================= */
-/* HEADINGS (smaller, tighter) */
-/* ========================= */
-
-.game-sidebar-section h4 {
-  margin: 0 0 0.5rem;
+.sidebar-panel-title {
+  margin: 0 0 14px 0;
   font-size: 0.7rem;
+  font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #94a3b8;
+  color: var(--text-muted, #a1a1aa);
+}
+
+.sidebar-panel-badge {
+  align-self: flex-start;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-bottom: 14px;
 }
 
 /* ========================= */
-/* RECORD (compact strip style) */
+/* RECORD                    */
 /* ========================= */
 
 .sidebar-record {
   display: flex;
   justify-content: center;
   align-items: baseline;
-  gap: 0.35rem;
-
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: #e2e8f0;
+  gap: 0.4rem;
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
 }
 
 .sidebar-wins {
-  color: #22d3ee;
+  color: var(--neon-blue-solid, #60a5fa);
+  text-shadow: 0 0 12px var(--neon-blue-glow, rgba(59, 130, 246, 0.3));
 }
 
 .sidebar-losses {
-  color: #fb7185;
+  color: rgb(196, 0, 0);
 }
 
 .sidebar-dash {
-  color: #475569;
+  color: var(--text-muted, #a1a1aa);
+  font-weight: 400;
 }
 
 .sidebar-pct {
-  margin-top: 0.4rem;
+  margin-top: 6px;
   text-align: center;
-
-  font-size: 0.7rem;
-  color: #94a3b8;
+  font-size: 0.8rem;
+  color: var(--text-muted, #a1a1aa);
 }
 
 /* ========================= */
-/* QUICK STATS (tight rows) */
+/* QUICK STATS                */
 /* ========================= */
 
-.sidebar-stat {
+.sidebar-stat-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-stat-row {
   display: flex;
   justify-content: space-between;
-  padding: 0.35rem 0;
-
-  border-bottom: 1px solid rgba(148, 163, 184, 0.06);
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
 }
 
-.sidebar-stat:last-child {
+.sidebar-stat-row:last-child {
   border-bottom: none;
 }
 
 .sidebar-stat-label {
-  font-size: 0.75rem;
-  color: #94a3b8;
+  font-size: 0.8rem;
+  color: var(--text-muted, #a1a1aa);
 }
 
 .sidebar-stat-value {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #e2e8f0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-primary, #f4f4f5);
 }
 
 /* ========================= */
-/* SIM SECTION (BOTTOM CONTROL PANEL STYLE) */
+/* SIM SECTION                */
 /* ========================= */
+
+.sidebar-date-info {
+  font-size: 0.78rem;
+  color: var(--text-muted, #a1a1aa);
+  margin: 0 0 14px 0;
+  text-align: center;
+}
 
 .sim-date-input {
-  margin-top: 0.5rem;
+  margin-bottom: 14px;
 }
 
-/* input container (flat, not glassy) */
 .date-picker-wrapper {
   display: flex;
   align-items: center;
-
-  background: rgba(15, 23, 42, 0.9);
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  border-radius: 8px;
-
+  background: rgba(9, 9, 11, 0.6);
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  border-radius: 10px;
   overflow: hidden;
-  transition: border 0.15s ease;
+  transition: border-color 0.15s ease;
 }
 
 .date-picker-wrapper:focus-within {
-  border-color: rgba(99, 102, 241, 0.4);
+  border-color: var(--neon-blue, #3b82f6);
+  box-shadow: 0 0 0 3px var(--neon-blue-glow, rgba(59, 130, 246, 0.3));
 }
 
-/* input */
 .date-picker-input {
   flex: 1;
-  padding: 0.5rem 0.6rem;
-  font-size: 0.8rem;
-  color: #e2e8f0;
+  padding: 10px 12px;
+  font-size: 0.85rem;
+  color: var(--text-primary, #f4f4f5);
 }
 
-/* calendar button (minimal) */
 .date-picker-button {
-  width: 36px;
-  height: 36px;
-
+  width: 40px;
+  height: 40px;
   border: none;
-  background: rgba(148, 163, 184, 0.08);
-  color: #e2e8f0;
-
+  border-left: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  background: transparent;
+  color: var(--text-primary, #f4f4f5);
   cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 .date-picker-button:hover {
-  background: rgba(148, 163, 184, 0.15);
+  background: rgba(59, 130, 246, 0.15);
 }
 
 /* ========================= */
-/* POPUP CALENDAR (less glow, more utility) */
+/* POPUP CALENDAR              */
 /* ========================= */
 
 .date-picker-popover {
-  margin-top: 6px;
-
-  padding: 0.75rem;
-  background: #0b1220;
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  border-radius: 10px;
-
-  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.6);
+  margin-top: 8px;
+  padding: 14px;
+  background: #0f111a;
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  border-radius: 14px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
   z-index: 1000;
-
-  top: 50%; 
-  left: 50%;
 }
 
-/* calendar sizing (compact) */
 .date-picker-calendar {
   width: 260px;
-  color: #e2e8f0;
+  color: var(--text-primary, #f4f4f5);
 }
 
-/* header */
 .calendar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 10px;
 }
 
 .calendar-header button {
   width: 28px;
   height: 28px;
-
   border: none;
   border-radius: 6px;
-
-  background: rgba(148, 163, 184, 0.08);
-  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-primary, #f4f4f5);
+  cursor: pointer;
+  transition: background 0.15s ease;
 }
 
 .calendar-header button:hover {
-  background: rgba(99, 102, 241, 0.2);
+  background: rgba(59, 130, 246, 0.25);
 }
-
-/* ========================= */
-/* CALENDAR GRID (minimal UI) */
-/* ========================= */
 
 .react-aria-CalendarHeaderCell {
   font-size: 0.65rem;
-  color: #64748b;
+  color: var(--text-muted, #a1a1aa);
 }
 
 .react-aria-CalendarCell {
   width: 32px;
   height: 32px;
-
   border-radius: 6px;
   text-align: center;
-
   font-size: 0.75rem;
   color: #cbd5e1;
-
-  cursor: pointer;
-}
-
-.react-aria-CalendarCell:hover {
-  background: rgba(99, 102, 241, 0.18);
-}
-
-.react-aria-CalendarCell[data-selected] {
-  background: #4f8cff;
-  color: white;
-  font-weight: 600;
-}
-
-.react-aria-CalendarCell[data-today] {
-  outline: 1px solid rgba(34, 211, 238, 0.7);
-}
-
-/* ========================= */
-/* ACTION BUTTON (tight footer CTA) */
-/* ========================= */
-
-.sidebar-action-btn {
-  margin-top: 0.6rem;
-  width: 100%;
-  padding: 0.65rem;
-
-  border: none;
-  border-radius: 8px;
-
-  background: #2563eb;
-  color: white;
-
-  font-size: 0.8rem;
-  font-weight: 600;
-
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
-.sidebar-action-btn:hover:not(:disabled) {
-  background: #1d4ed8;
+.react-aria-CalendarCell:hover {
+  background: rgba(59, 130, 246, 0.2);
 }
 
-.sidebar-action-btn:disabled {
-  opacity: 0.5;
+.react-aria-CalendarCell[data-selected] {
+  background: var(--neon-blue, #3b82f6);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 0 12px var(--neon-blue-glow, rgba(59, 130, 246, 0.3));
+}
+
+.react-aria-CalendarCell[data-today] {
+  outline: 1px solid var(--neon-blue-solid, #60a5fa);
 }
 
 /* ========================= */
-/* LAST SIM DATE TEXT (utility only) */
+/* ACTION BUTTON               */
 /* ========================= */
 
-.sidebar-date-info {
-  font-size: 0.7rem;
-  color: #64748b;
-  margin-bottom: 0.4rem;
-  text-align: center;
+.sidebar-action-btn {
+  width: 100%;
+}
+
+/* ========================= */
+/* RESPONSIVE                  */
+/* ========================= */
+
+@media (max-width: 640px) {
+  .glass-sidebar {
+    padding: 16px 12px;
+    gap: 14px;
+  }
 }

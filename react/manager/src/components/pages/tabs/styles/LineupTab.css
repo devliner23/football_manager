@@ -1,115 +1,144 @@
-/* src/components/pages/tabs/styles/LineupTab.css */
+/* ==========================================================================
+   LineupTab – Deep Slate Glass Extension
+   ========================================================================== */
 
+/* ── Section Wrappers & Layout ────────────────────────────────────────────── */
 .lineup-dashboard-panel {
-  width: 100%;
-  margin-top: 12px;
+  /* Inherits .glass-panel, we just add spacing */
+  padding: 32px !important;
 }
 
-.error-panel-centered {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 48px;
-}
-
-/* Header Adjustments */
 .lineup-header-flex {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 24px;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
-/* Minutes Allocation Gauge Widget */
+.lineup-header-titles {
+  flex: 1;
+}
+
+/* ── Minutes Gauge Widget ─────────────────────────────────────────────────── */
 .minutes-gauge-card {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
-  padding: 12px 20px;
-  border-radius: 12px;
-  min-width: 150px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
-  transition: border-color 0.3s ease;
+  border-radius: 14px;
+  padding: 16px 20px;
+  min-width: 180px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.25s ease;
 }
 
 .gauge-value-row {
   display: flex;
   align-items: baseline;
-  justify-content: flex-end;
   gap: 4px;
-  margin-top: 4px;
 }
 
 .gauge-total {
-  font-size: 1.8rem;
+  font-size: 2.2rem;
   font-weight: 800;
+  line-height: 1;
   letter-spacing: -0.5px;
 }
 
 .gauge-max {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  font-weight: 500;
   color: var(--text-muted);
-  font-weight: 600;
 }
 
-/* Status Banners */
-.lineup-status-banner {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 24px;
-  margin-top: 0;
-  animation: modalScaleUp 0.2s ease-out;
+.gauge-track {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  overflow: hidden;
 }
 
-.banner-success {
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  color: #a7f3d0;
+.gauge-track-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  box-shadow: 0 0 8px currentColor;
 }
 
-/* Vertical Continuous Stack Roster Design */
+/* ── Roster Vertical Stack ────────────────────────────────────────────────── */
 .roster-vertical-layout {
   display: flex;
   flex-direction: column;
-  gap: 32px;
-  margin-bottom: 32px;
+  gap: 28px;
+  margin: 24px 0 32px;
+}
+
+.roster-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .section-title-wrapper {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-  padding-bottom: 8px;
+  gap: 10px;
+  padding: 0 0 8px 0;
+  border-bottom: 1px solid var(--glass-border);
+  margin-bottom: 12px;
 }
 
 .section-title-wrapper h3 {
-  margin: 0;
-  font-size: 1.05rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  letter-spacing: -0.2px;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  margin: 0;
 }
 
+.section-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.section-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.section-dot--starter {
+  background: var(--neon-blue-solid);
+  color: var(--neon-blue-solid);
+  box-shadow: 0 0 10px var(--neon-blue-glow);
+}
+
+/* ── Player Cards ─────────────────────────────────────────────────────────── */
 .player-rows-stack {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
-/* Glassmorphism Player Cards */
 .lineup-player-card {
   background: rgba(255, 255, 255, 0.02);
   border: 1px solid var(--glass-border);
-  border-radius: 10px;
-  padding: 12px 16px;
+  border-radius: 12px;
+  padding: 14px 16px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  transition: all 0.2s ease;
+  justify-content: space-between;
+  gap: 16px;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .lineup-player-card:hover {
@@ -118,105 +147,127 @@
 }
 
 .lineup-player-card--starter {
-  background: rgba(59, 130, 246, 0.02);
+  background: rgba(59, 130, 246, 0.04);
+  border-color: rgba(59, 130, 246, 0.15);
+}
+
+.lineup-player-card--starter:hover {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(59, 130, 246, 0.3);
 }
 
 .lineup-player-card--empty {
+  background: rgba(255, 255, 255, 0.01);
   border-style: dashed;
-  background: transparent;
-  opacity: 0.6;
+  border-color: rgba(255, 255, 255, 0.06);
+  opacity: 0.7;
 }
 
 .lineup-player-identity {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
+  min-width: 0;
 }
 
-/* Slot Labels (PG, SG, B1, etc) */
 .lineup-slot-label {
-  font-size: 0.75rem;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 800;
-  padding: 4px 8px;
-  border-radius: 6px;
-  min-width: 36px;
-  text-align: center;
-  letter-spacing: 0.5px;
+  font-size: 0.8rem;
+  flex-shrink: 0;
 }
 
 .empty-label {
-  background: rgba(255, 255, 255, 0.05) !important;
-  color: var(--text-muted) !important;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
 }
 
 .lineup-player-meta {
   display: flex;
   flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .lineup-player-name {
-  font-size: 0.92rem;
   font-weight: 600;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   color: var(--text-primary);
 }
 
 .empty-text {
-  font-size: 0.88rem;
   color: var(--text-muted);
   font-style: italic;
+  font-size: 0.85rem;
 }
 
 .lineup-player-pos-tag {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 700;
   color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
+/* ── Stats & Controls Group ───────────────────────────────────────────────── */
 .lineup-player-stats {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
+  flex-shrink: 0;
 }
 
-/* Tiered Custom Ratings Badges */
 .lineup-rating-badge {
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 800;
   font-size: 0.75rem;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
+  letter-spacing: 0.3px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .lineup-rating--elite {
-  background: rgba(245, 158, 11, 0.15);
-  color: #fcd34d;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(34, 211, 238, 0.12);
+  color: #67e8f9;
+  border: 1px solid rgba(34, 211, 238, 0.25);
 }
 
 .lineup-rating--good {
-  background: rgba(59, 130, 246, 0.15);
-  color: #93c5fd;
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(250, 204, 21, 0.1);
+  color: #fde047;
+  border: 1px solid rgba(250, 204, 21, 0.2);
 }
 
 .lineup-rating--average {
   background: rgba(148, 163, 184, 0.1);
   color: #cbd5e1;
-  border: 1px solid rgba(148, 163, 184, 0.2);
+  border: 1px solid rgba(148, 163, 184, 0.15);
 }
 
-/* Minutes Digital Form Numeric Input */
+/* ── Minutes Input Group ──────────────────────────────────────────────────── */
 .lineup-minutes-input-wrapper {
   display: flex;
   align-items: center;
-  background: rgba(9, 9, 11, 0.6);
+  background: rgba(0, 0, 0, 0.2);
   border: 1px solid var(--glass-border);
-  border-radius: 6px;
-  padding: 2px 8px;
-  transition: focus-within 0.2s ease;
+  border-radius: 8px;
+  padding: 2px 2px 2px 10px;
+  transition: border-color 0.2s;
 }
 
 .lineup-minutes-input-wrapper:focus-within {
   border-color: var(--neon-blue-solid);
-  box-shadow: 0 0 10px rgba(59, 130, 246, 0.15);
+  box-shadow: 0 0 8px var(--neon-blue-glow);
 }
 
 .input-clock-icon {
@@ -224,19 +275,35 @@
   margin-right: 6px;
 }
 
-.lineup-minutes-input {
+.minutes-step-btn {
   background: transparent;
   border: none;
-  color: #ffffff;
-  width: 32px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  text-align: center;
-  outline: none;
-  padding: 4px 0;
+  color: var(--text-muted);
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
 }
 
-/* Clear standard spinner up-down UI controls */
+.minutes-step-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+.lineup-minutes-input {
+  width: 36px;
+  background: transparent;
+  border: none;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .lineup-minutes-input::-webkit-outer-spin-button,
 .lineup-minutes-input::-webkit-inner-spin-button {
   -webkit-appearance: none;
@@ -246,50 +313,232 @@
 .input-unit-label {
   font-size: 0.75rem;
   color: var(--text-muted);
-  margin-left: 2px;
+  margin-right: 8px;
+  font-weight: 500;
 }
 
-/* Action Controls Row Custom Modifications */
-.lineup-actions-footer {
+/* ── Swap Control ─────────────────────────────────────────────────────────── */
+.swap-control {
+  position: relative;
+}
+
+.swap-trigger-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  width: 60px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.swap-trigger-btn:hover,
+.swap-trigger-btn--active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: var(--neon-blue-solid);
+  color: var(--neon-blue-solid);
+  box-shadow: 0 0 10px var(--neon-blue-glow);
+}
+
+/* ── Swap Menu Popover ───────────────────────────────────────────────────── */
+.swap-menu-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 260px;
+  background: #0f172a;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.8);
+  z-index: 50;
+  overflow: hidden;
+  animation: fadeSlideIn 0.15s ease-out;
+}
+
+.swap-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--glass-border);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+}
+
+.swap-menu-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.swap-menu-close:hover {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--neon-danger);
+}
+
+.swap-menu-list {
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.swap-menu-empty {
+  padding: 14px;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.swap-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--text-primary);
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-size: 0.9rem;
+  text-align: left;
+}
+
+.swap-menu-item:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.swap-menu-slot {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 6px;
+  min-width: 34px;
+  text-align: center;
+}
+
+.swap-menu-name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.swap-menu-ovr {
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+/* ── Status Banners (extend .glass-banner) ──────────────────────────────── */
+.lineup-status-banner {
   margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
 }
 
-/* Loading Module Overlay */
+.banner-error {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.banner-success {
+  background: rgba(34, 211, 238, 0.08);
+  border-color: rgba(34, 211, 238, 0.2);
+  color: #67e8f9;
+}
+
+/* ── Action Footer Alignment ─────────────────────────────────────────────── */
+.lineup-actions-footer {
+  margin-bottom: 24px;
+}
+
+/* ── Loading State ───────────────────────────────────────────────────────── */
 .lineup-loading-container {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
-  padding: 60px 0;
-  gap: 16px;
+  justify-content: center;
+  gap: 20px;
+  min-height: 300px;
 }
 
 .lineup-loading-text {
   color: var(--text-muted);
-  font-size: 0.9rem;
-  letter-spacing: 0.5px;
+  font-size: 0.95rem;
 }
 
-/* Core System Keyframe Utilities */
+/* ── Centered Error Panel (No Team) ──────────────────────────────────────── */
+.error-panel-centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 32px;
+}
+
+/* ── Keyframe Animations ─────────────────────────────────────────────────── */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .spin-animation {
-  animation: spinTransform 1s linear infinite;
+  animation: spin 0.8s linear infinite;
 }
 
-@keyframes spinTransform {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
+/* ── Responsive Tweaks ───────────────────────────────────────────────────── */
+@media (max-width: 640px) {
   .lineup-header-flex {
     flex-direction: column;
-    align-items: stretch;
   }
+
   .minutes-gauge-card {
-    text-align: left;
+    width: 100%;
   }
-  .gauge-value-row {
-    justify-content: flex-start;
+
+  .lineup-player-card {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .lineup-player-stats {
+    width: 100%;
+    justify-content: space-between;
   }
 }

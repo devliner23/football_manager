@@ -1,21 +1,35 @@
 // src/components/pages/tabs/LineupTab.tsx
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { RefreshCw, Star, Users, Clock, Save, AlertCircle, CheckCircle2 } from 'lucide-react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import {
+  RefreshCw,
+  Users,
+  Clock,
+  Save,
+  AlertCircle,
+  CheckCircle2,
+  ArrowLeftRight,
+  ChevronDown,
+  Minus,
+  Plus,
+  X,
+} from 'lucide-react';
 import { Player, Team } from '../../../shared/index';
 import { leagueAPI, LineupData } from '../../../api/leagueApi';
 import './styles/LineupTab.css';
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const TOTAL_MINUTES = 240; // 48 min × 5 players
+const TOTAL_MINUTES = 240; 
 const STARTER_LABELS = ['PG', 'SG', 'SF', 'PF', 'C'];
+const BENCH_SIZE = 7;
 
-// Softer, glass-friendly colours
+
+// Position accent colours, tuned to sit alongside the dashboard's neon-blue palette
 const POSITION_COLOURS: Record<string, string> = {
-  PG: '#7aa2f7', // soft blue
-  SG: '#9d7cd8', // soft purple
-  SF: '#6abf8d', // soft green
-  PF: '#e0a84f', // soft gold
-  C: '#e06c75',  // soft red
+  PG: '#7aa2f7',
+  SG: '#9d7cd8',
+  SF: '#6abf8d',
+  PF: '#e0a84f',
+  C: '#e06c75',
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -26,17 +40,18 @@ interface LineupTabProps {
 }
 
 type DraftMinutes = Record<string, number>;
+type SlotId = string; // e.g. "starter-0" | "bench-3"
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-function totalDraft(draft: DraftMinutes): number {
-  return Object.values(draft).reduce((a, b) => a + b, 0);
+function totalDraft(draft: DraftMinutes, ids: (string | null)[]): number {
+  return ids.reduce((sum: number, id) => sum + (id ? draft[id] ?? 0 : 0), 0);
 }
 
 function budgetColour(total: number): string {
   const diff = Math.abs(total - TOTAL_MINUTES);
-  if (diff === 0) return '#10b981'; // Green accent matching status indicators
-  if (diff <= 5) return '#f58e0b';  // Amber accent
-  return '#ef4444';                 // Danger red
+  if (diff === 0) return '#22d3ee';
+  if (diff <= 5) return '#f59e0b';
+  return '#ef4444';
 }
 
 function ratingClass(r: number): string {
@@ -45,23 +60,102 @@ function ratingClass(r: number): string {
   return 'lineup-rating--average';
 }
 
+function getPlayerName(p: Player | null): string {
+  if (!p) return '';
+  return p.full_name ?? `${(p as any).first_name ?? ''} ${(p as any).last_name ?? ''}`.trim();
+}
+
+// ── SwapMenu ──────────────────────────────────────────────────────────────────
+interface SwapMenuProps {
+  currentSlot: SlotId;
+  eligible: { slot: SlotId; label: string; player: Player }[];
+  onSwap: (targetSlot: SlotId) => void;
+  onClose: () => void;
+}
+
+const SwapMenu: React.FC<SwapMenuProps> = ({ eligible, onSwap, onClose }) => {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose();
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [onClose]);
+
+  return (
+    <div className="swap-menu-popover" ref={ref}>
+      <div className="swap-menu-header">
+        <span>Swap With</span>
+        <button className="swap-menu-close" onClick={onClose}>
+          <X size={12} />
+        </button>
+      </div>
+      <div className="swap-menu-list">
+        {eligible.length === 0 && (
+          <div className="swap-menu-empty">No eligible players</div>
+        )}
+        {eligible.map(({ slot, label, player }) => (
+          <button key={slot} className="swap-menu-item" onClick={() => onSwap(slot)}>
+            <span
+              className="swap-menu-slot"
+              style={{
+                backgroundColor: `${POSITION_COLOURS[player.position] ?? '#94a3b8'}20`,
+                color: POSITION_COLOURS[player.position] ?? '#94a3b8',
+              }}
+            >
+              {label}
+            </span>
+            <span className="swap-menu-name">{getPlayerName(player)}</span>
+            <span className="swap-menu-ovr">{player.overall_rating}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 // ── PlayerRow ─────────────────────────────────────────────────────────────────
 interface PlayerRowProps {
+  slotId: SlotId;
   player: Player;
   slotLabel: string;
   isStarter: boolean;
   minutes: number;
-  onChange: (playerId: string, value: number) => void;
+  onChangeMinutes: (playerId: string, value: number) => void;
+  swapMenuOpen: boolean;
+  onToggleSwapMenu: (slotId: SlotId | null) => void;
+  eligibleForSwap: { slot: SlotId; label: string; player: Player }[];
+  onSwap: (fromSlot: SlotId, toSlot: SlotId) => void;
 }
 
-const PlayerRow: React.FC<PlayerRowProps> = ({ player, slotLabel, isStarter, minutes, onChange }) => {
+const PlayerRow: React.FC<PlayerRowProps> = ({
+  slotId,
+  player,
+  slotLabel,
+  isStarter,
+  minutes,
+  onChangeMinutes,
+  swapMenuOpen,
+  onToggleSwapMenu,
+  eligibleForSwap,
+  onSwap,
+}) => {
   const colour = POSITION_COLOURS[player.position] ?? '#94a3b8';
+
+  const clamp = (v: number) => Math.max(0, Math.min(48, v));
 
   const handleNumber = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = parseInt(e.target.value, 10);
-    if (Number.isNaN(raw)) return;
-    onChange(player.id, Math.max(0, Math.min(48, raw)));
+    if (Number.isNaN(raw)) {
+      onChangeMinutes(player.id, 0);
+      return;
+    }
+    onChangeMinutes(player.id, clamp(raw));
   };
+
+  const step = (delta: number) => onChangeMinutes(player.id, clamp(minutes + delta));
 
   return (
     <div className={`lineup-player-card ${isStarter ? 'lineup-player-card--starter' : ''}`}>
@@ -70,7 +164,7 @@ const PlayerRow: React.FC<PlayerRowProps> = ({ player, slotLabel, isStarter, min
           {slotLabel}
         </div>
         <div className="lineup-player-meta">
-          <span className="lineup-player-name">{player.full_name}</span>
+          <span className="lineup-player-name">{getPlayerName(player)}</span>
           <span className="lineup-player-pos-tag">{player.position}</span>
         </div>
       </div>
@@ -79,8 +173,12 @@ const PlayerRow: React.FC<PlayerRowProps> = ({ player, slotLabel, isStarter, min
         <div className={`lineup-rating-badge ${ratingClass(player.overall_rating)}`}>
           OVR {player.overall_rating}
         </div>
+
         <div className="lineup-minutes-input-wrapper">
-          <Clock size={14} className="input-clock-icon" />
+          <Clock size={13} className="input-clock-icon" />
+          <button type="button" className="minutes-step-btn" onClick={() => step(-1)} tabIndex={-1}>
+            <Minus size={12} />
+          </button>
           <input
             type="number"
             className="lineup-minutes-input"
@@ -89,7 +187,30 @@ const PlayerRow: React.FC<PlayerRowProps> = ({ player, slotLabel, isStarter, min
             min={0}
             max={48}
           />
+          <button type="button" className="minutes-step-btn" onClick={() => step(1)} tabIndex={-1}>
+            <Plus size={12} />
+          </button>
           <span className="input-unit-label">m</span>
+        </div>
+
+        <div className="swap-control">
+          <button
+            type="button"
+            className={`swap-trigger-btn ${swapMenuOpen ? 'swap-trigger-btn--active' : ''}`}
+            onClick={() => onToggleSwapMenu(swapMenuOpen ? null : slotId)}
+            title="Swap player"
+          >
+            <ArrowLeftRight size={14} />
+            <ChevronDown size={12} />
+          </button>
+          {swapMenuOpen && (
+            <SwapMenu
+              currentSlot={slotId}
+              eligible={eligibleForSwap}
+              onSwap={(targetSlot) => onSwap(slotId, targetSlot)}
+              onClose={() => onToggleSwapMenu(null)}
+            />
+          )}
         </div>
       </div>
     </div>
@@ -97,11 +218,46 @@ const PlayerRow: React.FC<PlayerRowProps> = ({ player, slotLabel, isStarter, min
 };
 
 // ── EmptySlot ─────────────────────────────────────────────────────────────────
-const EmptySlot: React.FC<{ slotLabel: string }> = ({ slotLabel }) => (
+interface EmptySlotProps {
+  slotId: SlotId;
+  slotLabel: string;
+  swapMenuOpen: boolean;
+  onToggleSwapMenu: (slotId: SlotId | null) => void;
+  eligibleForSwap: { slot: SlotId; label: string; player: Player }[];
+  onSwap: (fromSlot: SlotId, toSlot: SlotId) => void;
+}
+
+const EmptySlot: React.FC<EmptySlotProps> = ({
+  slotId,
+  slotLabel,
+  swapMenuOpen,
+  onToggleSwapMenu,
+  eligibleForSwap,
+  onSwap,
+}) => (
   <div className="lineup-player-card lineup-player-card--empty">
     <div className="lineup-player-identity">
       <div className="lineup-slot-label empty-label">{slotLabel}</div>
       <span className="lineup-player-name empty-text">Unassigned Roster Position</span>
+    </div>
+    <div className="swap-control">
+      <button
+        type="button"
+        className={`swap-trigger-btn ${swapMenuOpen ? 'swap-trigger-btn--active' : ''}`}
+        onClick={() => onToggleSwapMenu(swapMenuOpen ? null : slotId)}
+        title="Assign player"
+      >
+        <ArrowLeftRight size={14} />
+        <ChevronDown size={12} />
+      </button>
+      {swapMenuOpen && (
+        <SwapMenu
+          currentSlot={slotId}
+          eligible={eligibleForSwap}
+          onSwap={(targetSlot) => onSwap(slotId, targetSlot)}
+          onClose={() => onToggleSwapMenu(null)}
+        />
+      )}
     </div>
   </div>
 );
@@ -109,18 +265,38 @@ const EmptySlot: React.FC<{ slotLabel: string }> = ({ slotLabel }) => (
 // ── Main component ────────────────────────────────────────────────────────────
 const LineupTab: React.FC<LineupTabProps> = ({ savedGameId, userTeam, allPlayers }) => {
   const [lineup, setLineup] = useState<LineupData | null>(null);
+  const [starterIds, setStarterIds] = useState<(string | null)[]>(Array(STARTER_LABELS.length).fill(null));
+  const [benchIds, setBenchIds] = useState<(string | null)[]>(Array(BENCH_SIZE).fill(null));
   const [draft, setDraft] = useState<DraftMinutes>({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState(false);
+  const [openSwapSlot, setOpenSwapSlot] = useState<SlotId | null>(null);
 
   const playerMap = useMemo(() => {
     const m = new Map<string, Player>();
-    allPlayers.forEach(p => m.set(p.id, p));
+    allPlayers.forEach((p) => m.set(p.id, p));
     return m;
   }, [allPlayers]);
+
+  const applyLineup = useCallback((data: LineupData) => {
+    setLineup(data);
+    setDraft({ ...data.minutesTargets });
+
+    const nextStarters: (string | null)[] = Array(STARTER_LABELS.length).fill(null);
+    data.starters.slice(0, STARTER_LABELS.length).forEach((id, idx) => {
+      nextStarters[idx] = id;
+    });
+    setStarterIds(nextStarters);
+
+    const nextBench: (string | null)[] = Array(BENCH_SIZE).fill(null);
+    data.rotation.slice(0, BENCH_SIZE).forEach((id, idx) => {
+      nextBench[idx] = id;
+    });
+    setBenchIds(nextBench);
+  }, []);
 
   const fetchLineup = useCallback(async () => {
     if (!userTeam) return;
@@ -129,46 +305,99 @@ const LineupTab: React.FC<LineupTabProps> = ({ savedGameId, userTeam, allPlayers
     setSaveOk(false);
     try {
       const data = await leagueAPI.getLineup(savedGameId, userTeam.id);
-      setLineup(data);
-      setDraft({ ...data.minutesTargets });
+      applyLineup(data);
     } catch (err: any) {
       setError(err.message ?? 'Failed to load lineup');
     } finally {
-        setLoading(false)
+      setLoading(false);
     }
-  }, [savedGameId, userTeam]);
+  }, [savedGameId, userTeam, applyLineup]);
 
   useEffect(() => {
     fetchLineup();
   }, [fetchLineup]);
 
   const handleMinuteChange = useCallback((playerId: string, value: number) => {
-    setDraft(prev => ({ ...prev, [playerId]: value }));
+    setDraft((prev) => ({ ...prev, [playerId]: value }));
     setSaveOk(false);
   }, []);
 
+  // Parse a slot id like "starter-2" or "bench-4"
+  const parseSlot = (slot: SlotId): { group: 'starter' | 'bench'; idx: number } => {
+    const [group, idxStr] = slot.split('-');
+    return { group: group as 'starter' | 'bench', idx: parseInt(idxStr, 10) };
+  };
+
+  const getSlotPlayerId = useCallback(
+    (slot: SlotId): string | null => {
+      const { group, idx } = parseSlot(slot);
+      return group === 'starter' ? starterIds[idx] : benchIds[idx];
+    },
+    [starterIds, benchIds]
+  );
+
+  const setSlotPlayerId = (arrs: { starters: (string | null)[]; bench: (string | null)[] }, slot: SlotId, value: string | null) => {
+    const { group, idx } = parseSlot(slot);
+    if (group === 'starter') {
+      arrs.starters[idx] = value;
+    } else {
+      arrs.bench[idx] = value;
+    }
+  };
+
+  const handleSwap = useCallback(
+    (fromSlot: SlotId, toSlot: SlotId) => {
+      setStarterIds((prevStarters) => {
+        setBenchIds((prevBench) => {
+          const arrs = { starters: [...prevStarters], bench: [...prevBench] };
+          const fromVal = getSlotPlayerId(fromSlot);
+          const toVal = getSlotPlayerId(toSlot);
+          setSlotPlayerId(arrs, fromSlot, toVal);
+          setSlotPlayerId(arrs, toSlot, fromVal);
+          // schedule bench update via closure return below; starters handled outside
+          setTimeout(() => setBenchIds(arrs.bench), 0);
+          return arrs.bench;
+        });
+        const arrsPreview = { starters: [...prevStarters], bench: [...benchIds] };
+        const fromVal = getSlotPlayerId(fromSlot);
+        const toVal = getSlotPlayerId(toSlot);
+        setSlotPlayerId(arrsPreview, fromSlot, toVal);
+        setSlotPlayerId(arrsPreview, toSlot, fromVal);
+        return arrsPreview.starters;
+      });
+      setOpenSwapSlot(null);
+      setSaveOk(false);
+    },
+    [getSlotPlayerId, benchIds]
+  );
+
   const isDirty = useMemo(() => {
     if (!lineup) return false;
-    return Object.keys(draft).some(
-      id => draft[id] !== (lineup.minutesTargets[id] ?? 0)
-    );
-  }, [draft, lineup]);
+    const minutesChanged = Object.keys(draft).some((id) => draft[id] !== (lineup.minutesTargets[id] ?? 0));
+    const startersChanged = starterIds.some((id, idx) => id !== (lineup.starters[idx] ?? null));
+    const benchChanged = benchIds.some((id, idx) => id !== (lineup.rotation[idx] ?? null));
+    return minutesChanged || startersChanged || benchChanged;
+  }, [draft, lineup, starterIds, benchIds]);
 
-  const total = useMemo(() => totalDraft(draft), [draft]);
+  const allSlotIds = useMemo(() => [...starterIds, ...benchIds], [starterIds, benchIds]);
+  const total = useMemo(() => totalDraft(draft, allSlotIds), [draft, allSlotIds]);
   const budgetOk = Math.abs(total - TOTAL_MINUTES) <= 5;
+
+  const diff = total - TOTAL_MINUTES;
 
   const handleSave = async () => {
     if (!userTeam || !lineup) return;
     setSaving(true);
     setError(null);
     try {
+      const cleanStarters = starterIds.filter((id): id is string => !!id);
+      const cleanBench = benchIds.filter((id): id is string => !!id);
       const data = await leagueAPI.setLineup(savedGameId, userTeam.id, {
-        starters: lineup.starters,
-        rotation: lineup.rotation,
+        starters: cleanStarters,
+        rotation: cleanBench,
         minutesTargets: draft,
       });
-      setLineup(data);
-      setDraft({ ...data.minutesTargets });
+      applyLineup(data);
       setSaveOk(true);
       setTimeout(() => setSaveOk(false), 2500);
     } catch (err: any) {
@@ -185,8 +414,7 @@ const LineupTab: React.FC<LineupTabProps> = ({ savedGameId, userTeam, allPlayers
     setSaveOk(false);
     try {
       const data = await leagueAPI.resetLineup(savedGameId, userTeam.id);
-      setLineup(data);
-      setDraft({ ...data.minutesTargets });
+      applyLineup(data);
     } catch (err: any) {
       setError(err.message ?? 'Failed to reset lineup');
     } finally {
@@ -194,8 +422,26 @@ const LineupTab: React.FC<LineupTabProps> = ({ savedGameId, userTeam, allPlayers
     }
   };
 
-  const starters = lineup ? lineup.starters.map(id => playerMap.get(id) ?? null) : [];
-  const bench = lineup ? lineup.rotation.map(id => playerMap.get(id) ?? null) : [];
+  // Build eligible-swap list for a given slot: every other occupied/empty slot on the roster
+  const buildEligible = useCallback(
+    (slot: SlotId) => {
+      const results: { slot: SlotId; label: string; player: Player }[] = [];
+      starterIds.forEach((id, idx) => {
+        const s: SlotId = `starter-${idx}`;
+        if (s === slot || !id) return;
+        const p = playerMap.get(id);
+        if (p) results.push({ slot: s, label: STARTER_LABELS[idx], player: p });
+      });
+      benchIds.forEach((id, idx) => {
+        const s: SlotId = `bench-${idx}`;
+        if (s === slot || !id) return;
+        const p = playerMap.get(id);
+        if (p) results.push({ slot: s, label: `B${idx + 1}`, player: p });
+      });
+      return results;
+    },
+    [starterIds, benchIds, playerMap]
+  );
 
   if (!userTeam) {
     return (
@@ -220,13 +466,34 @@ const LineupTab: React.FC<LineupTabProps> = ({ savedGameId, userTeam, allPlayers
     <div className="glass-panel animated-border-glow lineup-dashboard-panel">
       <div className="panel-inner">
         {/* Header Block */}
-        <div className="lineup-header-flex">          
+        <div className="lineup-header-flex">
+          <div className="lineup-header-titles">
+            <span className="panel-badge neon-blue-badge">ROTATION DESK</span>
+          </div>
+
           {/* Minutes Target Gauge widget */}
           <div className="minutes-gauge-card" style={{ borderColor: budgetColour(total) }}>
             <span className="meta-label text-right">Allocated Minutes</span>
             <div className="gauge-value-row">
               <span className="gauge-total" style={{ color: budgetColour(total) }}>{total}</span>
               <span className="gauge-max">/ {TOTAL_MINUTES}</span>
+            </div>
+            <div className="gauge-track">
+              <div
+                className="gauge-track-fill"
+                style={{
+                  width: `${Math.min(100, (total / TOTAL_MINUTES) * 100)}%`,
+                  backgroundColor: budgetColour(total),
+                }}
+              />
+            </div>
+            {/* --- New delta indicator --- */}
+            <div className="minutes-delta" style={{ color: budgetColour(total) }}>
+              {diff === 0
+                ? '✓ Balanced'
+                : diff > 0
+                  ? `${diff} min over`
+                  : `${Math.abs(diff)} min needed`}
             </div>
           </div>
         </div>
@@ -251,23 +518,39 @@ const LineupTab: React.FC<LineupTabProps> = ({ savedGameId, userTeam, allPlayers
           {/* Top Panel Section: Starters */}
           <div className="roster-section">
             <div className="section-title-wrapper">
-              <Star size={16} className="text-glow-blue" />
+              <span className="section-dot section-dot--starter" />
               <h3>Starting Lineup</h3>
+              <span className="section-count">{starterIds.filter(Boolean).length}/{STARTER_LABELS.length}</span>
             </div>
             <div className="player-rows-stack">
               {STARTER_LABELS.map((label, idx) => {
-                const player = starters[idx];
+                const slotId: SlotId = `starter-${idx}`;
+                const playerId = starterIds[idx];
+                const player = playerId ? playerMap.get(playerId) ?? null : null;
                 return player ? (
                   <PlayerRow
-                    key={player.id}
+                    key={slotId}
+                    slotId={slotId}
                     player={player}
                     slotLabel={label}
                     isStarter={true}
                     minutes={draft[player.id] ?? 0}
-                    onChange={handleMinuteChange}
+                    onChangeMinutes={handleMinuteChange}
+                    swapMenuOpen={openSwapSlot === slotId}
+                    onToggleSwapMenu={setOpenSwapSlot}
+                    eligibleForSwap={buildEligible(slotId)}
+                    onSwap={handleSwap}
                   />
                 ) : (
-                  <EmptySlot key={`starter-empty-${idx}`} slotLabel={label} />
+                  <EmptySlot
+                    key={slotId}
+                    slotId={slotId}
+                    slotLabel={label}
+                    swapMenuOpen={openSwapSlot === slotId}
+                    onToggleSwapMenu={setOpenSwapSlot}
+                    eligibleForSwap={buildEligible(slotId)}
+                    onSwap={handleSwap}
+                  />
                 );
               })}
             </div>
@@ -276,30 +559,40 @@ const LineupTab: React.FC<LineupTabProps> = ({ savedGameId, userTeam, allPlayers
           {/* Bottom Panel Section: Bench Rotation */}
           <div className="roster-section">
             <div className="section-title-wrapper">
-              <Users size={16} style={{ color: '#93c5fd' }} />
+              <Users size={14} style={{ color: '#93c5fd' }} />
               <h3>Active Bench Rotations</h3>
+              <span className="section-count">{benchIds.filter(Boolean).length}/{BENCH_SIZE}</span>
             </div>
             <div className="player-rows-stack">
-              {bench.length === 0 ? (
-                <div className="lineup-player-card lineup-player-card--empty">
-                  <span className="empty-text">No depth players added to active bench lineup rotation rulesets.</span>
-                </div>
-              ) : (
-                bench.map((player, idx) =>
-                  player ? (
-                    <PlayerRow
-                      key={player.id}
-                      player={player}
-                      slotLabel={`B${idx + 1}`}
-                      isStarter={false}
-                      minutes={draft[player.id] ?? 0}
-                      onChange={handleMinuteChange}
-                    />
-                  ) : (
-                    <EmptySlot key={`bench-empty-${idx}`} slotLabel={`B${idx + 1}`} />
-                  )
-                )
-              )}
+              {benchIds.map((playerId, idx) => {
+                const slotId: SlotId = `bench-${idx}`;
+                const player = playerId ? playerMap.get(playerId) ?? null : null;
+                return player ? (
+                  <PlayerRow
+                    key={slotId}
+                    slotId={slotId}
+                    player={player}
+                    slotLabel={`B${idx + 1}`}
+                    isStarter={false}
+                    minutes={draft[player.id] ?? 0}
+                    onChangeMinutes={handleMinuteChange}
+                    swapMenuOpen={openSwapSlot === slotId}
+                    onToggleSwapMenu={setOpenSwapSlot}
+                    eligibleForSwap={buildEligible(slotId)}
+                    onSwap={handleSwap}
+                  />
+                ) : (
+                  <EmptySlot
+                    key={slotId}
+                    slotId={slotId}
+                    slotLabel={`B${idx + 1}`}
+                    swapMenuOpen={openSwapSlot === slotId}
+                    onToggleSwapMenu={setOpenSwapSlot}
+                    eligibleForSwap={buildEligible(slotId)}
+                    onSwap={handleSwap}
+                  />
+                );
+              })}
             </div>
           </div>
         </div>
@@ -310,7 +603,7 @@ const LineupTab: React.FC<LineupTabProps> = ({ savedGameId, userTeam, allPlayers
             className="glass-btn btn-primary-blue-glow"
             onClick={handleSave}
             disabled={saving || resetting || !isDirty || !budgetOk}
-            style={{ opacity: (!isDirty || !budgetOk) ? 0.4 : 1, cursor: (!isDirty || !budgetOk) ? 'not-allowed' : 'pointer' }}
+            style={{ opacity: !isDirty || !budgetOk ? 0.4 : 1, cursor: !isDirty || !budgetOk ? 'not-allowed' : 'pointer' }}
           >
             <Save size={18} />
             {saving ? 'Deploying Changes...' : 'Save Configuration'}

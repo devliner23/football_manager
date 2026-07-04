@@ -25,7 +25,7 @@ interface ScheduleTabProps {
   schedule: Record<number, GameResult[]>;
   teams: { id: string; name: string; abbreviation: string }[];
   currentDate: string | null;
-  currentTeam: string | null;   // managed team ID
+  currentTeam: string | null;
 }
 
 type Tab = 'team-schedule' | 'league-schedule' | 'calendar';
@@ -541,7 +541,7 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate,
                                     <span className="ts-result-score">{teamScore}–{oppScore}</span>
                                   </>
                                 ) : (
-                                  <span className="ts-result-pending">Upcoming</span>
+                                  <span className="ts-result-pending"></span>
                                 )}
                               </div>
 
@@ -752,7 +752,7 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate,
                   const isUserDay = currentTeam
                     ? games.some(g => g.home_team_id === currentTeam || g.away_team_id === currentTeam)
                     : false;
-                  const today = new Date();
+                  const today = currentDate ? new Date(currentDate) : new Date();
                   const isToday =
                     day !== null &&
                     calendarYear === today.getFullYear() &&

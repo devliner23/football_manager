@@ -36,6 +36,21 @@ interface GameSidebarProps {
   lastSimulatedDate?: string | null;
 }
 
+// Build a local YYYY-MM-DD string with no Date()/timezone round-trip.
+const todayAsString = (): string => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const d = String(now.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+// Format a YYYY-MM-DD string for display without ever going through UTC.
+const formatDisplayDate = (dateStr: string): string => {
+  const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString();
+};
+
 const GameSidebar: React.FC<GameSidebarProps> = ({
   season,
   wins,
@@ -55,13 +70,17 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
 }) => {
   const [simDate, setSimDate] = useState<string>("");
 
-  // Sync with latest simulated date
+  // Sync with latest simulated date.
+  // IMPORTANT: parse the date string directly instead of going through
+  // `new Date(...).toISOString()`, which reinterprets a date-only string
+  // as UTC midnight and can shift it by a day relative to the locale-based
+  // "Last simulated" label below — that mismatch was the root cause of the
+  // sidebar text and the DatePicker disagreeing.
   useEffect(() => {
     if (lastSimulatedDate) {
-      const formatted = new Date(lastSimulatedDate).toISOString().slice(0, 10);
-      setSimDate(formatted);
+      setSimDate(lastSimulatedDate.slice(0, 10));
     } else {
-      setSimDate(new Date().toISOString().slice(0, 10));
+      setSimDate(todayAsString());
     }
   }, [lastSimulatedDate]);
 
@@ -74,8 +93,6 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
 
   const fromCalendarDate = (date: DateValue | null): string => {
     if (!date) return '';
-    // DateValue can be CalendarDate, CalendarDateTime, or ZonedDateTime
-    // We only use CalendarDate, so we can cast safely.
     const cd = date as CalendarDate;
     return `${cd.year}-${String(cd.month).padStart(2, '0')}-${String(cd.day).padStart(2, '0')}`;
   };
@@ -85,40 +102,47 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
   };
 
   return (
-    <aside className="game-sidebar-container">
-      <div className="game-sidebar-section">
-        <h4>Season {season}</h4>
+    <aside className="glass-sidebar">
+      {/* Record */}
+      <section className="glass-sidebar-panel">
+        <span className="sidebar-panel-badge neon-blue-badge">SEASON {season}</span>
         <div className="sidebar-record">
           <span className="sidebar-wins">{wins}</span>
-          <span className="sidebar-dash">-</span>
+          <span className="sidebar-dash">–</span>
           <span className="sidebar-losses">{losses}</span>
         </div>
-        <div className="sidebar-pct">Win %: {winPct}%</div>
-      </div>
+        <div className="sidebar-pct">Win % {winPct}%</div>
+      </section>
 
-      <div className="game-sidebar-section">
-        <h4>Quick Stats</h4>
-        <div className="sidebar-stat">
-          <span className="sidebar-stat-label">PPG</span>
-          <span className="sidebar-stat-value">{ppg}</span>
+      {/* Quick Stats */}
+      {/* <section className="glass-sidebar-panel">
+        <h4 className="sidebar-panel-title">Quick Stats</h4>
+        <div className="sidebar-stat-list">
+          <div className="sidebar-stat-row">
+            <span className="sidebar-stat-label">PPG</span>
+            <span className="sidebar-stat-value">{ppg}</span>
+          </div>
+          <div className="sidebar-stat-row">
+            <span className="sidebar-stat-label">OPPG</span>
+            <span className="sidebar-stat-value">{oppg}</span>
+          </div>
+          <div className="sidebar-stat-row">
+            <span className="sidebar-stat-label">Players</span>
+            <span className="sidebar-stat-value">{playerCount}</span>
+          </div>
         </div>
-        <div className="sidebar-stat">
-          <span className="sidebar-stat-label">OPPG</span>
-          <span className="sidebar-stat-value">{oppg}</span>
-        </div>
-        <div className="sidebar-stat">
-          <span className="sidebar-stat-label">Players</span>
-          <span className="sidebar-stat-value">{playerCount}</span>
-        </div>
-      </div>
+      </section> */}
 
-      <div className="game-sidebar-section">
-        <h4>Simulate</h4>
-        {lastSimulatedDate && (
+      {/* Simulate */}
+      <section className="glass-sidebar-panel animated-border-glow">
+        <h4 className="sidebar-panel-title">Simulate</h4>
+
+        {/* {lastSimulatedDate && (
           <p className="sidebar-date-info">
-            Last simulated: {new Date(lastSimulatedDate).toLocaleDateString()}
+            Last simulated: <span className="text-white">{formatDisplayDate(lastSimulatedDate)}</span>
           </p>
-        )}
+        )} */}
+
         <div className="sim-date-input">
           <DatePicker
             className="sim-date-picker-card"
@@ -133,35 +157,43 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
               </DateInput>
               <Button className="date-picker-button">📅</Button>
             </div>
-              <Popover className="date-picker-popover" placement="bottom start">
-                <Calendar className="date-picker-calendar">
-                  <header className="calendar-header">
-                    <Button slot="previous">‹</Button>
-                    <Heading />
-                    <Button slot="next">›</Button>
-                  </header>
+            <Popover className="date-picker-popover" placement="bottom start">
+              <Calendar className="date-picker-calendar">
+                <header className="calendar-header">
+                  <Button slot="previous">‹</Button>
+                  <Heading />
+                  <Button slot="next">›</Button>
+                </header>
 
-                  <CalendarGrid>
-                    <CalendarGridHeader>
-                      {(day) => <CalendarHeaderCell>{day}</CalendarHeaderCell>}
-                    </CalendarGridHeader>
+                <CalendarGrid>
+                  <CalendarGridHeader>
+                    {(day) => <CalendarHeaderCell>{day}</CalendarHeaderCell>}
+                  </CalendarGridHeader>
 
-                    <CalendarGridBody>
-                      {(date) => <CalendarCell date={date} />}
-                    </CalendarGridBody>
-                  </CalendarGrid>
-                </Calendar>
-              </Popover>
+                  <CalendarGridBody>
+                    {(date) => <CalendarCell date={date} />}
+                  </CalendarGridBody>
+                </CalendarGrid>
+              </Calendar>
+            </Popover>
           </DatePicker>
         </div>
+
         <button
-          className="sidebar-action-btn"
+          className="glass-btn btn-primary-blue-glow large-btn sidebar-action-btn"
           onClick={() => onSimulateToDate(simDate)}
           disabled={loading || !simDate}
         >
           {loading ? 'Simulating…' : 'Simulate to Date'}
         </button>
-      </div>
+        <button
+          className="glass-btn btn-primary-blue-glow large-btn sidebar-action-btn"
+          onClick={() => onSimulateToDate(simDate)}
+          disabled={loading || !simDate}
+        >
+          {loading ? 'Simulating…' : 'Simulate A Day'}
+        </button>
+      </section>
     </aside>
   );
 };

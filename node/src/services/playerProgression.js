@@ -115,12 +115,18 @@ class playerProgressionService {
       return { playersProgressed: 0, playersRegressed: 0, totalDelta: 0 };
     }
 
-    // 2. Load current player rows (need traits, age, position, potential)
-    const { data: players, error } = await supabaseAdmin
-      .from('players')
-      .select('id, team_id, position, age, overall_rating, potential_rating, traits')
-      .eq('saved_game_id', savedGameId)
-      .in('id', playerIds);
+    const players = [];
+    const idChunks = chunkArray(playerIds, PLAYER_FETCH_CHUNK);
+    for (const idChunk of idChunks) {
+      const { data, error } = await supabaseAdmin
+        .from('players')
+        .select('id, team_id, position, age, overall_rating, potential_rating, traits')
+        .eq('saved_game_id', savedGameId)
+        .in('id', idChunk);
+
+      if (error) throw new Error(`Failed to load players for progression: ${error.message}`);
+      if (data?.length) players.push(...data);
+    }
 
     if (error) throw new Error(`Failed to load players for progression: ${error.message}`);
     if (!players?.length) return { playersProgressed: 0, playersRegressed: 0, totalDelta: 0 };

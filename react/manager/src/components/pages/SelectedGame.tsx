@@ -96,7 +96,9 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     game.managed_club_id ?? null
   );
 
-  const currentDate = lastSimulatedDate;
+  useEffect(() => {
+    console.log("Game current_game_date", game.current_game_date);
+  }, [game.id])
 
   // Load all league data
   const loadLeagueData = async () => {
@@ -289,6 +291,25 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     }
   };
 
+  useEffect(() => {
+    let cancelled = false;
+    let attempts = 0;
+
+    const load = async () => {
+      setLoading(true);
+      await refreshAllData();
+      attempts++;
+      if (!cancelled && !managedClubId && attempts < 6) {
+        setTimeout(load, 800); // retry until managed_club_id resolves
+      } else {
+        setLoading(false);
+      }
+    };
+
+    load();
+    return () => { cancelled = true; };
+  }, [game.id, refreshAllData]); // note: don't gate on managedClubId in the dep array, use a ref/state check inside
+
   return (
     <div className="selected-game-dashboard">
         <GameProvider value={{
@@ -301,7 +322,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
         oppg: 'N/A',
         nextUserGame,
         leagueGamesBeforeCount,
-        lastSimulatedDate: currentDate,
+        lastSimulatedDate: lastSimulatedDate,
         loading,
         onContinue: handleContinue,
         onSimulate: handleSimulate,
@@ -346,7 +367,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 nextUserGame={nextUserGame}
                 leagueGamesBeforeCount={leagueGamesBeforeCount}
                 onSimulateToDate={handleSimulateToDate}
-                lastSimulatedDate={currentDate}
+                lastSimulatedDate={lastSimulatedDate}
             /> }
         </div>
         </aside>
@@ -389,6 +410,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 refreshKey={refreshKey}
                 onGameClick={(gameId) => setSelectedGameId(gameId)}
                 allTeams={teams}
+                onSimulateToDate={handleSimulateToDate}
                 />
             )}
             {!loading && activeTab === 'leagueRoster' && (
@@ -411,7 +433,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 <ScheduleTab
                 schedule={schedule}
                 teams={teams}
-                currentDate={currentDate}
+                currentDate={lastSimulatedDate}
                 currentTeam={managedClubId}
                 />
             )}         
@@ -426,26 +448,6 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 userTeamPlayers={userTeamPlayers}
               />
             )}
-            </div>
-            {/* Right column – game sidebar & controls */}
-            <div className="game-content-right">
-            {/* <GameSidebar
-                season={currentSeason}
-                wins={userStanding?.wins ?? 0}
-                losses={userStanding?.losses ?? 0}
-                winPct={winPct}
-                playerCount={userTeamPlayers.length}
-                ppg="N/A"
-                oppg="N/A"
-                onContinue={handleContinue}
-                onSimulate={handleSimulate}
-                onViewStandings={() => setActiveTab('standings')}
-                loading={loading}
-                nextUserGame={nextUserGame}
-                leagueGamesBeforeCount={leagueGamesBeforeCount}
-                onSimulateToDate={handleSimulateToDate}
-                lastSimulatedDate={currentDate}
-            /> */}
             </div>
         </div>
         </main>

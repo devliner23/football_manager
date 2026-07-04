@@ -1086,3 +1086,81 @@
     align-items: stretch;
   }
 }
+
+
+
+.next-game-card--enhanced {
+  display: flex;
+  flex-direction: column;
+}
+
+.matchup-card-header {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.matchup-countdown-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+
+.matchup-live--enhanced {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.matchup-team-record {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.matchup-vs-sub {
+  font-size: 0.62rem;
+  color: #475569;
+  margin-top: 2px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.matchup-sim-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  margin-top: 4px;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.12);
+  color: #cbd5e1;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.matchup-sim-btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.25);
+  border-color: #60a5fa;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.matchup-sim-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

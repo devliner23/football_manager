@@ -1,5 +1,5 @@
 const { supabaseAdmin } = require('../config/supabase');
-const playerData = require('../data/playerData.json'); // adjust path if needed
+const playerData = require('../data/playerData.json');
 
 class PlayerGenerator {
   constructor(savedGameId, season) {
@@ -13,7 +13,6 @@ class PlayerGenerator {
     this.positionHeights = playerData.positionHeights;
     this.ageRanges = playerData.ageRanges;
     this.weightRange = playerData.weightRange;
-    this.ratingAdjustments = playerData.ratingAdjustments;
     this.numTraitsByRating = playerData.numTraitsByRating;
     this.positionTraitPools = playerData.positionTraitPools;
     this.extraTraitsForStars = playerData.extraTraitsForStars;
@@ -60,21 +59,10 @@ class PlayerGenerator {
   }
 
   // ---------- generate a full player ----------
-  generatePlayer(teamId, position, isStarter, isStar, teamBaseRating, rosterIndex) {
-    // Overall rating: base team rating + starter/bench adjustments + star boost + random
-    const rating = this.calculatePlayerRating(teamBaseRating, isStarter, isStar, rosterIndex);
-
-    // Skill attributes (threePoint, midRange, etc.)
+  generatePlayer(teamId, position, rating, isStar, rosterIndex) {
     const skillAttrs = this.generateSkillAttributes(position, rating);
-
-    // Special traits (clutch_shooter, etc.)
     const specialTraits = this.generateTraits(position, rating, isStar);
-
-    // Combine into one 'traits' JSONB field
-    const traits = {
-      ...skillAttrs,
-      ...specialTraits,
-    };
+    const traits = { ...skillAttrs, ...specialTraits };
 
     const potential = this.generatePotential(rating, isStar, rosterIndex);
     const age = this.generateAge(isStar, rosterIndex);
@@ -82,76 +70,99 @@ class PlayerGenerator {
     const weight = this.generateWeight();
     const first_name = this.generateFirstName();
     const last_name = this.generateLastName();
-    const full_name = this.generateFullName();
+    const full_name = `${first_name} ${last_name}`;
 
     return {
       saved_game_id: this.savedGameId,
       team_id: teamId,
-      first_name: first_name,
-      last_name: last_name,
-      full_name: full_name,
-      position: position,
-      age: age,
-      height: height,
-      weight: weight,
+      first_name,
+      last_name,
+      full_name,
+      position,
+      age,
+      height,
+      weight,
       overall_rating: rating,
       potential_rating: potential,
-      traits: traits, 
+      traits,
     };
   }
 
   // ---------- generate league (entry point) ----------
   generateLeague(teams) {
-    console.log('👥 Generating league with traits...');
+    console.log('👥 Generating league with realistic talent distribution...');
+
+    // Realistic tier distribution: ~4 contenders, 8 playoff, 8 mid, 6 lottery
+    const tiers = [
+      'contender', 'contender', 'contender', 'contender',
+      'playoff', 'playoff', 'playoff', 'playoff', 'playoff', 'playoff', 'playoff', 'playoff',
+      'mid', 'mid', 'mid', 'mid', 'mid', 'mid', 'mid', 'mid',
+      'lottery', 'lottery', 'lottery', 'lottery', 'lottery', 'lottery'
+    ];
+
+    const shuffledTeams = this.shuffleArray([...teams]);
     const allPlayers = [];
 
-    for (const team of teams) {
-      // Each team gets a random base strength (40–90, but we clamp later)
-      const teamBase = 60 + Math.random() * 20; // 50–85
-      const roster = this.generateTeamRoster(team, teamBase);
+    for (let i = 0; i < shuffledTeams.length; i++) {
+      const team = shuffledTeams[i];
+      const tier = tiers[i] || 'mid';
+      const roster = this.generateTeamRoster(team, tier);
       allPlayers.push(...roster);
     }
 
+    // === DEBUG: print a few ratings to verify distribution ===
+    const sample = allPlayers.slice(0, 20).map(p => ({
+      name: p.full_name,
+      ovr: p.overall_rating,
+      tier: p.team_id,
+    }));
+    console.log('🔍 Sample ratings before DB:', JSON.stringify(sample, null, 2));
     console.log(`✅ Generated ${allPlayers.length} players`);
+
     return allPlayers;
   }
 
   // ---------- generate roster for a single team ----------
-  generateTeamRoster(team, teamBaseRating) {
+  generateTeamRoster(team, tier) {
     const roster = [];
     const positions = ['PG', 'SG', 'SF', 'PF', 'C'];
 
     for (let i = 0; i < 15; i++) {
-      const position = positions[i % positions.length];
+      const position = positions[i % 5];
       const isStarter = i < 5;
-      const isStar = i < 2; // top 2 players are "stars"
-      const player = this.generatePlayer(team.id, position, isStarter, isStar, teamBaseRating, i);
+      const rating = this.generatePlayerRating(tier, isStarter, i);
+      const isStar = rating >= 85;   // star status based on rating, not index
+
+      const player = this.generatePlayer(team.id, position, rating, isStar, i);
       roster.push(player);
     }
     return roster;
   }
 
-  // ---------- rating calculation ----------
-  calculatePlayerRating(teamBase, isStarter, isStar, index) {
-    let rating = teamBase;
+  // ---------- NEW: Realistic rating generation ----------
+  generatePlayerRating(teamTier, isStarter, rosterIndex) {
+    const tierMeans = {
+      contender: { starter: 82, bench: 72 },
+      playoff:   { starter: 78, bench: 70 },
+      mid:       { starter: 74, bench: 67 },
+      lottery:   { starter: 70, bench: 64 }
+    };
 
-    if (isStarter) {
-      const [min, max] = this.ratingAdjustments.starter;
-      rating += min + Math.floor(Math.random() * (max - min + 1));
-    } else {
-      const [min, max] = this.ratingAdjustments.bench;
-      rating += min + Math.floor(Math.random() * (max - min + 1));
+    const mean = isStarter ? tierMeans[teamTier].starter : tierMeans[teamTier].bench;
+    const stdDev = 7;   // ~95% of players within ±14 of the mean
+    let rating = this.randomGaussian(mean, stdDev);
+
+    // 5% chance a starter is a genuine superstar, even on a bad team
+    if (isStarter && Math.random() < 0.05) {
+      rating += 15;
     }
 
-    if (isStar) {
-      const [min, max] = this.ratingAdjustments.star;
-      rating += min + Math.floor(Math.random() * (max - min + 1));
+    // Rookie penalty: last three roster spots get a slight downgrade
+    if (rosterIndex > 12) {
+      rating -= 5;
     }
 
-    const [minVar, maxVar] = this.ratingAdjustments.randomVariation;
-    rating += minVar + Math.floor(Math.random() * (maxVar - minVar + 1));
-
-    return Math.min(99, Math.max(60, Math.floor(rating)));
+    return Math.min(99, Math.max(60, Math.round(rating)));
   }
 
   // ---------- physical attributes ----------
@@ -181,16 +192,16 @@ class PlayerGenerator {
   generatePotential(rating, isStar, index) {
     let potential = rating;
     if (index > 12) {
-      potential += 5 + Math.floor(Math.random() * 15);
+      potential += 8 + Math.floor(Math.random() * 12); // rookies high upside
     } else if (isStar) {
-      potential += 2 + Math.floor(Math.random() * 8);
+      potential += 2 + Math.floor(Math.random() * 6);   // stars stay elite
     } else {
-      potential += Math.floor(Math.random() * 10) - 3;
+      potential += Math.floor(Math.random() * 6) - 2;   // role players mild growth
     }
     return Math.min(99, Math.max(45, Math.floor(potential)));
   }
 
-  // ---------- trait helpers ----------
+  // ---------- trait helpers (unchanged) ----------
   getRelevantTraits(position, isStar) {
     const pool = this.positionTraitPools[position] || [];
     let traits = [...pool];
@@ -235,10 +246,6 @@ class PlayerGenerator {
     return this.lastNames[Math.floor(Math.random() * this.lastNames.length)];
   }
 
-  generateFullName(first_name, last_name) {
-    return `${first_name} ${last_name}`
-  }
-
   // ---------- utility ----------
   shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -248,7 +255,7 @@ class PlayerGenerator {
     return array;
   }
 
-  // ---------- database save ----------
+  // ---------- database save (unchanged) ----------
   async savePlayers(players) {
     const batchSize = 50;
     const results = [];

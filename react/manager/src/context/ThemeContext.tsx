@@ -72,9 +72,13 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     root.style.setProperty('--team-primary', theme.primary);
     root.style.setProperty('--team-secondary', theme.secondary);
     root.style.setProperty('--team-accent', theme.accent);
+    // subtle glow (20% opacity) – used elsewhere
     root.style.setProperty('--team-primary-glow', `${theme.primary}33`);
-    root.style.setProperty('--team-secondary-glow', `${theme.secondary}33`);
-    root.style.setProperty('--team-background', theme.background);
+    // strong neon glow (60% opacity)
+    root.style.setProperty('--team-primary-neon', `${theme.primary}99`);
+    // extra intense for large spread (30% opacity)
+    root.style.setProperty('--team-primary-neon-spread', `${theme.primary}4D`);
+    // background etc.
     
     // Update body background
     document.body.style.background = theme.background;

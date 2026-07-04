@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { userAPI, gameAPI } from '../../api/client';
+import { useTheme } from '../../context/ThemeContext';
 import SavedGames from './SavedGames';
 import NewGameForm from './NewGameForm';
 import SelectedGame from '../pages/SelectedGame';
@@ -35,16 +36,30 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const handleGameCreated = (newGame: SavedGame): void => {
+  const handleGameCreated = async (newGame: SavedGame): Promise<void> => {
     setShowNewGameForm(false);
     setIsCreatingGame(true);
 
-    setTimeout(() => {
-      setSavedGames([newGame, ...savedGames]);
-      setSelectedGame(newGame);
+    try {
+      const ready = await waitForLeagueInit(newGame.id); // polls gameAPI.getGame until managed_club_id is set
+      setSavedGames([ready, ...savedGames]);
+      setSelectedGame(ready);
+    } catch (err) {
+      setError('League initialization timed out');
+    } finally {
       setIsCreatingGame(false);
-    }, 1200);
+    }
   };
+
+  async function waitForLeagueInit(gameId: string, timeoutMs = 15000): Promise<SavedGame> {
+    const start = Date.now();
+    while (Date.now() - start < timeoutMs) {
+      const res = await gameAPI.getGame(gameId);
+      if (res.data?.managed_club_id) return res.data;
+      await new Promise(r => setTimeout(r, 500));
+    }
+    throw new Error('timeout');
+  }
 
   const handleGameDeleted = async (gameId: string): Promise<void> => {
     try {

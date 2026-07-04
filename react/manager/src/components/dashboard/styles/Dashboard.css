@@ -151,8 +151,44 @@
 /* Premium Visual Edge Treatment */
 .animated-border-glow {
   position: relative;
-  border-top: 2px solid var(--neon-blue);
-  box-shadow: 0 0 30px rgba(59, 130, 246, 0.05), inset 0 1px 0 var(--glass-highlight);
+  /* primary border remains bright */
+  border-top: 3px solid var(--team-primary);
+  /* dual‑color glow: primary core, secondary wider spread */
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 0 8px var(--team-primary-neon),          /* tight primary core */
+    0 0 18px var(--team-primary-neon-spread),   /* primary spread */
+    0 0 35px var(--team-secondary-neon-spread); /* secondary outer bloom */
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  animation: dualNeonPulse 2.5s infinite ease-in-out;
+
+}
+
+/* hover state for interactive elements */
+.animated-border-glow:hover {
+  border-top-color: var(--team-secondary);        /* switch border to secondary */
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 0 15px var(--team-primary-neon),
+    0 0 25px var(--team-primary-neon-spread),
+    0 0 50px var(--team-secondary-neon-spread);
+}
+
+@keyframes dualNeonPulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      0 0 6px var(--team-primary-neon),
+      0 0 15px var(--team-primary-neon-spread),
+      0 0 30px var(--team-secondary-neon-spread);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 var(--glass-highlight),
+      0 0 12px var(--team-primary-neon),
+      0 0 25px var(--team-primary-neon-spread),
+      0 0 45px var(--team-secondary-neon-spread);
+  }
 }
 
 .panel-inner {
