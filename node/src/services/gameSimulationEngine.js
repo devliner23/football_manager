@@ -1034,7 +1034,7 @@ class GameSimulationEngine {
   }
 
   // ── Momentum, chemistry, fatigue (unchanged) ────────────────────────
-  static _updateMomentum(gameState, result) {
+  static _updateMomentum(gameState, result, isHomeOffense) {
     const ms = gameState.config.momentumSystem;
     let delta = 0;
     if (result.points >= 2) {
@@ -1043,7 +1043,9 @@ class GameSimulationEngine {
     }
     if (result.turnovers) delta -= 0.02;
     delta -= ms.decayRatePerMinute * (24 / 60);
-    gameState.momentum = Math.max(ms.minMomentum, Math.min(ms.maxMomentum, gameState.momentum + delta));
+
+    const signedDelta = isHomeOffense ? delta : -delta;
+    gameState.momentum = Math.max(ms.minMomentum, Math.min(ms.maxMomentum, gameState.momentum + signedDelta));
   }
 
   static _updateChemistry(gameState, isHome, amount) {

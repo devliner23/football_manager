@@ -84,6 +84,16 @@ function clampRating(v) {
   return Math.max(40, Math.min(99, v));
 }
 
+const PLAYER_FETCH_CHUNK = 200;
+
+function chunkArray(arr, size) {
+  const chunks = [];
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size));
+  }
+  return chunks;
+}
+
 class playerProgressionService {
 
   /**
@@ -126,6 +136,10 @@ class playerProgressionService {
 
       if (error) throw new Error(`Failed to load players for progression: ${error.message}`);
       if (data?.length) players.push(...data);
+    }
+
+    if (!players.length) {
+      return { playersProgressed: 0, playersRegressed: 0, totalDelta: 0 };
     }
 
     if (error) throw new Error(`Failed to load players for progression: ${error.message}`);
