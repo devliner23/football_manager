@@ -250,27 +250,56 @@
 .kpi-meta.trend-up { color: #10b981; }
 .kpi-meta.trend-down { color: #ef4444; }
 
-/* ========================== SECOND ROW: CENTERED THREE PANEL FLEX ========================== */
+/* ========================== SECOND ROW: SPOTLIGHT MATCHUP + PLACEHOLDER ========================== */
 
-.overview-lower-flex-row {
+.overview-highlight-row {
   grid-column: 1 / -1;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  align-items: stretch;
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
 }
 
-.lower-row-panel {
+.sim-spotlight-card {
+  flex: 0 0 83%;                /* large spotlight – matches banner width */
+  min-width: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 4px solid #3b82f6;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.6);
+}
+
+.sim-spotlight-placeholder {
+  flex: 1;                      /* takes remaining ~17% */
   background: rgba(15, 23, 42, 0.45);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 16px;
   padding: 1.5rem;
-  box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: 220px;
+  box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.5);
 }
 
+.sim-spotlight-placeholder__label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #52525b;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 8px 16px;
+  border-radius: 10px;
+}
+
+/* Shared card title styles (kept global for reuse across panels) */
 .card-title {
   margin: 0 0 1rem 0;
   font-size: 0.95rem;
@@ -1098,6 +1127,7 @@
   display: flex;
   flex-direction: row;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 4px;
 }
 

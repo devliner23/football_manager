@@ -330,6 +330,109 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           </div>
         </div>
 
+        {/* ==================== SIMULATION SPOTLIGHT + PLACEHOLDER ==================== */}
+        <div className="overview-highlight-row">
+
+          <div className="sim-spotlight-card">
+            <div className="sim-spotlight-header">
+              <h3 className="card-title">
+                <Calendar size={16} className="title-icon-inline" />&nbsp; Next Matchup
+              </h3>
+              {nextUserGame && daysUntil !== null && (
+                <span className="sim-countdown-pill">
+                  {daysUntil <= 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `In ${daysUntil} days`}
+                </span>
+              )}
+            </div>
+
+            {nextUserGame ? (
+              (() => {
+                const isHome = nextUserGame.isHome;
+                const opponent = isHome ? nextUserGame.away_team : nextUserGame.home_team;
+                const self = isHome ? nextUserGame.home_team : nextUserGame.away_team;
+                const oppRecord = null;
+                const sameConference = null;
+
+                return (
+                  <div className="sim-broadcast">
+                    <div className="sim-broadcast__scoreboard">
+                      <div className="sim-team-panel sim-team-panel--self">
+                        <div className="sim-team-avatar sim-team-avatar--self">
+                          {self?.abbreviation || userTeam.abbreviation}
+                        </div>
+                        <span className="sim-team-name">{self?.name || userTeam.name}</span>
+                        <span className="sim-team-record">{wins}-{losses}</span>
+                      </div>
+
+                      <div className="sim-center-col">
+                        <span className={`matchup-loc-tag ${isHome ? 'home' : 'away'}`}>
+                          {isHome ? <Home size={12} /> : <Plane size={12} />}
+                          {isHome ? 'HOME' : 'AWAY'}
+                        </span>
+                        <span className="sim-vs-text">VS</span>
+                        <span className="matchup-vs-sub">
+                          {leagueGamesBeforeCount > 0 ? `${leagueGamesBeforeCount} league games first` : 'Next up'}
+                        </span>
+                      </div>
+
+                      <div className="sim-team-panel sim-team-panel--opp">
+                        <div className="sim-team-avatar sim-team-avatar--opp">
+                          {opponent?.abbreviation || '???'}
+                        </div>
+                        <span className="sim-team-name">{opponent?.name || 'TBD'}</span>
+                        {oppRecord && <span className="sim-team-record">{oppRecord}</span>}
+                      </div>
+                    </div>
+
+                    <div className="sim-broadcast__ticker">
+                      <span className="matchup-meta-item">
+                        <Clock size={13} />
+                        {nextUserGame.game_date
+                          ? new Date(nextUserGame.game_date).toLocaleDateString(undefined, {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                            })
+                          : 'Date TBD'}
+                      </span>
+                      <span className="matchup-meta-item">
+                        <Trophy size={13} />
+                        {opponent ? (sameConference ? 'Conference Matchup' : 'Interconference') : 'Matchup TBD'}
+                      </span>
+                      <span className="matchup-meta-item">
+                        <Flame size={13} />
+                        Simulation Ready
+                      </span>
+                    </div>
+
+                    <button
+                      className="sim-launch-btn"
+                      disabled={!nextUserGame.game_date}
+                      onClick={handleSimulateToNextGame}
+                    >
+                      <Play size={16} />
+                      <span>Simulate to {new Date(nextUserGame.game_date).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                          })}</span>
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                );
+              })()
+            ) : (
+              <div className="empty-state">Season complete — no games remaining.</div>
+            )}
+          </div>
+
+          {/* PLACEHOLDER */}
+          <div className="sim-spotlight-placeholder">
+            <span className="sim-spotlight-placeholder__label">Coming Soon</span>
+          </div>
+
+        </div>
+
+        {/* ==================== LEADERBOARDS ROW ==================== */}
         <div className="overview-lower-flex-row">
 
           {/* 1. LEAGUE LEADERS */}
@@ -375,94 +478,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
           </div>
 
-          <div className="next-game-card lower-row-panel next-game-card--enhanced">
-            <div className="matchup-card-header">
-              <h3 className="card-title">
-                <Calendar size={16} className="title-icon-inline" />&nbsp; Upcoming
-              </h3>
-              {nextUserGame && daysUntil !== null && (
-                <span className="card-title">
-                  &nbsp; {daysUntil <= 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `In ${daysUntil} days`}
-                </span>
-              )}
-            </div>
-
-            {nextUserGame ? (
-              (() => {
-                const isHome = nextUserGame.isHome;
-                const opponent = isHome ? nextUserGame.away_team : nextUserGame.home_team;
-                const self = isHome ? nextUserGame.home_team : nextUserGame.away_team;
-                const oppRecord = null;
-                const sameConference = null;
-
-                return (
-                  <div className="matchup-live matchup-live--enhanced">
-                    <div className="matchup-teams-row">
-                      <div className="matchup-team-block">
-                        <div className="matchup-avatar matchup-avatar--self">
-                          {self?.abbreviation || userTeam.abbreviation}
-                        </div>
-                        <span className="matchup-team-label">{self?.name || userTeam.name}</span>
-                        <span className="matchup-team-record">{wins}-{losses}</span>
-                      </div>
-
-                      <div className="matchup-vs-col">
-                        <span className={`matchup-loc-tag ${isHome ? 'home' : 'away'}`}>
-                          {isHome ? <Home size={12} /> : <Plane size={12} />}
-                          {isHome ? 'HOME' : 'AWAY'}
-                        </span>
-                        <span className="matchup-vs-text">VS</span>
-                        <span className="matchup-vs-sub">
-                          {leagueGamesBeforeCount > 0 ? `${leagueGamesBeforeCount} league games first` : 'Next up'}
-                        </span>
-                      </div>
-
-                      <div className="matchup-team-block">
-                        <div className="matchup-avatar matchup-avatar--opp">
-                          {opponent?.abbreviation || '???'}
-                        </div>
-                        <span className="matchup-team-label">{opponent?.name || 'TBD'}</span>
-                        {oppRecord && <span className="matchup-team-record">{oppRecord}</span>}
-                      </div>
-                    </div>
-
-                    <div className="matchup-meta-row">
-                      <span className="matchup-meta-item">
-                        <Clock size={13} />
-                        {nextUserGame.game_date
-                          ? new Date(nextUserGame.game_date).toLocaleDateString(undefined, {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
-                            })
-                          : 'Date TBD'}
-                      </span>
-                      <span className="matchup-meta-item">
-                        <Trophy size={13} />
-                        {opponent ? (sameConference ? 'Conference Matchup' : 'Interconference') : 'Matchup TBD'}
-                      </span>
-                    </div>
-
-                    <button
-                      className="matchup-sim-btn"
-                      disabled={!nextUserGame.game_date}
-                      onClick={handleSimulateToNextGame}
-                    >
-                      <span>Simulate to {new Date(nextUserGame.game_date).toLocaleDateString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                          })}</span>
-                      <ArrowRight size={14} />
-                    </button>
-                  </div>
-                );
-              })()
-            ) : (
-              <div className="empty-state">Season complete — no games remaining.</div>
-            )}
-          </div>
-
-          {/* 3. TEAM LEADERS */}
+          {/* 2. TEAM LEADERS */}
           <div className="leaders-card lower-row-panel">
             <h3 className="card-title">
               <User size={16} className="title-icon-inline" /> Franchise Roster Leaders

@@ -7,11 +7,16 @@
  * – detailed play types, turnover model, foul drawing, rebounds
  * – defensive schemes, clutch moments, home crowd intangibles
  * – automatic substitutions based on fatigue and depth
- * 
+ * – Markov-chain play calling, weighted passing/defensive graphs,
+ *   and Bayesian (Beta-Binomial) per-player shooting models
+ *
  * Configuration is loaded from src/data/gameData.json
  */
 
 const gameData = require('../data/gameData.json');
+const { MarkovChain, WeightedDirectedGraph, PlayerShotModelRegistry } = require('./utils/mathModels');
+
+const PLAY_TYPES = ['isolation', 'pick_and_roll', 'spot_up', 'post_up', 'transition', 'cut'];
 
 class GameSimulationEngine {
   /**
@@ -41,6 +46,25 @@ class GameSimulationEngine {
       gameLog: [],
       homeStats: this._initTeamStats(),
       awayStats: this._initTeamStats(),
+
+      // ── New: per-team Markov chains over play types, seeded from the
+      // static weight table so day-one behaviour matches the old model,
+      // but the chain drifts as the game unfolds (Bayesian updating). ──
+      homePlayChain: this._buildPlayChainPrior(),
+      awayPlayChain: this._buildPlayChainPrior(),
+      homeLastPlay: 'isolation',
+      awayLastPlay: 'isolation',
+
+      // ── New: passing networks (weighted directed graphs) per team.
+      // Edge weight = likelihood of A passing to B; built from passing/
+      // chemistry ratings and reinforced by successful assists. ──
+      homePassGraph: new WeightedDirectedGraph(),
+      awayPassGraph: new WeightedDirectedGraph(),
+
+      // ── New: Bayesian per-player, per-zone shot models (Beta-Binomial).
+      // These let hot/cold streaks emerge from actual makes/misses rather
+      // than being purely re-derived from static ratings every possession.
+      shotModels: new PlayerShotModelRegistry(),
     };
 
     const homeTeam = this._createTeam(homePlayers, 'home', g.homeCourtAdvantageFactor);
@@ -48,7 +72,7 @@ class GameSimulationEngine {
     gameState.homeTeam = homeTeam;
     gameState.awayTeam = awayTeam;
 
-    gameState.homeLineup = options.homeLineup || null; 
+    gameState.homeLineup = options.homeLineup || null;
     gameState.awayLineup = options.awayLineup || null;
 
     // Substitution state
@@ -64,6 +88,10 @@ class GameSimulationEngine {
       gameState.homeFatigue.set(p.id, 0);
       gameState.awayFatigue.set(p.id, 0);
     }
+
+    // Seed passing graphs from static passing/chemistry ratings
+    this._seedPassGraph(gameState.homePassGraph, homeTeam.players);
+    this._seedPassGraph(gameState.awayPassGraph, awayTeam.players);
 
     // Regulation quarters
     for (let q = 0; q < g.quarters; q++) {
@@ -95,6 +123,41 @@ class GameSimulationEngine {
       overtime: gameState.isOvertime,
       overtimeCount: gameState.overtimeCount,
     };
+  }
+
+  // ── Markov chain prior, derived from the same base weights the old
+  // _selectPlayType used, so behaviour is backward-compatible at tip-off. ──
+  static _buildPlayChainPrior() {
+    const baseWeights = {
+      isolation: 10, pick_and_roll: 25, spot_up: 22,
+      post_up: 8, transition: 18, cut: 17,
+    };
+    const priorCounts = {};
+    for (const from of PLAY_TYPES) {
+      priorCounts[from] = {};
+      for (const to of PLAY_TYPES) {
+        // Slight inertia: repeating the same play type that just worked is
+        // marginally favored (teams "ride the hot hand" play-type-wise).
+        priorCounts[from][to] = baseWeights[to] * (from === to ? 1.15 : 1.0);
+      }
+    }
+    return new MarkovChain(PLAY_TYPES, priorCounts);
+  }
+
+  // ── Seed a team's passing graph from ball-handling/passing ratings and
+  // positional fit chemistry so early-game ball movement isn't uniform. ──
+  static _seedPassGraph(graph, players) {
+    const chemMatrix = gameData.chemistry.positionalFitMatrix;
+    for (const a of players) {
+      for (const b of players) {
+        if (a.id === b.id) continue;
+        const receiverScore = (b.three_point || 50) * 0.35 + (b.inside_scoring || 50) * 0.35 + (b.overall_rating || 50) * 0.30;
+        const passerSkill = (a.passing || 50) / 100;
+        const fit = (chemMatrix[a.position] && chemMatrix[a.position][b.position]) || 0.02;
+        const weight = passerSkill * receiverScore * (1 + fit * 4);
+        graph.setEdge(a.id, b.id, Math.max(0.5, weight));
+      }
+    }
   }
 
   static _setPeriodLineups(gameState, period) {
@@ -227,6 +290,38 @@ class GameSimulationEngine {
       this._accumulateStats(gameState, result, isHomeOffense);
       this._updateMomentum(gameState, result);
 
+      // ── Markov chain update: record the transition from the team's last
+      // play type to this one, then reinforce/punish based on outcome so
+      // the chain adapts to what's actually working tonight. ──
+      {
+        const chainKey = isHomeOffense ? 'homePlayChain' : 'awayPlayChain';
+        const lastKey = isHomeOffense ? 'homeLastPlay' : 'awayLastPlay';
+        const chain = gameState[chainKey];
+        const lastPlay = gameState[lastKey];
+        chain.update(lastPlay, result.playType, 1);
+        if (result.points > 0 && !result.turnovers) {
+          chain.reinforce(lastPlay, result.playType, 0.35 * (result.points / 2));
+        } else if (result.turnovers) {
+          chain.reinforce(lastPlay, result.playType, -0.5);
+        }
+        gameState[lastKey] = result.playType;
+      }
+
+      // ── Passing graph reinforcement: strengthen the handler -> assister
+      // edge on a successful assist, weaken it slightly on a turnover. ──
+      {
+        const graph = isHomeOffense ? gameState.homePassGraph : gameState.awayPassGraph;
+        if (result.assist && result.assistedBy && result.handler) {
+          graph.addToEdge(result.handler.id, result.assistedBy.id, 0.6);
+        }
+        if (result.turnovers && result.handler) {
+          // Diffuse ball-dominance away from a handler who just turned it over
+          for (const [to] of graph.neighbors(result.handler.id)) {
+            graph.addToEdge(result.handler.id, to, -0.05);
+          }
+        }
+      }
+
       if (result.assist) {
         this._updateChemistry(gameState, isHomeOffense, gameState.config.chemistry.assistBonusPerGame || 0.005);
       }
@@ -315,7 +410,7 @@ class GameSimulationEngine {
       const config = gameState.config;
       const primaryHandler = this._selectPrimaryHandler(offense);
       const primaryDefender = this._selectPrimaryDefender(defense);
-      const playType = this._selectPlayType(offense, defense, gameState);
+      const playType = this._selectPlayType(offense, defense, gameState, isHomePossession);
       const defenseScheme = this._selectDefensiveScheme(defense);
 
       // ── Execute the play ──────────────────────────────────────────
@@ -331,7 +426,7 @@ class GameSimulationEngine {
           break;
         }
         case 'spot_up': {
-          const shooter = this._selectShooter(offense);
+          const shooter = this._selectShooter(offense, gameState, isHomePossession, primaryHandler);
           const defender = this._selectClosestDefender(defense);
           shotResult = this._executeSpotUp(shooter, defender, defenseScheme, gameState);
           break;
@@ -407,19 +502,31 @@ class GameSimulationEngine {
         fouler = defense[Math.floor(Math.random() * defense.length)];
       }
 
-      // ── Assist attribution ────────────────────────────────────────
+      // ── Assist attribution: walk the passing graph one hop from the
+      // primary handler instead of a flat rating-weighted lottery. This
+      // makes assist patterns follow the team's actual ball-movement
+      // tendencies (which themselves evolve via graph reinforcement). ──
       let assistedBy = null;
       if (shotResult.assist && !turnover) {
-        const teammates = offense.filter(p => p.id !== primaryHandler.id);
-        if (teammates.length) {
-          const scores = teammates.map(p => p.passing || 50);
-          const total = scores.reduce((s, v) => s + v, 0);
-          let r = Math.random() * total;
-          for (let i = 0; i < teammates.length; i++) {
-            r -= scores[i];
-            if (r <= 0) { assistedBy = teammates[i]; break; }
+        const graph = isHomePossession ? gameState.homePassGraph : gameState.awayPassGraph;
+        const teammateIds = new Set(offense.filter(p => p.id !== primaryHandler.id).map(p => p.id));
+        const nextId = graph.step(primaryHandler.id);
+        if (nextId && teammateIds.has(nextId)) {
+          assistedBy = offense.find(p => p.id === nextId) || null;
+        }
+        if (!assistedBy) {
+          // fallback: rating-weighted lottery among teammates (old behaviour)
+          const teammates = offense.filter(p => p.id !== primaryHandler.id);
+          if (teammates.length) {
+            const scores = teammates.map(p => p.passing || 50);
+            const total = scores.reduce((s, v) => s + v, 0);
+            let r = Math.random() * total;
+            for (let i = 0; i < teammates.length; i++) {
+              r -= scores[i];
+              if (r <= 0) { assistedBy = teammates[i]; break; }
+            }
+            if (!assistedBy) assistedBy = teammates[teammates.length - 1];
           }
-          if (!assistedBy) assistedBy = teammates[teammates.length - 1];
         }
       }
 
@@ -474,7 +581,7 @@ class GameSimulationEngine {
     baseChance += rebDiff;
 
     // fatigue penalty
-    const avgFatigue = offense.reduce((s, p) => 
+    const avgFatigue = offense.reduce((s, p) =>
       s + (gameState.homeFatigue.get(p.id) || gameState.awayFatigue.get(p.id) || 0), 0) / offense.length;
     baseChance -= avgFatigue * 0.06;
 
@@ -551,12 +658,26 @@ class GameSimulationEngine {
     );
   }
 
-  static _selectShooter(players) {
+  static _selectShooter(players, gameState, isHomePossession, primaryHandler) {
+    // Blend static rating-based selection with the passing graph: a
+    // shooter who's currently "hot" in the ball-movement network (i.e.
+    // receiving weighted passes from the handler) is more likely to get
+    // the look, on top of raw shooting skill.
+    const graph = gameState && isHomePossession !== undefined
+      ? (isHomePossession ? gameState.homePassGraph : gameState.awayPassGraph)
+      : null;
+    const graphWeight = (id) => {
+      if (!graph || !primaryHandler) return 1;
+      const edges = graph.neighbors(primaryHandler.id);
+      const found = edges.find(([to]) => to === id);
+      return found ? 1 + found[1] / 20 : 1;
+    };
+
     const scores = players.map(p => {
       let base = (p.three_point || 50) * 0.7 + (p.mid_range || 50) * 0.3;
       if (p.position === 'SG' || p.position === 'SF') base *= 1.15;
       if (p.position === 'PG') base *= 1.05;
-      return Math.pow(base, 1.8);
+      return Math.pow(base, 1.8) * graphWeight(p.id);
     });
     const total = scores.reduce((s, v) => s + v, 0);
     let r = Math.random() * total;
@@ -579,48 +700,43 @@ class GameSimulationEngine {
     );
   }
 
-  // ── Play type selection (revised with realistic NBA frequencies) ─────
-  static _selectPlayType(offense, defense, gameState) {
+  // ── Play type selection (now driven by a Bayesian-updated Markov chain
+  // rather than a fresh flat weight table every possession). The team's
+  // static tendencies (shooting/passing/speed profile) and situational
+  // factors (clutch, momentum, OT) are folded in as a multiplicative bias
+  // on top of the chain's learned posterior. ─────────────────────────────
+  static _selectPlayType(offense, defense, gameState, isHomePossession) {
     const threeAvg = offense.reduce((s, p) => s + p.three_point, 0) / offense.length;
     const insideAvg = offense.reduce((s, p) => s + p.inside_scoring, 0) / offense.length;
     const passAvg   = offense.reduce((s, p) => s + p.passing, 0) / offense.length;
     const speedAvg  = offense.reduce((s, p) => s + p.speed, 0) / offense.length;
 
-    const weights = {
-      isolation:      10,
-      pick_and_roll:  25,
-      spot_up:        22,
-      post_up:         8,
-      transition:     18,
-      cut:            17,
+    const bias = {
+      isolation: 1, pick_and_roll: 1, spot_up: 1, post_up: 1, transition: 1, cut: 1,
     };
 
-    if (threeAvg > 80)  { weights.spot_up += 8; weights.cut -= 4; }
-    if (insideAvg > 80) { weights.post_up += 6; weights.isolation += 3; weights.cut += 3; }
-    if (passAvg > 80)   { weights.pick_and_roll += 5; weights.cut += 5; }
-    if (speedAvg > 80)  { weights.transition += 5; weights.cut += 2; }
+    if (threeAvg > 80)  { bias.spot_up *= 1.35; bias.cut *= 0.85; }
+    if (insideAvg > 80) { bias.post_up *= 1.6; bias.isolation *= 1.2; bias.cut *= 1.15; }
+    if (passAvg > 80)   { bias.pick_and_roll *= 1.15; bias.cut *= 1.2; }
+    if (speedAvg > 80)  { bias.transition *= 1.25; bias.cut *= 1.1; }
 
     if (gameState.clutchActive) {
-      weights.isolation += 8;
-      weights.pick_and_roll -= 4;
-      weights.transition -= 2;
+      bias.isolation *= 1.7;
+      bias.pick_and_roll *= 0.8;
+      bias.transition *= 0.85;
     }
     if (gameState.momentum > 0.3) {
-      weights.transition += 4;
-      weights.isolation += 2;
+      bias.transition *= 1.2;
+      bias.isolation *= 1.1;
     }
     if (gameState.isOvertime) {
-      weights.isolation += 5;
-      weights.pick_and_roll -= 3;
+      bias.isolation *= 1.35;
+      bias.pick_and_roll *= 0.85;
     }
 
-    const total = Object.values(weights).reduce((a, b) => a + b, 0);
-    let r = Math.random() * total;
-    for (const [play, w] of Object.entries(weights)) {
-      r -= w;
-      if (r <= 0) return play;
-    }
-    return 'isolation';
+    const chain = isHomePossession ? gameState.homePlayChain : gameState.awayPlayChain;
+    const lastPlay = isHomePossession ? gameState.homeLastPlay : gameState.awayLastPlay;
+    return chain.sample(lastPlay, (playType) => bias[playType] ?? 1);
   }
 
   // ── Turnover probability (revised with realistic base & scaling) ─────
@@ -702,7 +818,9 @@ class GameSimulationEngine {
     return Math.min(0.95, Math.max(0.05, quality));
   }
 
-  // ── Shot attempt (revised – realistic per‑zone make rates, foul model) ──
+  // ── Shot attempt (revised – realistic per‑zone make rates, foul model,
+  // now blended with each player's live Bayesian (Beta-Binomial) shot
+  // model so hot/cold streaks affect outcomes and are learned from). ────
   static _attemptShot(player, defender, shotQuality, playType, gameState) {
     const config = gameState.config;
     const ff = config.foulAndFreeThrow;
@@ -773,7 +891,20 @@ class GameSimulationEngine {
     baseMake -= fatigue * 0.05;
 
     baseMake = Math.min(0.85, Math.max(0.10, baseMake));
-    const made = Math.random() < baseMake;
+
+    // ── Bayesian blend: pull baseMake toward this player's live posterior
+    // mean for this zone tonight. Weight grows with the model's sample
+    // size (inverse variance) so early in the game ratings dominate, and
+    // later a real hot/cold streak has earned influence. ────────────────
+    const shotModel = gameState.shotModels.get(player.id, shotType, playerSkill);
+    const posteriorMean = shotModel.mean();
+    const confidence = 1 - Math.min(1, shotModel.variance() * 12); // 0..~1
+    const bayesWeight = 0.35 * confidence; // cap live-model influence at 35%
+    let finalMake = baseMake * (1 - bayesWeight) + posteriorMean * bayesWeight;
+    finalMake = Math.min(0.85, Math.max(0.10, finalMake));
+
+    const made = Math.random() < finalMake;
+    shotModel.update(made);
 
     const assistProb = playCfg.assistProbability || this._defaultAssistProb(playType);
     const isAssist = made && Math.random() < assistProb;
