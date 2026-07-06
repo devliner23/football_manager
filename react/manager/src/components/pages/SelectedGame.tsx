@@ -379,7 +379,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
             <button className="game-back-btn" onClick={onBack}>
             ← Back
             </button>
-            <h1 className="game-header-title">{game.name}</h1>
+            <h1 className="game-header-title glass-team-name">{game.name}</h1>
             <div className="game-header-actions">
             <button className="game-delete-btn" onClick={handleDelete}>
                 Delete
