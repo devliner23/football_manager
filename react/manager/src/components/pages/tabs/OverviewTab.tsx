@@ -23,6 +23,7 @@ import {
   Plane,
   Clock,
   Flame,
+  FastForward
 } from 'lucide-react';
 import TradePanel from './tabComponents/TradePanel';
 import "./styles/OverviewTab.css";
@@ -406,17 +407,22 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                     </div>
 
                     <button
-                      className="sim-launch-btn"
-                      disabled={!nextUserGame.game_date}
+                      className="btn btn--trade"
                       onClick={handleSimulateToNextGame}
                     >
-                      <Play size={16} />
-                      <span>Simulate to {new Date(nextUserGame.game_date).toLocaleDateString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                          })}</span>
-                      <ArrowRight size={16} />
+                      <span className="btn__content btn__content--default">
+                        <FastForward size={16} />
+                        Simulate Next User Game
+                      </span>
+                      <span className="btn__content btn__content--hover">
+                        <span>Simulating to: {new Date(nextUserGame.game_date).toLocaleDateString(undefined, {
+                                    weekday: 'short',
+                                    month: 'short',
+                                    day: 'numeric',
+                                  })}</span>
+                      </span>
                     </button>
+
                   </div>
                 );
               })()

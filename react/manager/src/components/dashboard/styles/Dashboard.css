@@ -139,20 +139,15 @@
 
 /* Glassmorphism Structural Cards */
 .glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border);
   border-radius: 16px;
   padding: 32px;
-  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
 }
 
 /* Premium Visual Edge Treatment */
 .animated-border-glow {
   position: relative;
   /* primary border remains bright */
-  border-top: 3px solid var(--team-primary);
+  border: 3px solid var(--team-primary);
   /* dual‑color glow: primary core, secondary wider spread */
   box-shadow:
     inset 0 1px 0 var(--glass-highlight),
@@ -166,7 +161,7 @@
 
 /* hover state for interactive elements */
 .animated-border-glow:hover {
-  border-top-color: var(--team-secondary);        /* switch border to secondary */
+  border-color: var(--team-secondary);        /* switch border to secondary */
   box-shadow:
     inset 0 1px 0 var(--glass-highlight),
     0 0 15px var(--team-primary-neon),
