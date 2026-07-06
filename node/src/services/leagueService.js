@@ -1,12 +1,13 @@
 const { supabaseAdmin } = require('../config/supabase');
 const NBA_TEAMS = require('../data/teams.json');
-const GameSimulationEngine = require('./gameSimulationEngine');
-const PlayerGenerator = require('./playerGenerator');
-const TeamArchetypeService = require('./teamArchetypeService');
+const GameSimulationEngine = require('./utils/gameSimulationEngine');
+const PlayerGenerator = require('./utils/playerGenerator');
+const TeamArchetypeService = require('./utils/teamArchetypeService');
 const LineupService = require("./lineupService");
-const playerProgressionService = require("./playerProgression");
+const playerProgressionService = require("./utils/playerProgression");
 const FinanceService = require("./financeService");
-const { generateFreeAgentPool } = require("./freeAgentGenerator");
+const CoachGenerator = require("./utils/coachGenerator")
+const { generateFreeAgentPool } = require("./utils/freeAgentGenerator");
 
 const ROSTER_SIZE = 15;
 const BATCH_SIZE_STATS   = 200;
@@ -42,6 +43,15 @@ function mapBoxScore(b, teamId, gameId, savedGameId) {
     turnovers:          b.turnovers          || 0,
     personal_fouls:     b.personal_fouls     || 0,
     plus_minus:         b.plus_minus         || 0,
+  };
+}
+
+function evaluateTrade(giving, receiving) {
+  const sum = arr => arr.reduce((s, p) => s + (p.overall_rating || 0) + (p.potential_rating || 0) * 0.3, 0);
+  const diff = sum(receiving) - sum(giving);
+  return {
+    accepted: diff <= 15, // CPU accepts if not losing much value
+    reason: diff <= 15 ? 'Fair value trade' : 'Receiving team wants more value',
   };
 }
 
@@ -352,6 +362,7 @@ class leagueService {
 
       // 4. Generate rosters (archetype modifiers applied inside createRosters)
       const players    = await this.createRosters(teams, season, teamArchetypes);
+      const coaches = await this.createCoaches(teams);
       seasonRecord     = await this.createSeason(season);
       await this.createSeasonStats(teams, seasonRecord.id);
       const gamesCount = await this.generateSchedule(teams, seasonRecord.id);
@@ -429,6 +440,10 @@ class leagueService {
     const [homePlayers, awayPlayers] = await Promise.all([
       this.getRosterForTeam(homeTeamId),
       this.getRosterForTeam(awayTeamId),
+    ]);
+    const [homeCoach, awayCoach] = await Promise.all([
+      this.getCoachForTeam(homeTeamId),
+      this.getCoachForTeam(awayTeamId),
     ]);
 
     const lineups = await this._getLineupsForTeams([homeTeamId, awayTeamId]);
@@ -1475,6 +1490,29 @@ async signFreeAgent(playerId, teamId) {
       teamIds.map(async id => [id, await lineupService.getLineupForSimulation(id)])
     );
     return Object.fromEntries(entries);
+  }
+
+  async createCoaches(teams) {
+    const coachGen = new CoachGenerator(this.savedGameId);
+    const coaches = coachGen.generateLeagueCoaches(teams, this._lastTeamTiers || {});
+
+    const { data, error } = await supabaseAdmin.from('coaches').insert(coaches).select();
+    if (error) throw new Error(`Failed to create coaches: ${error.message}`);
+
+    await FinanceService.initializeCoachContracts(this.savedGameId, data);
+    return data;
+  }
+
+  // getRosterForTeam pattern, mirrored for coaches:
+  async getCoachForTeam(teamId) {
+    const { data, error } = await supabaseAdmin
+      .from('coaches')
+      .select('*')
+      .eq('saved_game_id', this.savedGameId)
+      .eq('team_id', teamId)
+      .maybeSingle();
+    if (error) throw new Error(`Failed to load coach: ${error.message}`);
+    return data;
   }
 };
 

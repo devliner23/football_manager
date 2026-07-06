@@ -101,7 +101,7 @@ const Login: React.FC<AuthProps> = ({ onSwitchToRegister }) => {
           <p>
             Don't have an account?{' '}
             <button 
-              onClick={onSwitchToRegister} 
+              onClick={() => navigate('/register')} 
               className="auth-link-button"
               disabled={loading}
             >

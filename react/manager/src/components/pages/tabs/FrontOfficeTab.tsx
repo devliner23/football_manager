@@ -177,7 +177,7 @@ const FrontOfficeTab: React.FC<FrontOfficeTabProps> = ({
         </div>
 
         {/* Panel 3: Financial Health */}
-        <div className="fo-dash-card">
+        <div className="fo-dash-card animated-border">
           <div className="fo-card-header">
             <h4>Salary & Finances</h4>
           </div>

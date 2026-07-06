@@ -41,14 +41,14 @@
 }
 
 /* ---------- Hero / Cap Overview ---------- */
-.finance-hero {
+/* .finance-hero {
   --team-primary: var(--neon-blue-solid);
   --team-primary-neon: var(--neon-blue-glow);
   --team-primary-neon-spread: rgba(59, 130, 246, 0.12);
   --team-secondary: #f59e0b;
   --team-secondary-neon-spread: rgba(245, 158, 11, 0.08);
   padding: 28px 32px;
-}
+} */
 
 .finance-hero__top {
   display: flex;
@@ -496,4 +496,27 @@
     flex-direction: column;
     align-items: flex-start;
   }
+}
+
+.animated-border-glow-finance {
+  position: relative;
+  border: 3px solid var(--team-secondary);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 0 8px var(--team-primary-neon),          /* tight primary core */
+    0 0 18px var(--team-primary-neon-spread),   /* primary spread */
+    0 0 35px var(--team-secondary-neon-spread); /* secondary outer bloom */
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  animation: dualNeonPulse 2.5s infinite ease-in-out;
+
+}
+
+/* hover state for interactive elements */
+.animated-border-glow-finance:hover {
+  border-color: var(--team-secondary);        /* switch border to secondary */
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 0 15px var(--team-primary-neon),
+    0 0 25px var(--team-primary-neon-spread),
+    0 0 50px var(--team-secondary-neon-spread);
 }

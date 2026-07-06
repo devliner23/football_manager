@@ -13,8 +13,8 @@
  * Configuration is loaded from src/data/gameData.json
  */
 
-const gameData = require('../data/gameData.json');
-const { MarkovChain, WeightedDirectedGraph, PlayerShotModelRegistry } = require('./utils/mathModels');
+const gameData = require('../../data/gameData.json');
+const { MarkovChain, WeightedDirectedGraph, PlayerShotModelRegistry } = require('./mathModels');
 
 const PLAY_TYPES = ['isolation', 'pick_and_roll', 'spot_up', 'post_up', 'transition', 'cut'];
 
@@ -288,7 +288,7 @@ class GameSimulationEngine {
       }
 
       this._accumulateStats(gameState, result, isHomeOffense);
-      this._updateMomentum(gameState, result);
+      this._updateMomentum(gameState, result, isHomeOffense);
 
       // ── Markov chain update: record the transition from the team's last
       // play type to this one, then reinforce/punish based on outcome so

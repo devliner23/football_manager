@@ -120,7 +120,7 @@
 /* Active Visual Indicator Variation */
 .animated-border {
   position: relative;
-  border-left: 4px solid var(--neon-blue);
+  border-left: 4px solid var(--team-primary);
   box-shadow: 0 0 30px rgba(59, 130, 246, 0.05);
 }
 

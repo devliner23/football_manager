@@ -51,7 +51,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  async function waitForLeagueInit(gameId: string, timeoutMs = 15000): Promise<SavedGame> {
+  async function waitForLeagueInit(gameId: string, timeoutMs = 25000): Promise<SavedGame> {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       const res = await gameAPI.getGame(gameId);
@@ -120,9 +120,7 @@ const Dashboard: React.FC = () => {
   // ── Loading spinner while initial data is being fetched ──
   if (loading) {
     return (
-      <div className="loading-overlay">
         <div className="pulse-ring-loader"></div>
-      </div>
     );
   }
 

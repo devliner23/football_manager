@@ -33,6 +33,15 @@ const LUXURY_TAX_BRACKETS = [
   { upTo: Infinity,   rate: 3.75 }, // + 0.50 for every additional $5M beyond this handled below
 ];
 
+// add near the player salary constants
+const COACH_SALARY_TIERS = [
+  { min: 88, range: [8_000_000, 12_000_000] },
+  { min: 80, range: [5_000_000, 8_000_000] },
+  { min: 72, range: [3_000_000, 5_000_000] },
+  { min: 64, range: [1_500_000, 3_000_000] },
+  { min: 0,  range: [800_000,   1_500_000] },
+];
+
 class FinanceService {
 
   // ── Salary helpers ─────────────────────────────────────────────────────
@@ -477,6 +486,42 @@ class FinanceService {
       averagePlayerSalary: Math.round(averageSalary),
       top5HighestPaid: top5,
     };
+  };
+
+    static getCoachSalary(overall) {
+    const tier = COACH_SALARY_TIERS.find(t => overall >= t.min);
+    const [min, max] = tier.range;
+    return Math.round(min + Math.random() * (max - min));
+  }
+
+  static getCoachContractYears(overall) {
+    const pool = overall >= 85 ? [4, 5, 5, 6]
+              : overall >= 72 ? [3, 3, 4]
+              : [1, 2, 2, 3];
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  static async initializeCoachContracts(savedGameId, coaches) {
+    const rows = coaches
+      .filter(c => c.team_id)
+      .map(c => {
+        const salary = FinanceService.getCoachSalary(c.overall_rating);
+        const years = FinanceService.getCoachContractYears(c.overall_rating);
+        return {
+          saved_game_id: savedGameId,
+          coach_id: c.id,
+          team_id: c.team_id,
+          salary,
+          years_remaining: years,
+          total_years: years,
+        };
+      });
+
+    if (rows.length > 0) {
+      const { error } = await supabaseAdmin.from('coach_contracts').insert(rows);
+      if (error) throw new Error(`Failed to create coach contracts: ${error.message}`);
+    }
+    return rows.length;
   }
 }
 

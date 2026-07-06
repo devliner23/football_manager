@@ -75,13 +75,13 @@ const AppContent: React.FC = () => {
       
       <Route path="/login" element={
         <AuthPage>
-          <Login onSwitchToRegister={() => setShowRegister(true)} />
+          <Login />
         </AuthPage>
       } />
       
       <Route path="/register" element={
         <AuthPage>
-          <Register onSwitchToLogin={() => setShowRegister(false)} />
+          <Register />
         </AuthPage>
       } />
       

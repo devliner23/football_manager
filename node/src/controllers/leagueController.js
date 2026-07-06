@@ -1,7 +1,7 @@
 // controllers/leagueController.js
 const { supabaseAdmin }      = require('../config/supabase');
 const LeagueService          = require('../services/leagueService');
-const TeamArchetypeService   = require('../services/teamArchetypeService');
+const TeamArchetypeService   = require('../services/utils/teamArchetypeService');
 const FinanceService         = require("../services/financeService");
 
 const SORTABLE_PLAYER_COLUMNS = new Set([

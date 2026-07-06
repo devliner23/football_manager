@@ -146,9 +146,7 @@
 /* Premium Visual Edge Treatment */
 .animated-border-glow {
   position: relative;
-  /* primary border remains bright */
   border: 3px solid var(--team-primary);
-  /* dual‑color glow: primary core, secondary wider spread */
   box-shadow:
     inset 0 1px 0 var(--glass-highlight),
     0 0 8px var(--team-primary-neon),          /* tight primary core */

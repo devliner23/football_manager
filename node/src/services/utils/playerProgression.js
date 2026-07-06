@@ -15,7 +15,7 @@
 // Mirrors teamArchetypeService.js: traits are snake_case DB columns,
 // this service works with that same snake_case shape directly.
 
-const { supabaseAdmin } = require('../config/supabase');
+const { supabaseAdmin } = require('../../config/supabase');
 
 const TRAIT_KEYS = [
   'three_point', 'mid_range', 'inside_scoring', 'passing',
@@ -141,9 +141,6 @@ class playerProgressionService {
     if (!players.length) {
       return { playersProgressed: 0, playersRegressed: 0, totalDelta: 0 };
     }
-
-    if (error) throw new Error(`Failed to load players for progression: ${error.message}`);
-    if (!players?.length) return { playersProgressed: 0, playersRegressed: 0, totalDelta: 0 };
 
     // 3. Compute updates
     const updates = [];

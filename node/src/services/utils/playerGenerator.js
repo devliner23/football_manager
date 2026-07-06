@@ -1,5 +1,5 @@
-const { supabaseAdmin } = require('../config/supabase');
-const playerData = require('../data/playerData.json');
+const { supabaseAdmin } = require('../../config/supabase');
+const playerData = require('../../data/playerData.json');
 
 class PlayerGenerator {
   constructor(savedGameId, season) {
@@ -116,7 +116,7 @@ class PlayerGenerator {
       ovr: p.overall_rating,
       tier: p.team_id,
     }));
-    console.log('🔍 Sample ratings before DB:', JSON.stringify(sample, null, 2));
+
     console.log(`✅ Generated ${allPlayers.length} players`);
 
     return allPlayers;

@@ -1,59 +1,78 @@
 /* ============================================
-   AUTH - FUTURISTIC GLASS THEME
+   Auth.css – Deep Slate Glass Neon Theme
+   Matches Dashboard.css design system
    ============================================ */
 
+/* --- Design Tokens (same as Dashboard) --- */
+:root {
+  --bg-main: #09090b;
+  --bg-gradient: radial-gradient(circle at 50% 0%, #1e1b4b 0%, #09090b 70%);
+  --glass-bg: rgba(15, 23, 42, 0.45);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-highlight: rgba(255, 255, 255, 0.03);
+  --text-primary: #f4f4f5;
+  --text-muted: #a1a1aa;
+  --neon-blue: #3b82f6;
+  --neon-blue-glow: rgba(59, 130, 246, 0.3);
+  --neon-blue-solid: #60a5fa;
+  --neon-danger: #ef4444;
+  --neon-danger-glow: rgba(239, 68, 68, 0.25);
+  --neon-success: #10b981;
+  --neon-success-glow: rgba(16, 185, 129, 0.25);
+}
+
+/* --- Base container: full‑screen gradient, centered card --- */
 .auth-container {
   min-height: 100vh;
+  background: var(--bg-main);
+  background-image: var(--bg-gradient);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   display: flex;
-  align-items: center;
   justify-content: center;
-  padding: 20px;
-  position: relative;
-  z-index: 1;
+  align-items: center;
+  padding: 24px;
 }
 
+/* --- Glass card with subtle animated glow --- */
 .auth-card {
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  background: rgba(15, 23, 42, 0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--glass-border);
   border-radius: 20px;
-  padding: 48px 40px;
+  padding: 40px 32px;
   width: 100%;
   max-width: 420px;
-  box-shadow: var(--glass-shadow);
-  position: relative;
-  overflow: hidden;
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 var(--glass-highlight);
+  animation: cardPulse 3s infinite ease-in-out;
 }
 
-.auth-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--primary-gradient);
-  box-shadow: 0 0 40px var(--primary-glow);
+/* Subtle breathing glow for the card border */
+@keyframes cardPulse {
+  0%, 100% { box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 8px var(--neon-blue-glow); }
+  50% { box-shadow: 0 20px 50px rgba(0,0,0,0.5), 0 0 18px var(--neon-blue-glow); }
 }
 
+/* --- Typography inside the card --- */
 .auth-card h2 {
   margin: 0 0 8px 0;
-  font-size: 28px;
-  font-weight: 700;
-  background: var(--primary-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--text-primary);
 }
 
 .auth-subtitle {
-  color: var(--text-secondary);
+  color: var(--text-muted);
+  font-size: 0.95rem;
   margin: 0 0 32px 0;
-  font-size: 14px;
-  font-weight: 300;
+  line-height: 1.5;
 }
 
+/* --- Form elements --- */
 .auth-form {
   display: flex;
   flex-direction: column;
@@ -67,130 +86,114 @@
 }
 
 .form-group label {
-  font-size: 12px;
+  font-size: 0.8rem;
   font-weight: 600;
-  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  color: var(--text-muted);
 }
 
 .form-group input {
-  padding: 12px 16px;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  font-size: 15px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 0.95rem;
   color: var(--text-primary);
-  transition: all 0.3s ease;
-}
-
-.form-group input::placeholder {
-  color: var(--text-muted);
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: var(--primary);
-  box-shadow: 0 0 30px var(--primary-glow);
+  border-color: var(--neon-blue-solid);
+  box-shadow: 0 0 10px var(--neon-blue-glow);
 }
 
+.form-group input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+/* Disabled input style */
 .form-group input:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
+/* --- Submit button – matches .glass-btn .btn-primary-blue-glow from Dashboard --- */
 .auth-button {
-  padding: 14px;
-  background: var(--primary-gradient);
-  color: white;
-  border: none;
+  margin-top: 8px;
+  padding: 14px 24px;
   border-radius: 10px;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: 0.95rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.auth-button::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent 60%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-.auth-button:hover:not(:disabled)::before {
-  opacity: 1;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.12);
+  color: #cbd5e1;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .auth-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 40px var(--primary-glow);
+  background: rgba(59, 130, 246, 0.25);
+  border-color: var(--neon-blue-solid);
+  color: #ffffff;
+  box-shadow: 0 8px 25px var(--neon-blue-glow);
 }
 
 .auth-button:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
+/* --- Feedback messages (success / error) --- */
+.success-message,
 .error-message {
-  background: rgba(255, 23, 68, 0.1);
-  color: var(--error);
-  padding: 10px 14px;
+  padding: 12px 16px;
   border-radius: 8px;
-  font-size: 13px;
-  border: 1px solid rgba(255, 23, 68, 0.1);
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 8px;
 }
 
 .success-message {
-  background: rgba(0, 230, 118, 0.1);
-  color: var(--success);
-  padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-  border: 1px solid rgba(0, 230, 118, 0.1);
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: #6ee7b7;
 }
 
+.error-message {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+/* --- Footer link button --- */
 .auth-footer {
-  margin-top: 24px;
   text-align: center;
-  color: var(--text-secondary);
-  font-size: 14px;
+  margin-top: 28px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
 }
 
 .auth-link-button {
   background: none;
   border: none;
-  color: var(--primary);
+  color: var(--neon-blue-solid);
   font-weight: 600;
   cursor: pointer;
-  padding: 0;
-  font-size: 14px;
-  transition: all 0.3s ease;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s, text-shadow 0.2s;
 }
 
-.auth-link-button:hover:not(:disabled) {
-  color: var(--primary-dark);
-  text-shadow: 0 0 30px var(--primary-glow);
+.auth-link-button:hover {
+  color: #ffffff;
+  text-shadow: 0 0 8px var(--neon-blue-glow);
 }
 
 .auth-link-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-@media (max-width: 480px) {
-  .auth-card {
-    padding: 32px 24px;
-  }
-  
-  .auth-card h2 {
-    font-size: 24px;
-  }
 }

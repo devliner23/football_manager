@@ -104,7 +104,7 @@ const FinancePanel: React.FC<FinancePanelProps> = ({ savedGameId, userTeamId }) 
   return (
     <div className="finance-panel-container">
       {/* ---------- Header / Cap Overview ---------- */}
-      <section className="finance-hero glass-panel animated-border-glow">
+      <section className="finance-hero glass-panel animated-border-glow-finance">
         <div className="finance-hero__top">
           <div>
             <span className="finance-hero__eyebrow">Front Office</span>

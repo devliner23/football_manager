@@ -134,7 +134,7 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
       </section> */}
 
       {/* Simulate */}
-      <section className="glass-sidebar-panel animated-border-glow">
+      <section className="glass-sidebar-panel">
         <h4 className="sidebar-panel-title">Simulate</h4>
 
         {/* {lastSimulatedDate && (

@@ -3,11 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './Auth.css';
 
-interface RegisterProps {
-  onSwitchToLogin: () => void;
-}
-
-const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
+const Register = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -177,7 +173,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
           <p>
             Already have an account?{' '}
             <button 
-              onClick={onSwitchToLogin} 
+              onClick={() => navigate('/login')}
               className="auth-link-button"
               disabled={loading}
             >
