@@ -828,6 +828,39 @@ const leagueController = {
       next(error);
     }
   },
+
+  async getProspects(req, res, next) {
+    try {
+      const { savedGameId } = req.params;
+      const {
+        position,
+        draftClassYear,
+        limit  = 100,
+        offset = 0,
+      } = req.query;
+
+      const game = await loadOwnedGame(savedGameId, req.user.id);
+      if (!game) return res.status(404).json({ error: 'Game not found or unauthorized' });
+
+      let query = supabaseAdmin
+        .from('players')
+        .select('*')
+        .eq('saved_game_id', savedGameId)
+        .eq('draft_status', 'available')
+        .order('overall_rating', { ascending: false })
+        .range(parseInt(offset, 10) || 0, (parseInt(offset, 10) || 0) + Math.min(parseInt(limit, 10) || 100, 200) - 1);
+
+      if (position) query = query.eq('position', position);
+      if (draftClassYear) query = query.eq('draft_class_year', parseInt(draftClassYear, 10));
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      res.json({ success: true, data: data || [], count: (data || []).length });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
   
 

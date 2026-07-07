@@ -31,7 +31,8 @@ import {
   Building2,
   Calendar,
   Clipboard,
-  UserCog
+  UserCog,
+  GraduationCap
 } from 'lucide-react';
 import GameResults from './GameResults';
 
@@ -43,7 +44,7 @@ interface SelectedGameProps {
   onUpdate: (game: SavedGame) => void;
 }
 
-type TabType = 'overview' | 'leagueRoster' | 'standings' | 'frontoffice' | 'schedule'| 'coach';
+type TabType = 'overview' | 'leagueRoster' | 'standings' | 'frontoffice' | 'schedule'| 'coach' | 'prospects';
 
 const tabConfig = {
   overview: {
@@ -69,6 +70,10 @@ const tabConfig = {
   coach: { 
     label: 'Coach', 
     icon: <UserCog size={18} strokeWidth={2} /> 
+  },
+  prospects: {
+    label: 'Draft Prospects',
+    icon: <GraduationCap size={18} strokeWidth={2} />,
   },
 
 };

@@ -171,6 +171,60 @@ export interface Coach {
   preferred_archetype: string;
   attributes: CoachAttributes;
 }
+export interface Prospect {
+  id: string;
+  first_name: string;
+  last_name: string;
+  position: 'PG' | 'SG' | 'SF' | 'PF' | 'C';
+  age: number;
+  height: number;
+  weight: number;
+  overall_rating: number;
+  potential_rating: number;
+  traits: Record<string, number>;
+  college: string;
+  college_class: string;
+  hometown_city: string;
+  hometown_state: string;
+  high_school: string;
+  player_archetype: string;
+  draft_class_year: number;
+  projected_draft_range: string;
+  college_ppg: number;
+  college_rpg: number;
+  college_apg: number;
+  college_spg: number;
+  college_bpg: number;
+  college_fg_pct: number;
+  college_three_pct: number;
+  college_ft_pct: number;
+  college_minutes: number;
+  wingspan: number;
+  standing_reach: number;
+  lane_agility_time: number;
+  three_quarter_sprint: number;
+  standing_vertical: number;
+  max_vertical: number;
+  bench_press_reps: number;
+  work_ethic: string;
+  basketball_iq: string;
+  leadership: string;
+  injury_history: string;
+  character_concerns: boolean;
+  awards: string; // JSON stringified array
+  trait_tags: string[]; // JSON stringified array
+  development_trend: string;
+  breakout_potential: string;
+  player_comparison_1: string;
+  player_comparison_2: string;
+}
+
+export interface ProspectsResponse {
+  success: boolean;
+  data: Prospect[];
+  count: number;
+}
+
 
 
 api.interceptors.response.use(
@@ -400,6 +454,23 @@ export const leagueAPI = {
   getCoach: async (savedGameId: string, teamId: string): Promise<Coach | null> => {
     const res = await api.get(`/api/league/${savedGameId}/coach/${teamId}`);
     return res.data.data ?? null;
+  },
+
+  async getProspects(
+    savedGameId: string,
+    params: { position?: string; draftClassYear?: number; limit?: number; offset?: number } = {}
+  ): Promise<ProspectsResponse> {
+    const query = new URLSearchParams();
+    if (params.position) query.set('position', params.position);
+    if (params.draftClassYear) query.set('draftClassYear', String(params.draftClassYear));
+    if (params.limit) query.set('limit', String(params.limit));
+    if (params.offset) query.set('offset', String(params.offset));
+
+    const res = await fetch(`/api/league/${savedGameId}/prospects?${query.toString()}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    });
+    if (!res.ok) throw new Error('Failed to fetch prospects');
+    return res.json();
   },
   
 };

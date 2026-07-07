@@ -45,5 +45,7 @@ router.get ('/:savedGameId/finance/league-summary', leagueController.getLeagueFi
 
 router.get('/:savedGameId/coach/:teamId', leagueController.getCoach);
 
+router.get('/:savedGameId/prospects', leagueController.getProspects);
+
 
 module.exports = router;

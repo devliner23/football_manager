@@ -1,6 +1,19 @@
 const { supabaseAdmin } = require('../../config/supabase');
 const playerData = require('../../data/playerData.json');
 
+const CANONICAL_TRAIT_MAP = {
+  three_point:        'three_point_scoring',
+  mid_range:           'mid_range_scoring',
+  inside_scoring:      'inside_scoring',
+  passing:             'passing',
+  ball_handling:       'ball_handling',
+  perimeter_defense:   'perimeter_defense',
+  post_defense:        'interior_defense',
+  rebounding:          'rebounding',
+  speed:               'speed',
+  strength:            'strength',
+};
+
 class PlayerGenerator {
   constructor(savedGameId, season) {
     this.savedGameId = savedGameId;
@@ -88,6 +101,12 @@ class PlayerGenerator {
   // ---------- NEW: simple traits (array of strings) ----------
   generateTraitsArray() {
     const count = Math.floor(Math.random() * 4); // 0–3 traits
+    const shuffled = this.shuffleArray([...this.traitNames]);
+    return shuffled.slice(0, count);
+  }
+
+  generateTraitTags() {
+    const count = Math.floor(Math.random() * 4); // 0–3 tags
     const shuffled = this.shuffleArray([...this.traitNames]);
     return shuffled.slice(0, count);
   }
@@ -237,8 +256,9 @@ class PlayerGenerator {
 
   // ---------- generate a full player (UPDATED with new fields) ----------
   generatePlayer(teamId, position, rating, isStar, rosterIndex) {
-    const skillAttrs = this.generateSkillAttributes(position, rating);
-    const traitsArray = this.generateTraitsArray();
+    const skillAttrs = this.generateSkillAttributes(position, rating); // uses REAL column names, unchanged
+    const traitTags = this.generateTraitTags();
+    const traits = this.buildTraitsObject(skillAttrs);
 
     const potential = this.generatePotential(rating, isStar, rosterIndex);
     const age = this.generateAge(isStar, rosterIndex);
@@ -287,7 +307,7 @@ class PlayerGenerator {
       ...skillAttrs,
 
       // Traits (JSON string array)
-      traits: JSON.stringify(traitsArray),
+      trait_tags: JSON.stringify(traitTags),
 
       college,
       college_class: collegeClass,
@@ -497,6 +517,14 @@ class PlayerGenerator {
       [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
+  }
+
+  buildTraitsObject(skillAttrs) {
+    const traits = {};
+    for (const [canonicalKey, flatColumn] of Object.entries(CANONICAL_TRAIT_MAP)) {
+      traits[canonicalKey] = skillAttrs[flatColumn] ?? 50;
+    }
+    return traits;
   }
 
   // ---------- database save (unchanged) ----------

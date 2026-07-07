@@ -74,101 +74,22 @@
   },
   "extraTraitsForStars": ["clutch_performer", "ice_veins", "floor_general"],
   "skillAttributes": {
-    "keys": [
-      "inside_scoring",
-      "mid_range_scoring",
-      "three_point_scoring",
-      "free_throw",
-      "ball_handling",
-      "passing",
-      "offensive_iq",
-      "defensive_iq",
-      "perimeter_defense",
-      "interior_defense",
-      "shot_blocking",
-      "rebounding",
-      "speed",
-      "strength",
-      "vertical",
-      "stamina",
-      "durability"
-    ],
+    "keys": ["threePoint", "midRange", "inside_scoring", "passing", "ball_handling", "perimeterDefense", "postDefense", "rebounding", "speed", "strength"],
     "positionModifiers": {
-      "PG": {
-        "inside_scoring": -8, "mid_range_scoring": 0, "three_point_scoring": 6,
-        "free_throw": 0, "ball_handling": 12, "passing": 10,
-        "offensive_iq": 5, "defensive_iq": 0, "perimeter_defense": 4,
-        "interior_defense": -10, "shot_blocking": -10, "rebounding": -12,
-        "speed": 8, "strength": -6, "vertical": 0, "stamina": 0, "durability": 0
-      },
-      "SG": {
-        "inside_scoring": -4, "mid_range_scoring": 5, "three_point_scoring": 8,
-        "free_throw": 0, "ball_handling": 6, "passing": 2,
-        "offensive_iq": 2, "defensive_iq": 0, "perimeter_defense": 4,
-        "interior_defense": -8, "shot_blocking": -8, "rebounding": -8,
-        "speed": 5, "strength": -3, "vertical": 2, "stamina": 0, "durability": 0
-      },
-      "SF": {
-        "inside_scoring": 2, "mid_range_scoring": 2, "three_point_scoring": 2,
-        "free_throw": 0, "ball_handling": 0, "passing": 0,
-        "offensive_iq": 0, "defensive_iq": 2, "perimeter_defense": 2,
-        "interior_defense": 0, "shot_blocking": 0, "rebounding": 0,
-        "speed": 2, "strength": 0, "vertical": 2, "stamina": 0, "durability": 0
-      },
-      "PF": {
-        "inside_scoring": 6, "mid_range_scoring": -2, "three_point_scoring": -4,
-        "free_throw": 0, "ball_handling": -6, "passing": -4,
-        "offensive_iq": 0, "defensive_iq": 2, "perimeter_defense": -2,
-        "interior_defense": 6, "shot_blocking": 4, "rebounding": 8,
-        "speed": -3, "strength": 6, "vertical": 2, "stamina": 0, "durability": 0
-      },
-      "C": {
-        "inside_scoring": 8, "mid_range_scoring": -6, "three_point_scoring": -10,
-        "free_throw": 0, "ball_handling": -10, "passing": -8,
-        "offensive_iq": 0, "defensive_iq": 4, "perimeter_defense": -6,
-        "interior_defense": 10, "shot_blocking": 10, "rebounding": 14,
-        "speed": -8, "strength": 10, "vertical": 0, "stamina": 0, "durability": 0
-      }
-    },
+      "PG": { "threePoint": 6, "midRange": 3, "inside_scoring": -8, "passing": 10, "ball_handling": 12, "perimeterDefense": 4, "postDefense": -10, "rebounding": -12, "speed": 8, "strength": -6 },
+      "SG": { "threePoint": 8, "midRange": 5, "inside_scoring": -4, "passing": 2, "ball_handling": 6, "perimeterDefense": 4, "postDefense": -8, "rebounding": -8, "speed": 5, "strength": -3 },
+      "SF": { "threePoint": 2, "midRange": 2, "inside_scoring": 2, "passing": 0, "ball_handling": 0, "perimeterDefense": 2, "postDefense": 0, "rebounding": 0, "speed": 2, "strength": 0 },
+      "PF": { "threePoint": -4, "midRange": -2, "inside_scoring": 6, "passing": -4, "ball_handling": -6, "perimeterDefense": -2, "postDefense": 6, "rebounding": 8, "speed": -3, "strength": 6 },
+      "C":  { "threePoint": -10, "midRange": -6, "inside_scoring": 8, "passing": -8, "ball_handling": -10, "perimeterDefense": -6, "postDefense": 10, "rebounding": 14, "speed": -8, "strength": 10 }    },
     "overallWeights": {
-      "PG": {
-        "inside_scoring": 0.5, "mid_range_scoring": 1.0, "three_point_scoring": 1.0,
-        "free_throw": 0.5, "ball_handling": 1.5, "passing": 2.0,
-        "offensive_iq": 1.2, "defensive_iq": 0.8, "perimeter_defense": 1.0,
-        "interior_defense": 0.3, "shot_blocking": 0.3, "rebounding": 0.4,
-        "speed": 1.2, "strength": 0.5, "vertical": 0.5, "stamina": 0.8, "durability": 0.8
+      "PG": { "threePoint": 1, "midRange": 1, "inside_scoring": 0.5, "passing": 2, "ball_handling": 1.5, "perimeterDefense": 1, "postDefense": 0.3, "rebounding": 0.4, "speed": 1.2, "strength": 0.5 },
+      "SG": { "threePoint": 1.5, "midRange": 1.3, "inside_scoring": 0.8, "passing": 1, "ball_handling": 1.2, "perimeterDefense": 1, "postDefense": 0.4, "rebounding": 0.5, "speed": 1, "strength": 0.6 },
+      "SF": { "threePoint": 1.1, "midRange": 1.1, "inside_scoring": 1.1, "passing": 0.9, "ball_handling": 0.9, "perimeterDefense": 1, "postDefense": 0.8, "rebounding": 0.9, "speed": 0.9, "strength": 0.9 },
+      "PF": { "threePoint": 0.6, "midRange": 0.9, "inside_scoring": 1.3, "passing": 0.6, "ball_handling": 0.5, "perimeterDefense": 0.7, "postDefense": 1.3, "rebounding": 1.4, "speed": 0.6, "strength": 1.2 },
+      "C":  { "threePoint": 0.3, "midRange": 0.6, "inside_scoring": 1.4, "passing": 0.5, "ball_handling": 0.3, "perimeterDefense": 0.5, "postDefense": 1.6, "rebounding": 1.7, "speed": 0.5, "strength": 1.4 }
       },
-      "SG": {
-        "inside_scoring": 0.8, "mid_range_scoring": 1.3, "three_point_scoring": 1.5,
-        "free_throw": 0.6, "ball_handling": 1.2, "passing": 1.0,
-        "offensive_iq": 1.0, "defensive_iq": 0.8, "perimeter_defense": 1.0,
-        "interior_defense": 0.4, "shot_blocking": 0.3, "rebounding": 0.5,
-        "speed": 1.0, "strength": 0.6, "vertical": 0.7, "stamina": 0.8, "durability": 0.8
-      },
-      "SF": {
-        "inside_scoring": 1.1, "mid_range_scoring": 1.1, "three_point_scoring": 1.1,
-        "free_throw": 0.8, "ball_handling": 0.9, "passing": 0.9,
-        "offensive_iq": 1.0, "defensive_iq": 1.0, "perimeter_defense": 1.0,
-        "interior_defense": 0.8, "shot_blocking": 0.7, "rebounding": 0.9,
-        "speed": 0.9, "strength": 0.9, "vertical": 0.9, "stamina": 0.9, "durability": 0.9
-      },
-      "PF": {
-        "inside_scoring": 1.3, "mid_range_scoring": 0.9, "three_point_scoring": 0.6,
-        "free_throw": 0.6, "ball_handling": 0.5, "passing": 0.6,
-        "offensive_iq": 0.9, "defensive_iq": 1.1, "perimeter_defense": 0.7,
-        "interior_defense": 1.3, "shot_blocking": 1.1, "rebounding": 1.4,
-        "speed": 0.6, "strength": 1.2, "vertical": 0.8, "stamina": 0.9, "durability": 0.9
-      },
-      "C": {
-        "inside_scoring": 1.4, "mid_range_scoring": 0.6, "three_point_scoring": 0.3,
-        "free_throw": 0.4, "ball_handling": 0.3, "passing": 0.5,
-        "offensive_iq": 0.8, "defensive_iq": 1.4, "perimeter_defense": 0.5,
-        "interior_defense": 1.6, "shot_blocking": 1.6, "rebounding": 1.7,
-        "speed": 0.5, "strength": 1.4, "vertical": 0.7, "stamina": 0.9, "durability": 0.9
-      }
-    },
-    "attributeNoise": 9,
-    "minAttr": 25,
-    "maxAttr": 99
+      "attributeNoise": 9,
+      "minAttr": 25,
+      "maxAttr": 99
   }
 }

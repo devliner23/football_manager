@@ -33,6 +33,7 @@ function generateSingleProspect(savedGameId, draftClassYear) {
 
   // Generate skill ratings based on position and archetype
   const skills = generateSkills(position, archetype, overall);
+  const traits = buildTraitsObject(skills);
 
   // Physical measurements
   const height = randomHeight(position);
@@ -50,10 +51,10 @@ function generateSingleProspect(savedGameId, draftClassYear) {
   const projectedRange = getProjectedRange(overall);
 
   // Traits (0–3 random traits)
-  const traitCount = randomInt(0, 3);
-  const traits = [];
-  for (let t = 0; t < traitCount; t++) {
-    traits.push(pickRandom(TRAITS));
+  const traitTagCount = randomInt(0, 3);
+  const traitTags = [];
+    for (let t = 0; t < traitTagCount; t++) {
+    traitTags.push(pickRandom(TRAITS));
   }
 
   // College stats (loosely tied to overall)
@@ -98,7 +99,8 @@ function generateSingleProspect(savedGameId, draftClassYear) {
     draft_position: null,
     drafted_by_team_id: null,
     player_archetype: archetype,
-    traits: JSON.stringify(traits),
+    traits,
+    trait_tags: traitTags,
     ...stats,
     wingspan,
     standing_reach: standingReach,
@@ -171,14 +173,7 @@ function ageToCollegeClass(age) {
 
 /** Random height in inches based on position */
 function randomHeight(pos) {
-  const ranges = {
-    PG: [70, 76],
-    SG: [74, 79],
-    SF: [77, 82],
-    PF: [80, 85],
-    C:  [82, 88],
-  };
-  const [min, max] = ranges[pos];
+  const [min, max] = playerData.positionHeights[pos] || [72, 78];
   return randomInt(min, max);
 }
 
@@ -190,29 +185,36 @@ function randomWeight(height) {
 
 /** Generate skill ratings based on position and archetype */
 function generateSkills(position, archetype, overall) {
-  // Each skill is based on overall with position/archetype modifiers
   const base = overall;
-  const skills = {
-    inside_scoring:       clamp(base + randomInt(-5, 5) + (archetypeMod(archetype, 'inside')), 30, 99),
-    mid_range_scoring:    clamp(base + randomInt(-5, 5) + (archetypeMod(archetype, 'midrange')), 30, 99),
-    three_point_scoring:  clamp(base + randomInt(-5, 5) + (archetypeMod(archetype, 'three')), 30, 99),
-    free_throw:           clamp(base + randomInt(-5, 5), 30, 99),
-    ball_handling:        clamp(base + randomInt(-5, 5) + (archetypeMod(archetype, 'handle')), 30, 99),
-    passing:              clamp(base + randomInt(-5, 5) + (archetypeMod(archetype, 'passing')), 30, 99),
-    offensive_iq:         clamp(base + randomInt(-5, 5) + (archetypeMod(archetype, 'offIQ')), 30, 99),
-    defensive_iq:         clamp(base + randomInt(-5, 5) + (archetypeMod(archetype, 'defIQ')), 30, 99),
-    perimeter_defense:    clamp(base + randomInt(-5, 5) + (archetypeMod(archetype, 'perimD')), 30, 99),
-    interior_defense:     clamp(base + randomInt(-5, 5) + (archetypeMod(archetype, 'interiorD')), 30, 99),
-    shot_blocking:        clamp(base + randomInt(-5, 5) + (archetypeMod(archetype, 'block')), 30, 99),
-    rebounding:           clamp(base + randomInt(-5, 5) + (archetypeMod(archetype, 'rebound')), 30, 99),
-    speed:                clamp(base + randomInt(-5, 5) + (archetypeMod(archetype, 'speed')), 30, 99),
-    strength:             clamp(base + randomInt(-5, 5) + (archetypeMod(archetype, 'strength')), 30, 99),
-    vertical:             clamp(base + randomInt(-5, 5) + (archetypeMod(archetype, 'vertical')), 30, 99),
-    stamina:              clamp(base + randomInt(-5, 5), 30, 99),
-    durability:           clamp(base + randomInt(-5, 5), 30, 99),
+  return {
+    inside_scoring:     clamp(base + randomInt(-5, 5) + archetypeMod(archetype, 'inside'), 30, 99),
+    mid_range:          clamp(base + randomInt(-5, 5) + archetypeMod(archetype, 'midrange'), 30, 99),
+    three_point:        clamp(base + randomInt(-5, 5) + archetypeMod(archetype, 'three'), 30, 99),
+    free_throw:         clamp(base + randomInt(-5, 5), 30, 99),
+    ball_handling:      clamp(base + randomInt(-5, 5) + archetypeMod(archetype, 'handle'), 30, 99),
+    passing:            clamp(base + randomInt(-5, 5) + archetypeMod(archetype, 'passing'), 30, 99),
+    offensive_iq:       clamp(base + randomInt(-5, 5) + archetypeMod(archetype, 'offIQ'), 30, 99),
+    defensive_iq:       clamp(base + randomInt(-5, 5) + archetypeMod(archetype, 'defIQ'), 30, 99),
+    perimeter_defense:  clamp(base + randomInt(-5, 5) + archetypeMod(archetype, 'perimD'), 30, 99),
+    post_defense:       clamp(base + randomInt(-5, 5) + archetypeMod(archetype, 'interiorD'), 30, 99),
+    shot_blocking:      clamp(base + randomInt(-5, 5) + archetypeMod(archetype, 'block'), 30, 99),
+    rebounding:         clamp(base + randomInt(-5, 5) + archetypeMod(archetype, 'rebound'), 30, 99),
+    speed:              clamp(base + randomInt(-5, 5) + archetypeMod(archetype, 'speed'), 30, 99),
+    strength:           clamp(base + randomInt(-5, 5) + archetypeMod(archetype, 'strength'), 30, 99),
+    vertical:           clamp(base + randomInt(-5, 5) + archetypeMod(archetype, 'vertical'), 30, 99),
+    stamina:            clamp(base + randomInt(-5, 5), 30, 99),
+    durability:         clamp(base + randomInt(-5, 5), 30, 99),
   };
-  return skills;
 }
+
+function buildTraitsObject(skills) {
+  const traits = {};
+  for (const [canonicalKey, flatColumn] of Object.entries(CANONICAL_TRAIT_MAP)) {
+    traits[canonicalKey] = skills[flatColumn] ?? 50;
+  }
+  return traits;
+}
+
 
 /** Archetype modifier for skills. Adjusts specific skills up/down. */
 function archetypeMod(archetype, skill) {
@@ -335,6 +337,19 @@ const TRAITS = [
   'Physical', 'Finesse', 'Vocal', 'Confident', 'Resilient',
   'Quick Learner', 'Team Player', 'Alpha Dog', 'Spark Plug'
 ];
+
+const CANONICAL_TRAIT_MAP = {
+  three_point:        'three_point_scoring',
+  mid_range:           'mid_range_scoring',
+  inside_scoring:      'inside_scoring',
+  passing:             'passing',
+  ball_handling:       'ball_handling',
+  perimeter_defense:   'perimeter_defense',
+  post_defense:        'interior_defense',
+  rebounding:          'rebounding',
+  speed:               'speed',
+  strength:            'strength',
+};
 
 const FIRST_NAMES = [
   'Jalen', 'Malik', 'Cade', 'Emoni', 'Scoot', 'Cam', 'Jabari', 'Paolo',

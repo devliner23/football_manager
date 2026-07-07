@@ -103,14 +103,14 @@
 
   "shotQualityCalculation": {
     "offensiveSkillWeights": {
-      "isolation":     { "ballHandling": 0.30, "midRange": 0.40, "threePoint": 0.30 },
+      "isolation":     { "ball_handling": 0.30, "midRange": 0.40, "threePoint": 0.30 },
       "spot_up":       { "threePoint": 0.70, "midRange": 0.30 },
-      "post_up":       { "insideScoring": 0.60, "strength": 0.40 },
+      "post_up":       { "inside_scoring": 0.60, "strength": 0.40 },
       "pick_and_roll": {
-        "handler":     { "ballHandling": 0.25, "midRange": 0.25, "insideScoring": 0.25, "passing": 0.25 },
-        "screener":    { "insideScoring": 0.55, "strength": 0.20, "midRange": 0.25 }
+        "handler":     { "ball_handling": 0.25, "midRange": 0.25, "inside_scoring": 0.25, "passing": 0.25 },
+        "screener":    { "inside_scoring": 0.55, "strength": 0.20, "midRange": 0.25 }
       },
-      "transition":    { "speed": 0.50, "insideScoring": 0.30, "ballHandling": 0.20 }
+      "transition":    { "speed": 0.50, "inside_scoring": 0.30, "ball_handling": 0.20 }
     },
     "defensiveSkillWeights": {
       "isolation":     { "perimeterDefense": 1.0 },
@@ -135,7 +135,7 @@
 
   "turnoverModel": {
     "baseRate": 0.12,
-    "handlerSkillWeight": { "ballHandling": 0.6, "passing": 0.4 },
+    "handlerSkillWeight": { "ball_handling": 0.6, "passing": 0.4 },
     "defenderSkillWeight": { "perimeterDefense": 0.8, "stealRating": 0.2 },
     "skillDiffScale": 0.003,
     "minRate": 0.03,
