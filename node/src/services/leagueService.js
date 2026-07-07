@@ -62,6 +62,20 @@ class leagueService {
     this.savedGameId = savedGameId;
   }
 
+  async rollbackLeague() {
+    await supabaseAdmin.from('player_progression').delete().eq('saved_game_id', this.savedGameId);
+    await supabaseAdmin.from('player_season_stats').delete().eq('saved_game_id', this.savedGameId);
+    await supabaseAdmin.from('player_game_stats').delete().eq('saved_game_id', this.savedGameId);
+    await supabaseAdmin.from('team_season_stats').delete().eq('saved_game_id', this.savedGameId);
+    await supabaseAdmin.from('contracts').delete().eq('saved_game_id', this.savedGameId);
+    await supabaseAdmin.from('coach_contracts').delete().eq('saved_game_id', this.savedGameId);
+    await supabaseAdmin.from('coaches').delete().eq('saved_game_id', this.savedGameId);
+    await supabaseAdmin.from('games').delete().eq('saved_game_id', this.savedGameId);
+    await supabaseAdmin.from('players').delete().eq('saved_game_id', this.savedGameId);
+    await supabaseAdmin.from('seasons').delete().eq('saved_game_id', this.savedGameId);
+    await supabaseAdmin.from('teams').delete().eq('saved_game_id', this.savedGameId);
+  }
+
   // ── Public data helpers ───────────────────────────────────────────────────
 
   async getTeams() {
@@ -332,103 +346,111 @@ class leagueService {
       throw new Error(`League already initialized for saved game ${this.savedGameId}`);
     }
 
-    const validUserArchetype =
-      userArchetype && TeamArchetypeService.isValidArchetype(userArchetype)
-        ? userArchetype
-        : TeamArchetypeService.getRandomArchetype();
-
-    // ---------- Phase 1: independent foundational data ----------
-    const [teams, seasonRecord] = await Promise.all([
-      this.createTeams(),
-      this.createSeason(season),
-    ]);
-
-    // Resolve managed team and assign archetypes (pure JS)
-    let managedTeamId = null;
-    if (managedClubName && typeof managedClubName === 'string') {
-      const found = teams.find(
-        t => t.name.toLowerCase() === managedClubName.toLowerCase()
-      );
-      managedTeamId = found ? found.id : teams[0]?.id;
-    } else {
-      managedTeamId = teams[0]?.id;
-    }
-
-    const teamArchetypes = {};
-    for (const team of teams) {
-      teamArchetypes[team.id] =
-        team.id === managedTeamId
-          ? validUserArchetype
+    try {
+      const validUserArchetype =
+        userArchetype && TeamArchetypeService.isValidArchetype(userArchetype)
+          ? userArchetype
           : TeamArchetypeService.getRandomArchetype();
-    }
 
-    // ---------- Phase 2: all tasks that only need teams + season ----------
-    // createRosters will give us players – we’ll need them for finances
-    const rosterPromise = this.createRosters(teams, season, teamArchetypes);
+      // ---------- Phase 1: independent foundational data ----------
+      const [teams, seasonRecord] = await Promise.all([
+        this.createTeams(),
+        this.createSeason(season),
+      ]);
 
-    // These can run completely in parallel with rosters
-    const coachesPromise    = this.createCoaches(teams);
-    const statsPromise      = this.createSeasonStats(teams, seasonRecord.id);
-    const schedulePromise   = this.generateSchedule(teams, seasonRecord.id);
-    const freeAgentsPromise = this.createFreeAgents(season); // assuming createFreeAgents takes seasonRecord
+      // Resolve managed team and assign archetypes (pure JS)
+      let managedTeamId = null;
+      if (managedClubName && typeof managedClubName === 'string') {
+        const found = teams.find(
+          t => t.name.toLowerCase() === managedClubName.toLowerCase()
+        );
+        managedTeamId = found ? found.id : teams[0]?.id;
+      } else {
+        managedTeamId = teams[0]?.id;
+      }
 
-    // Wait for rosters to finish, then kick off finances while others still run
-    const players = await rosterPromise;
-    const financePromise = FinanceService.initializeLeagueFinances(
-      this.savedGameId,
-      teams,
-      players
-    );
+      const teamArchetypes = {};
+      for (const team of teams) {
+        teamArchetypes[team.id] =
+          team.id === managedTeamId
+            ? validUserArchetype
+            : TeamArchetypeService.getRandomArchetype();
+      }
 
-    // Now wait for *everything* to settle
-    const [
-      _players,        // already have
-      coaches,
-      _stats,          // ignored
-      gamesCount,
-      faCount,
-      financeResult,
-    ] = await Promise.all([
-      rosterPromise,   // already resolved, included for consistency
-      coachesPromise,
-      statsPromise,
-      schedulePromise,
-      freeAgentsPromise,
-      financePromise,
-    ]);
+      // ---------- Phase 2: all tasks that only need teams + season ----------
+      // createRosters will give us players – we’ll need them for finances
+      const rosterPromise = this.createRosters(teams, season, teamArchetypes);
 
-    if (!financeResult.success) {
-      throw new Error("Financial setup failed during league initialization.");
-    }
+      // These can run completely in parallel with rosters
+      const coachesPromise    = this.createCoaches(teams);
+      const statsPromise      = this.createSeasonStats(teams, seasonRecord.id);
+      const schedulePromise   = this.generateSchedule(teams, seasonRecord.id);
+      const freeAgentsPromise = this.createFreeAgents(season); // assuming createFreeAgents takes seasonRecord
 
-    // ---------- Phase 3: final metadata update ----------
-    const currentState = (await this._getGameState()) || {};
-    await supabaseAdmin
-      .from('saved_games')
-      .update({
-        current_season:  season,
-        managed_club_id: managedTeamId,
-        game_state: {
-          ...currentState,
-          initialized_at:  new Date().toISOString(),
-          season_id:       seasonRecord.id,
-          total_games:     gamesCount,
-          team_archetypes: teamArchetypes,
-          user_archetype:  validUserArchetype,
-        },
-      })
-      .eq('id', this.savedGameId);
+      // Wait for rosters to finish, then kick off finances while others still run
+      const players = await rosterPromise;
+      const financePromise = FinanceService.initializeLeagueFinances(
+        this.savedGameId,
+        teams,
+        players
+      );
 
-    return {
-      season,
-      teamsCreated:      teams.length,
-      playersCreated:    players.length,
-      freeAgentsCreated: faCount.length,  // faCount is likely an array
-      gamesCreated:      gamesCount,
-      userArchetype:     validUserArchetype,
-      financesInitialized: true,
+      // Now wait for *everything* to settle
+      const [
+        _players,        // already have
+        coaches,
+        _stats,          // ignored
+        gamesCount,
+        faCount,
+        financeResult,
+      ] = await Promise.all([
+        rosterPromise,   // already resolved, included for consistency
+        coachesPromise,
+        statsPromise,
+        schedulePromise,
+        freeAgentsPromise,
+        financePromise,
+      ]);
+
+      if (!financeResult.success) {
+        throw new Error("Financial setup failed during league initialization.");
+      }
+
+      // ---------- Phase 3: final metadata update ----------
+      const currentState = (await this._getGameState()) || {};
+      await supabaseAdmin
+        .from('saved_games')
+        .update({
+          current_season:  season,
+          managed_club_id: managedTeamId,
+          game_state: {
+            ...currentState,
+            initialized_at:  new Date().toISOString(),
+            season_id:       seasonRecord.id,
+            total_games:     gamesCount,
+            team_archetypes: teamArchetypes,
+            user_archetype:  validUserArchetype,
+          },
+        })
+        .eq('id', this.savedGameId);
+
+      return {
+        season,
+        teamsCreated:      teams.length,
+        playersCreated:    players.length,
+        freeAgentsCreated: faCount.length,  // faCount is likely an array
+        gamesCreated:      gamesCount,
+        userArchetype:     validUserArchetype,
+        financesInitialized: true,
+      };
+    } catch (err) {
+      console.error(`❌ League init failed for ${this.savedGameId}, rolling back:`, err);
+      await this.rollbackLeague().catch(rbErr =>
+        console.error('Rollback also failed:', rbErr)
+      );
+      throw err;
     };
-  }
+  };
 
 
   // ── Single-game simulation ────────────────────────────────────────────────

@@ -105,6 +105,20 @@ class CoachGenerator {
     return data;
 
   }
+
+  generateLeagueCoaches(teams, teamTiers = {}) {
+    const coaches = [];
+    for (const team of teams) {
+      const tier = teamTiers[team.id] || 'mid';
+      const coach = this.generateCoach(team.id, tier);
+      // Defensive: generateCoach should always set these, but never let a
+      // malformed row silently hit the DB with a null FK.
+      coach.saved_game_id = this.savedGameId;
+      coach.team_id = team.id;
+      coaches.push(coach);
+    }
+    return coaches;
+  }
 }
 
 module.exports = CoachGenerator;

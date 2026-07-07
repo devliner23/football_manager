@@ -55,7 +55,11 @@ const Dashboard: React.FC = () => {
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
       const res = await gameAPI.getGame(gameId);
-      if (res.data?.managed_club_id) return res.data;
+      // Access the actual game data nested inside the API wrapper
+      const game = res.data?.data;
+      if (game?.managed_club_id) {
+        return game as SavedGame;   // return the game object itself, not the wrapper
+      }
       await new Promise(r => setTimeout(r, 500));
     }
     throw new Error('timeout');
