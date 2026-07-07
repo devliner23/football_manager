@@ -6,7 +6,7 @@ class PlayerGenerator {
     this.savedGameId = savedGameId;
     this.season = season;
 
-    // Load static data from JSON
+    // Load static data from JSON (unchanged)
     this.firstNames = playerData.firstNames;
     this.lastNames = playerData.lastNames;
     this.traitDefinitions = playerData.traitDefinitions;
@@ -17,9 +17,38 @@ class PlayerGenerator {
     this.positionTraitPools = playerData.positionTraitPools;
     this.extraTraitsForStars = playerData.extraTraitsForStars;
     this.skillAttributes = playerData.skillAttributes;
+
+    // Static data for new background columns (you can move these to playerData.json later)
+    this.colleges = [
+      'Duke', 'Kentucky', 'Kansas', 'North Carolina', 'Villanova', 'Gonzaga',
+      'UCLA', 'Michigan', 'Michigan State', 'Arizona', 'Texas', 'Baylor',
+      'Auburn', 'Alabama', 'Tennessee', 'Arkansas', 'Illinois', 'Purdue',
+      'Indiana', 'Ohio State', 'Florida', 'LSU', 'USC', 'Oregon', 'Virginia',
+      'Florida State', 'Memphis', 'Houston', 'UConn', 'Syracuse'
+    ];
+    this.cities = [
+      'Los Angeles', 'Chicago', 'New York', 'Houston', 'Philadelphia',
+      'Dallas', 'Miami', 'Atlanta', 'Seattle', 'Oakland', 'Detroit',
+      'Indianapolis', 'Charlotte', 'Portland', 'Cleveland'
+    ];
+    this.states = [
+      'CA', 'IL', 'NY', 'TX', 'PA', 'FL', 'GA', 'WA', 'MI', 'IN', 'NC', 'OR', 'OH'
+    ];
+    this.highSchools = [
+      'Oak Hill Academy', 'Sierra Canyon', 'Montverde Academy', 'IMG Academy',
+      'Sunrise Christian', 'Wasatch Academy', 'La Lumiere', 'Prolific Prep',
+      'Link Academy', 'Brewster Academy'
+    ];
+    this.playerArchetypesByPos = {
+      PG: ['Playmaker', 'Floor General', 'Combo Guard', 'Sharpshooter', 'Two-Way Star'],
+      SG: ['Sharpshooter', 'Scoring Machine', '3-and-D', 'Slasher', 'Combo Guard'],
+      SF: ['All-Around', '3-and-D', 'Slasher', 'Point Forward', 'Lockdown Defender'],
+      PF: ['Stretch Big', 'Interior Force', 'Rebounder', 'Two-Way Star', 'Rim Protector'],
+      C:  ['Rim Protector', 'Interior Force', 'Rebounder', 'Stretch Big', 'Two-Way Star']
+    };
   }
 
-  // ---------- helper: Gaussian random ----------
+  // ---------- helper: Gaussian random (unchanged) ----------
   randomGaussian(mean = 0, stdDev = 1) {
     let u = 0, v = 0;
     while (u === 0) u = Math.random();
@@ -28,7 +57,7 @@ class PlayerGenerator {
     return z * stdDev + mean;
   }
 
-  // ---------- generate skill attributes ----------
+  // ---------- generate skill attributes (unchanged) ----------
   generateSkillAttributes(position, overallRating) {
     const modifiers = this.skillAttributes.positionModifiers[position] || {};
     const attributes = {};
@@ -45,7 +74,7 @@ class PlayerGenerator {
     return attributes;
   }
 
-  // ---------- generate traits (special abilities) ----------
+  // ---------- generate traits (unchanged) ----------
   generateTraits(position, rating, isStar) {
     const traits = {};
     const availableTraits = this.getRelevantTraits(position, isStar);
@@ -58,7 +87,44 @@ class PlayerGenerator {
     return traits;
   }
 
-  // ---------- generate a full player ----------
+  // ---------- NEW: background generation helpers ----------
+  pickRandom(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  generateCollege() {
+    return this.pickRandom(this.colleges);
+  }
+
+  generateCollegeClass(age) {
+    if (age <= 19) return 'Freshman';
+    if (age === 20) return Math.random() < 0.5 ? 'Freshman' : 'Sophomore';
+    if (age === 21) return Math.random() < 0.3 ? 'Sophomore' : 'Junior';
+    return Math.random() < 0.4 ? 'Junior' : 'Senior';
+  }
+
+  generateHometown() {
+    return {
+      city: this.pickRandom(this.cities),
+      state: this.pickRandom(this.states),
+      country: 'USA'
+    };
+  }
+
+  generateHighSchool() {
+    return this.pickRandom(this.highSchools);
+  }
+
+  generateJerseyNumber() {
+    return Math.floor(Math.random() * 100); // 0–99
+  }
+
+  generatePlayerArchetype(position) {
+    const list = this.playerArchetypesByPos[position] || ['All-Around'];
+    return this.pickRandom(list);
+  }
+
+  // ---------- generate a full player (UPDATED with new fields) ----------
   generatePlayer(teamId, position, rating, isStar, rosterIndex) {
     const skillAttrs = this.generateSkillAttributes(position, rating);
     const specialTraits = this.generateTraits(position, rating, isStar);
@@ -72,6 +138,14 @@ class PlayerGenerator {
     const last_name = this.generateLastName();
     const full_name = `${first_name} ${last_name}`;
 
+    // New background fields
+    const college = this.generateCollege();
+    const collegeClass = this.generateCollegeClass(age);
+    const hometown = this.generateHometown();
+    const high_school = this.generateHighSchool();
+    const jersey_number = this.generateJerseyNumber();
+    const player_archetype = this.generatePlayerArchetype(position);
+
     return {
       saved_game_id: this.savedGameId,
       team_id: teamId,
@@ -84,15 +158,29 @@ class PlayerGenerator {
       weight,
       overall_rating: rating,
       potential_rating: potential,
-      traits,
+      traits,                                          // object (skills + traits)
+
+      // New columns (all nullable, so safe to add)
+      college,
+      college_class: collegeClass,
+      hometown_city: hometown.city,
+      hometown_state: hometown.state,
+      hometown_country: hometown.country,
+      nationality: 'American',
+      high_school,
+      draft_year: null,              // initial league players weren't drafted
+      draft_round: null,
+      draft_pick: null,
+      draft_team_id: null,
+      player_archetype,
+      jersey_number,
     };
   }
 
-  // ---------- generate league (entry point) ----------
+  // ---------- generate league (entry point) – MINOR FIX INCLUDED ----------
   generateLeague(teams) {
     console.log('👥 Generating league with realistic talent distribution...');
 
-    // Realistic tier distribution: ~4 contenders, 8 playoff, 8 mid, 6 lottery
     const tiers = [
       'contender', 'contender', 'contender', 'contender',
       'playoff', 'playoff', 'playoff', 'playoff', 'playoff', 'playoff', 'playoff', 'playoff',
@@ -102,35 +190,30 @@ class PlayerGenerator {
 
     const shuffledTeams = this.shuffleArray([...teams]);
     const allPlayers = [];
+    const teamTiers = {};                     // moved outside the duplicate loop
 
     for (let i = 0; i < shuffledTeams.length; i++) {
       const team = shuffledTeams[i];
       const tier = tiers[i] || 'mid';
+      teamTiers[team.id] = tier;              // store tier
       const roster = this.generateTeamRoster(team, tier);
       allPlayers.push(...roster);
     }
 
-    // === DEBUG: print a few ratings to verify distribution ===
-    const sample = allPlayers.slice(0, 20).map(p => ({
+    // DEBUG (optional)
+    const sample = allPlayers.slice(0, 5).map(p => ({
       name: p.full_name,
       ovr: p.overall_rating,
-      tier: p.team_id,
+      college: p.college,
+      city: p.hometown_city
     }));
+    console.log('Sample players:', sample);
 
     console.log(`✅ Generated ${allPlayers.length} players`);
-    
-    const teamTiers = {};
-    for (let i = 0; i < shuffledTeams.length; i++) {
-      const team = shuffledTeams[i];
-      const tier = tiers[i] || 'mid';
-      teamTiers[team.id] = tier;
-      allPlayers.push(...this.generateTeamRoster(team, tier));
-    }
     return { players: allPlayers, teamTiers };
-
   }
 
-  // ---------- generate roster for a single team ----------
+  // ---------- generate roster (unchanged) ----------
   generateTeamRoster(team, tier) {
     const roster = [];
     const positions = ['PG', 'SG', 'SF', 'PF', 'C'];
@@ -139,7 +222,7 @@ class PlayerGenerator {
       const position = positions[i % 5];
       const isStarter = i < 5;
       const rating = this.generatePlayerRating(tier, isStarter, i);
-      const isStar = rating >= 85;   // star status based on rating, not index
+      const isStar = rating >= 85;
 
       const player = this.generatePlayer(team.id, position, rating, isStar, i);
       roster.push(player);
@@ -147,7 +230,7 @@ class PlayerGenerator {
     return roster;
   }
 
-  // ---------- NEW: Realistic rating generation ----------
+  // ---------- Realistic rating generation (unchanged) ----------
   generatePlayerRating(teamTier, isStarter, rosterIndex) {
     const tierMeans = {
       contender: { starter: 82, bench: 72 },
@@ -157,15 +240,12 @@ class PlayerGenerator {
     };
 
     const mean = isStarter ? tierMeans[teamTier].starter : tierMeans[teamTier].bench;
-    const stdDev = 7;   // ~95% of players within ±14 of the mean
+    const stdDev = 7;
     let rating = this.randomGaussian(mean, stdDev);
 
-    // 5% chance a starter is a genuine superstar, even on a bad team
     if (isStarter && Math.random() < 0.05) {
       rating += 15;
     }
-
-    // Rookie penalty: last three roster spots get a slight downgrade
     if (rosterIndex > 12) {
       rating -= 5;
     }
@@ -173,7 +253,7 @@ class PlayerGenerator {
     return Math.min(99, Math.max(60, Math.round(rating)));
   }
 
-  // ---------- physical attributes ----------
+  // ---------- physical attributes (unchanged) ----------
   generateAge(isStar, index) {
     if (index > 12) {
       const [min, max] = this.ageRanges.rookie;
@@ -200,11 +280,11 @@ class PlayerGenerator {
   generatePotential(rating, isStar, index) {
     let potential = rating;
     if (index > 12) {
-      potential += 8 + Math.floor(Math.random() * 12); // rookies high upside
+      potential += 8 + Math.floor(Math.random() * 12);
     } else if (isStar) {
-      potential += 2 + Math.floor(Math.random() * 6);   // stars stay elite
+      potential += 2 + Math.floor(Math.random() * 6);
     } else {
-      potential += Math.floor(Math.random() * 6) - 2;   // role players mild growth
+      potential += Math.floor(Math.random() * 6) - 2;
     }
     return Math.min(99, Math.max(45, Math.floor(potential)));
   }
@@ -245,7 +325,7 @@ class PlayerGenerator {
     return Math.min(99, Math.max(0, Math.floor(value)));
   }
 
-  // ---------- name generation ----------
+  // ---------- name generation (unchanged) ----------
   generateFirstName() {
     return this.firstNames[Math.floor(Math.random() * this.firstNames.length)];
   }

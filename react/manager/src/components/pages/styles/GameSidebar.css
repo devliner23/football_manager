@@ -1,265 +1,354 @@
-/* =========================================================
-   GAME SIDEBAR — restyled to match Dashboard.css theme
-   (deep-slate glass, neon-blue accents, column layout)
-   ========================================================= */
+/* GameSidebar.css — matches Dashboard.css dark-glass theme, compact layout */
 
 .glass-sidebar {
-  width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 20px 16px;
-  color: var(--text-primary, #f4f4f5);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  gap: 12px;
+  animation: sidebarFadeIn 0.35s ease-out;
 }
 
-/* ========================= */
-/* SHARED GLASS PANEL        */
-/* ========================= */
+@keyframes sidebarFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
+/* ── Shared panel base ── */
 .glass-sidebar-panel {
-  display: flex;
-  flex-direction: column;
-  background: var(--glass-bg, rgba(15, 23, 42, 0.45));
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
+  position: relative;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   border-radius: 14px;
-  padding: 18px;
-  box-shadow: 0 12px 30px -12px rgba(0, 0, 0, 0.5);
-  transition: border-color 0.15s ease;
+  padding: 16px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 8px 20px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  transition: box-shadow 0.25s ease;
+}
+
+.glass-sidebar-panel::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-blue-solid), transparent);
+  opacity: 0.7;
 }
 
 .glass-sidebar-panel:hover {
-  border-color: rgba(59, 130, 246, 0.25);
+  box-shadow:
+    inset 0 1px 0 var(--glass-highlight),
+    0 12px 28px rgba(0, 0, 0, 0.4);
 }
 
-.sidebar-panel-title {
-  margin: 0 0 14px 0;
-  font-size: 0.7rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-muted, #a1a1aa);
-}
-
+/* ── Season / record panel ── */
 .sidebar-panel-badge {
-  align-self: flex-start;
+  display: inline-block;
   font-size: 0.65rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  padding: 4px 10px;
-  border-radius: 6px;
-  margin-bottom: 14px;
+  letter-spacing: 1px;
+  padding: 3px 8px;
+  border-radius: 5px;
+  margin-bottom: 10px;
 }
-
-/* ========================= */
-/* RECORD                    */
-/* ========================= */
 
 .sidebar-record {
   display: flex;
-  justify-content: center;
   align-items: baseline;
-  gap: 0.4rem;
+  justify-content: center;
+  gap: 6px;
+  margin: 2px 0 6px 0;
+}
+
+.sidebar-wins,
+.sidebar-losses {
   font-size: 2rem;
   font-weight: 800;
-  letter-spacing: -0.5px;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 14px rgba(255, 255, 255, 0.06);
 }
 
 .sidebar-wins {
-  color: var(--neon-blue-solid, #60a5fa);
-  text-shadow: 0 0 12px var(--neon-blue-glow, rgba(59, 130, 246, 0.3));
+  color: var(--neon-blue-solid);
+  text-shadow: 0 0 12px var(--neon-blue-glow);
 }
 
 .sidebar-losses {
-  color: rgb(196, 0, 0);
+  color: #f87171;
+  text-shadow: 0 0 12px var(--neon-danger-glow);
 }
 
 .sidebar-dash {
-  color: var(--text-muted, #a1a1aa);
-  font-weight: 400;
+  font-size: 1.4rem;
+  font-weight: 300;
+  color: var(--text-muted);
 }
 
 .sidebar-pct {
-  margin-top: 6px;
   text-align: center;
-  font-size: 0.8rem;
-  color: var(--text-muted, #a1a1aa);
-}
-
-/* ========================= */
-/* QUICK STATS                */
-/* ========================= */
-
-.sidebar-stat-list {
-  display: flex;
-  flex-direction: column;
-}
-
-.sidebar-stat-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
-}
-
-.sidebar-stat-row:last-child {
-  border-bottom: none;
-}
-
-.sidebar-stat-label {
-  font-size: 0.8rem;
-  color: var(--text-muted, #a1a1aa);
-}
-
-.sidebar-stat-value {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: var(--text-primary, #f4f4f5);
-}
-
-/* ========================= */
-/* SIM SECTION                */
-/* ========================= */
-
-.sidebar-date-info {
   font-size: 0.78rem;
-  color: var(--text-muted, #a1a1aa);
-  margin: 0 0 14px 0;
-  text-align: center;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.3px;
+  padding-top: 8px;
+  border-top: 1px solid var(--glass-border);
 }
 
-.sim-date-input {
-  margin-bottom: 14px;
+/* ── Panel title ── */
+.sidebar-panel-title {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--neon-blue-solid);
+  text-shadow: 0 0 8px var(--neon-blue-glow);
+  margin: 0 0 12px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+/* ── Date info (removed, keeping class) ── */
+.sidebar-date-info {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: -4px 0 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.sidebar-date-info::before {
+  content: '';
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 5px #10b981;
+  flex-shrink: 0;
+}
+
+/* ── DatePicker (react-aria-components) ── */
+.sim-date-picker-card {
+  width: 100%;
 }
 
 .date-picker-wrapper {
   display: flex;
   align-items: center;
-  background: rgba(9, 9, 11, 0.6);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
-  border-radius: 10px;
-  overflow: hidden;
-  transition: border-color 0.15s ease;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .date-picker-wrapper:focus-within {
-  border-color: var(--neon-blue, #3b82f6);
-  box-shadow: 0 0 0 3px var(--neon-blue-glow, rgba(59, 130, 246, 0.3));
+  border-color: var(--neon-blue-solid);
+  background: rgba(59, 130, 246, 0.06);
+  box-shadow: 0 0 0 2px var(--neon-blue-glow);
 }
 
 .date-picker-input {
-  flex: 1;
-  padding: 10px 12px;
+  display: flex;
+  gap: 1px;
   font-size: 0.85rem;
-  color: var(--text-primary, #f4f4f5);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.date-picker-input [data-placeholder] {
+  color: var(--text-muted);
+}
+
+.date-picker-input [role="spinbutton"] {
+  padding: 1px 2px;
+  border-radius: 3px;
+  outline: none;
+  caret-color: transparent;
+}
+
+.date-picker-input [role="spinbutton"][data-focused] {
+  background: var(--neon-blue-solid);
+  color: #061021;
 }
 
 .date-picker-button {
-  width: 40px;
-  height: 40px;
-  border: none;
-  border-left: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
   background: transparent;
-  color: var(--text-primary, #f4f4f5);
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.15s ease;
+  padding: 1px 3px;
+  border-radius: 5px;
+  transition: color 0.15s ease, transform 0.15s ease;
 }
 
 .date-picker-button:hover {
-  background: rgba(59, 130, 246, 0.15);
+  color: var(--neon-blue-solid);
+  transform: scale(1.1);
 }
 
-/* ========================= */
-/* POPUP CALENDAR              */
-/* ========================= */
-
+/* Popover shell */
 .date-picker-popover {
-  margin-top: 8px;
-  padding: 14px;
   background: #0f111a;
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.08));
-  border-radius: 14px;
-  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
-  z-index: 1000;
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  padding: 14px;
+  z-index: 1200;
+  animation: popoverDrop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popoverDrop {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .date-picker-calendar {
-  width: 260px;
-  color: var(--text-primary, #f4f4f5);
+  width: 100%;
 }
 
 .calendar-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: 10px;
 }
 
+.calendar-header h2,
+.calendar-header [slot="heading"] {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 0.3px;
+}
+
 .calendar-header button {
-  width: 28px;
-  height: 28px;
-  border: none;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text-primary, #f4f4f5);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
-  transition: background 0.15s ease;
+  font-size: 0.9rem;
+  transition: all 0.15s ease;
 }
 
 .calendar-header button:hover {
-  background: rgba(59, 130, 246, 0.25);
+  background: rgba(59, 130, 246, 0.18);
+  border-color: var(--neon-blue-solid);
+  color: var(--neon-blue-solid);
 }
 
-.react-aria-CalendarHeaderCell {
+/* Calendar grid */
+.date-picker-calendar table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.date-picker-calendar th {
   font-size: 0.65rem;
-  color: var(--text-muted, #a1a1aa);
-}
-
-.react-aria-CalendarCell {
-  width: 32px;
-  height: 32px;
-  border-radius: 6px;
-  text-align: center;
-  font-size: 0.75rem;
-  color: #cbd5e1;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.react-aria-CalendarCell:hover {
-  background: rgba(59, 130, 246, 0.2);
-}
-
-.react-aria-CalendarCell[data-selected] {
-  background: var(--neon-blue, #3b82f6);
-  color: #ffffff;
   font-weight: 700;
-  box-shadow: 0 0 12px var(--neon-blue-glow, rgba(59, 130, 246, 0.3));
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding-bottom: 6px;
 }
 
-.react-aria-CalendarCell[data-today] {
-  outline: 1px solid var(--neon-blue-solid, #60a5fa);
+.date-picker-calendar td {
+  text-align: center;
+  padding: 1px;
 }
 
-/* ========================= */
-/* ACTION BUTTON               */
-/* ========================= */
+.date-picker-calendar [role="button"] {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 7px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin: 0 auto;
+}
 
+.date-picker-calendar [role="button"]:hover {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.date-picker-calendar [role="button"][data-selected] {
+  background: var(--neon-blue-solid);
+  color: #061021;
+  box-shadow: 0 0 10px var(--neon-blue-glow);
+  font-weight: 800;
+}
+
+.date-picker-calendar [role="button"][data-outside-month] {
+  color: rgba(161, 161, 170, 0.35);
+}
+
+.date-picker-calendar [role="button"][data-unavailable] {
+  color: rgba(161, 161, 170, 0.25);
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.date-picker-calendar [role="button"][data-today]:not([data-selected]) {
+  border: 1px solid var(--neon-blue-solid);
+}
+
+/* ── Action buttons ── */
 .sidebar-action-btn {
   width: 100%;
+  margin-top: 6px;
+  position: relative;
+  overflow: hidden;
+  padding: 10px 16px;
+  font-size: 0.88rem;
 }
 
-/* ========================= */
-/* RESPONSIVE                  */
-/* ========================= */
+.sidebar-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
 
+.sidebar-action-btn:not(:disabled):active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* subtle shimmer sweep while a sim is running */
+.sidebar-action-btn:not(:disabled)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent, rgba(255,255,255,0.08), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.5s ease;
+}
+
+.sidebar-action-btn:not(:disabled):hover::after {
+  transform: translateX(100%);
+}
+
+/* ── Responsive ── */
 @media (max-width: 640px) {
-  .glass-sidebar {
-    padding: 16px 12px;
-    gap: 14px;
-  }
+  .glass-sidebar-panel { padding: 14px; }
+  .sidebar-wins, .sidebar-losses { font-size: 1.7rem; }
+  .date-picker-wrapper { flex-wrap: wrap; }
 }

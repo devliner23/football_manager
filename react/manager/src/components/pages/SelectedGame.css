@@ -193,7 +193,7 @@
   letter-spacing: -0.02em;
 }
 
-.glass-team-name {
+.glass-team-name-selected {
   padding: 14px 20px;
   border-radius: 16px;
   font-size: 1.2rem;
@@ -203,14 +203,18 @@
   color: #fff;
   background: var(--team-primary, #FF6B35);
   border: 2px solid rgba(255,255,255,0.25);
-  box-shadow: 0 0 25px var(--team-color, #FF6B35), inset 0 1px 0 rgba(255,255,255,0.2);
   margin-bottom: 20px;
   text-shadow: 0 2px 8px rgba(0,0,0,0.5);
   position: relative;
   overflow: hidden;
   width: 300px !important;
 }
-.glass-team-name::after {
+
+.glass-team-name {
+  width: 300px !important;
+}
+
+.glass-team-name-selected::after {
   content: '';
   position: absolute;
   top: 0; left: -100%;
@@ -218,6 +222,7 @@
   background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
   animation: shimmer 3s infinite;
 }
+
 @keyframes shimmer {
   to { left: 100%; }
 }

@@ -65,6 +65,16 @@ const CoachTab: React.FC<CoachTabProps> = ({ savedGameId, teamId, team }) => {
     };
   }, [savedGameId, teamId]);
 
+  const initials = coach?.full_name
+    .split(' ')
+    .map(n => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+
+  const tierFor = (value: number) =>
+    value >= 85 ? 'elite' : value >= 72 ? 'strong' : value >= 60 ? 'average' : 'weak';
+
   // Placeholder actions — not yet wired to any backend logic.
   const handlePlaceholderAction = (actionName: string) => {
     console.log(`[CoachTab] "${actionName}" clicked — not implemented yet.`);
@@ -106,25 +116,32 @@ const CoachTab: React.FC<CoachTabProps> = ({ savedGameId, teamId, team }) => {
     <div className="coach-tab">
       {/* ── Coach identity card ── */}
       <div className="glass-panel coach-header-card">
-        <div className="panel-inner">
-          <span className="panel-badge neon-blue-badge">HEAD COACH</span>
-          <h2 className="panel-title">{coach.full_name}</h2>
-          <p className="panel-subtitle">
-            {team ? `${team.city} ${team.name}` : 'Unassigned'} · Age {coach.age} · Overall{' '}
-            {coach.overall_rating}
-          </p>
+        <div className="coach-header-card-first-row">
+            <div className="coach-avatar-ring">
+              <div className="coach-avatar">{initials}</div>
+            </div>
+            <div>
+                <span className="panel-badge neon-blue-badge">HEAD COACH</span>
+                <h2 className="panel-title">{coach.full_name}</h2>
+            </div>
+        </div>
+        <p className="panel-subtitle">
+          {team ? `${team.city} ${team.name}` : 'Unassigned'} · Age {coach.age} · Overall{' '}
+          {coach.overall_rating}
+        </p>
 
-          <div className="coach-meta-row">
-            <div className="meta-item">
-              <span className="meta-label">Preferred Scheme</span>
-              <span className="meta-value text-white">
-                {ARCHETYPE_LABELS[coach.preferred_archetype] || coach.preferred_archetype}
-              </span>
-            </div>
-            <div className="meta-item">
-              <span className="meta-label">Overall Rating</span>
-              <span className="meta-value text-white">{coach.overall_rating}</span>
-            </div>
+        <div className="coach-meta-row">
+          <div className="meta-item">
+            <span className="meta-label">Preferred Scheme</span>
+            <span className="meta-value text-white">
+              {ARCHETYPE_LABELS[coach.preferred_archetype] || coach.preferred_archetype}
+            </span>
+          </div>
+          <div className="meta-item">
+            <span className={`meta-value text-white coach-rating-pill tier-${tierFor(coach.overall_rating)}`}>
+              {coach.overall_rating}
+            </span>
+            <span className="meta-label">Overall Rating</span>
           </div>
         </div>
       </div>
@@ -138,7 +155,7 @@ const CoachTab: React.FC<CoachTabProps> = ({ savedGameId, teamId, team }) => {
           {ATTRIBUTE_LABELS.map(({ key, label }) => {
             const value = coach.attributes?.[key] ?? 0;
             return (
-              <div className="coach-attribute-row" key={key}>
+              <div className={`coach-attribute-row tier-${tierFor(value)}`} key={key}>
                 <span className="coach-attribute-label">{label}</span>
                 <div className="coach-attribute-bar-track">
                   <div

@@ -406,22 +406,24 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                       </span>
                     </div>
 
-                    <button
-                      className="btn btn--trade"
-                      onClick={handleSimulateToNextGame}
-                    >
-                      <span className="btn__content btn__content--default">
-                        <FastForward size={16} />
-                        Simulate Next User Game
-                      </span>
-                      <span className="btn__content btn__content--hover">
-                        <span>Simulating to: {new Date(nextUserGame.game_date).toLocaleDateString(undefined, {
-                                    weekday: 'short',
-                                    month: 'short',
-                                    day: 'numeric',
-                                  })}</span>
-                      </span>
-                    </button>
+                    <div className="banner__actions">
+                      <button
+                        className="btn btn--trade"
+                        onClick={handleSimulateToNextGame}
+                      >
+                        <span className="btn__content btn__content--default">
+                          <FastForward size={16} />
+                          Simulate Next User Game
+                        </span>
+                        <span className="btn__content btn__content--hover">
+                          <span>Simulating to: {new Date(nextUserGame.game_date).toLocaleDateString(undefined, {
+                                      weekday: 'short',
+                                      month: 'short',
+                                      day: 'numeric',
+                                    })}</span>
+                        </span>
+                      </button>
+                    </div>
 
                   </div>
                 );

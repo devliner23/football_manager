@@ -398,7 +398,7 @@ export const leagueAPI = {
   },
 
   getCoach: async (savedGameId: string, teamId: string): Promise<Coach | null> => {
-    const res = await api.get(`/league/${savedGameId}/coach/${teamId}`);
+    const res = await api.get(`/api/league/${savedGameId}/coach/${teamId}`);
     return res.data.data ?? null;
   },
   
