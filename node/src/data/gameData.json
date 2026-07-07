@@ -19,7 +19,7 @@
       "baseSuccess": 0.42,
       "synergyWithBallHandlerRating": 0.0006,
       "synergyWithDefenderPenalty": -0.0004,
-      "shotDistribution": { "midRange": 0.65, "threePoint": 0.15, "rim": 0.20 },
+      "shotDistribution": { "mid_range": 0.65, "three_point": 0.15, "rim": 0.20 },
       "turnoverBase": 0.09,
       "foulDrawnRate": 0.10,
       "assistProbability": 0.12,
@@ -43,8 +43,8 @@
       "synergyHandlerScreener": 0.0010,
       "synergyDefenderRollDefender": -0.0005,
       "rollVsPopSplit": { "roll": 0.55, "pop": 0.45 },
-      "shotDistributionRoll": { "rim": 0.80, "midRange": 0.20 },
-      "shotDistributionPop": { "midRange": 0.40, "threePoint": 0.60 },
+      "shotDistributionRoll": { "rim": 0.80, "mid_range": 0.20 },
+      "shotDistributionPop": { "mid_range": 0.40, "three_point": 0.60 },
       "turnoverBase": 0.11,
       "foulDrawnRateRoll": 0.14,
       "foulDrawnRatePop": 0.06,
@@ -59,7 +59,7 @@
       "baseSuccess": 0.50,
       "synergyShooterPasser": 0.0007,
       "synergyDefenderCloseout": -0.0005,
-      "shotDistribution": { "threePoint": 0.85, "midRange": 0.15 },
+      "shotDistribution": { "three_point": 0.85, "mid_range": 0.15 },
       "turnoverBase": 0.04,
       "foulDrawnRate": 0.04,
       "assistProbability": 0.80,
@@ -71,7 +71,7 @@
       "baseSuccess": 0.44,
       "synergyPostPlayerPasser": 0.0005,
       "synergyDefenderPostDefender": -0.0006,
-      "shotDistribution": { "rim": 0.50, "midRange": 0.35, "hook": 0.15 },
+      "shotDistribution": { "rim": 0.50, "mid_range": 0.35, "hook": 0.15 },
       "turnoverBase": 0.13,
       "foulDrawnRate": 0.18,
       "assistProbability": 0.35,
@@ -83,7 +83,7 @@
       "baseSuccess": 0.55,
       "synergySpeedAdvantage": 0.0012,
       "defensiveRecoveryPenalty": -0.0003,
-      "shotDistribution": { "rim": 0.70, "threePoint": 0.20, "midRange": 0.10 },
+      "shotDistribution": { "rim": 0.70, "three_point": 0.20, "mid_range": 0.10 },
       "turnoverBase": 0.07,
       "foulDrawnRate": 0.10,
       "assistProbability": 0.50,
@@ -103,24 +103,24 @@
 
   "shotQualityCalculation": {
     "offensiveSkillWeights": {
-      "isolation":     { "ball_handling": 0.30, "midRange": 0.40, "threePoint": 0.30 },
-      "spot_up":       { "threePoint": 0.70, "midRange": 0.30 },
-      "post_up":       { "inside_scoring": 0.60, "strength": 0.40 },
+      "isolation":     { "ball_handling": 0.30, "mid_range": 0.40, "three_point": 0.30 },
+      "spot_up":       { "three_point": 0.70, "mid_range": 0.30 },
+      "post_up":       { "inside": 0.60, "strength": 0.40 },
       "pick_and_roll": {
-        "handler":     { "ball_handling": 0.25, "midRange": 0.25, "inside_scoring": 0.25, "passing": 0.25 },
-        "screener":    { "inside_scoring": 0.55, "strength": 0.20, "midRange": 0.25 }
+        "handler":     { "ball_handling": 0.25, "mid_range": 0.25, "inside": 0.25, "passing": 0.25 },
+        "screener":    { "inside": 0.55, "strength": 0.20, "mid_range": 0.25 }
       },
-      "transition":    { "speed": 0.50, "inside_scoring": 0.30, "ball_handling": 0.20 }
+      "transition":    { "speed": 0.50, "inside": 0.30, "ball_handling": 0.20 }
     },
     "defensiveSkillWeights": {
-      "isolation":     { "perimeterDefense": 1.0 },
-      "spot_up":       { "perimeterDefense": 0.80, "speed": 0.20 },
-      "post_up":       { "postDefense": 0.70, "strength": 0.30 },
+      "isolation":     { "perimeter_defense": 1.0 },
+      "spot_up":       { "perimeter_defense": 0.80, "speed": 0.20 },
+      "post_up":       { "interior_defense": 0.70, "strength": 0.30 },
       "pick_and_roll": {
-        "handlerDefender":   { "perimeterDefense": 0.70, "speed": 0.30 },
-        "screenerDefender":  { "postDefense": 0.60, "rebounding": 0.40 }
+        "handlerDefender":   { "perimeter_defense": 0.70, "speed": 0.30 },
+        "screenerDefender":  { "interior_defense": 0.60, "rebounding": 0.40 }
       },
-      "transition":    { "speed": 0.70, "perimeterDefense": 0.30 }
+      "transition":    { "speed": 0.70, "perimeter_defense": 0.30 }
     },
     "baseQualityOffset": 0.30,
     "randomnessFactor": 0.15,
@@ -136,7 +136,7 @@
   "turnoverModel": {
     "baseRate": 0.12,
     "handlerSkillWeight": { "ball_handling": 0.6, "passing": 0.4 },
-    "defenderSkillWeight": { "perimeterDefense": 0.8, "stealRating": 0.2 },
+    "defenderSkillWeight": { "perimeter_defense": 0.8, "stealRating": 0.2 },
     "skillDiffScale": 0.003,
     "minRate": 0.03,
     "maxRate": 0.35,
@@ -152,11 +152,11 @@
   "foulAndFreeThrow": {
     "baseFoulProbability": 0.08,
     "defenderDisciplineFactor": 0.0005,
-    "perimeterDefenseWeight": -0.4,
+    "perimeter_defenseWeight": -0.4,
     "freeThrowBase": 0.70,
     "freeThrowSkillWeight": 0.15,
     "andOneChanceOnFoul": 0.14,
-    "threePointFoulChance": 0.02,
+    "three_pointFoulChance": 0.02,
     "foulPerPlayType": {
       "isolation": 0.08,
       "pick_and_roll": 0.12,
@@ -175,8 +175,8 @@
       "C": 0.30, "PF": 0.25, "SF": 0.15, "SG": 0.10, "PG": 0.05
     },
     "shotTypeOffReboundModifier": {
-      "threePoint": 0.30,
-      "midRange": 0.20,
+      "three_point": 0.30,
+      "mid_range": 0.20,
       "rim": 0.40,
       "post": 0.35
     }
@@ -187,7 +187,7 @@
     "minMomentum": -1.0,
     "scoreChangeThreshold": 6,
     "runBonusPerPoint": 0.01,
-    "bigPlayBonus": { "dunk": 0.05, "threePointer": 0.04, "block": 0.06, "steal": 0.05 },
+    "bigPlayBonus": { "dunk": 0.05, "three_pointer": 0.04, "block": 0.06, "steal": 0.05 },
     "decayRatePerMinute": 0.02,
     "momentumEffectOnSuccess": 0.0005,
     "momentumEffectOnTurnoverRate": -0.0003,
@@ -228,7 +228,7 @@
     { "name": "and_one",              "prob": 0.18, "points": 3, "trigger": "any",            "requireFoul": true },
     { "name": "steal_and_score",      "prob": 0.12, "points": 2, "trigger": "defensiveStop", "momentumShift": 0.10 },
     { "name": "block_and_run",        "prob": 0.10, "points": 0, "trigger": "defensiveStop", "momentumShift": 0.12 },
-    { "name": "four_point_play",      "prob": 0.02, "points": 4, "trigger": "threePointFoul" },
+    { "name": "four_point_play",      "prob": 0.02, "points": 4, "trigger": "three_pointFoul" },
     { "name": "buzzer_beater",        "prob": 0.01, "points": 3, "trigger": "endOfQuarter"  },
     { "name": "flagrant_foul_ft",     "prob": 0.03, "points": 2, "trigger": "flagrant"       }
   ],
