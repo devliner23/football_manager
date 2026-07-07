@@ -148,6 +148,30 @@ export interface LeagueFinanceSummary {
   }>;
 }
 
+export interface CoachAttributes {
+  offense_rating: number;
+  defense_rating: number;
+  player_development: number;
+  motivation: number;
+  discipline: number;
+  adaptability: number;
+  rotation_iq: number;
+  clutch_factor: number;
+}
+
+export interface Coach {
+  id: string;
+  saved_game_id: string;
+  team_id: string;
+  first_name: string;
+  last_name: string;
+  full_name: string;
+  age: number;
+  overall_rating: number;
+  preferred_archetype: string;
+  attributes: CoachAttributes;
+}
+
 
 api.interceptors.response.use(
   (response) => response,
@@ -372,6 +396,12 @@ export const leagueAPI = {
     );
     return extractData(response);
   },
+
+  getCoach: async (savedGameId: string, teamId: string): Promise<Coach | null> => {
+    const res = await api.get(`/league/${savedGameId}/coach/${teamId}`);
+    return res.data.data ?? null;
+  },
+  
 };
 
 export type { Team, Player, StandingsRow, SavedGame, GameResult, PlayerGameStats };

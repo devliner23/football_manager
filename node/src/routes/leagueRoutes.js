@@ -43,4 +43,7 @@ router.get ('/:savedGameId/finance/teams',          leagueController.getTeamFina
 router.get ('/:savedGameId/finance/teams/:teamId',  leagueController.getTeamFinanceDetail);
 router.get ('/:savedGameId/finance/league-summary', leagueController.getLeagueFinanceSummary);
 
+router.get('/:savedGameId/coach/:teamId', leagueController.getCoach);
+
+
 module.exports = router;

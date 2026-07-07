@@ -346,7 +346,6 @@ class playerProgressionService {
     const pull = potentialPullRate(age);
     const potentialPull = pull * (potential - recalculated) * usageFactor;
 
-    const ratingDelta = (recalculated - overall) + drift + potentialPull;
 
     return { traits, ratingDelta };
   }

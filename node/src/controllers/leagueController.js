@@ -809,6 +809,25 @@ const leagueController = {
       res.status(500).json({ success: false, error: err.message });
     }
   },
+
+  // ── GET /api/league/:savedGameId/coach/:teamId ──────────────────────────────
+  async getCoach(req, res, next) {
+    try {
+      const { savedGameId, teamId } = req.params;
+
+      const game = await loadOwnedGame(savedGameId, req.user.id);
+      if (!game) return res.status(404).json({ error: 'Game not found or unauthorized' });
+
+      const leagueService = new LeagueService(savedGameId);
+      const coach = await leagueService.getCoachForTeam(teamId);
+
+      if (!coach) return res.status(404).json({ error: 'No coach found for this team' });
+
+      res.json({ success: true, data: coach });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
   
 

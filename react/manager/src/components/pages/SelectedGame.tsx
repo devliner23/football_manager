@@ -14,6 +14,7 @@ import FrontOfficeTab from './tabs/FrontOfficeTab';
 import PlayerModal from './PlayerModal';
 import ScheduleTab from './tabs/ScheduleTab';
 import LineupTab from './tabs/LineupTab';
+import CoachTab from './tabs/CoachTab';
 import './SelectedGame.css';
 
 
@@ -29,7 +30,8 @@ import {
   UserPlus,
   Building2,
   Calendar,
-  Clipboard
+  Clipboard,
+  UserCog
 } from 'lucide-react';
 import GameResults from './GameResults';
 
@@ -41,7 +43,7 @@ interface SelectedGameProps {
   onUpdate: (game: SavedGame) => void;
 }
 
-type TabType = 'overview' | 'leagueRoster' | 'standings' | 'frontoffice' | 'schedule';
+type TabType = 'overview' | 'leagueRoster' | 'standings' | 'frontoffice' | 'schedule'| 'coach';
 
 const tabConfig = {
   overview: {
@@ -64,6 +66,11 @@ const tabConfig = {
     label: 'Schedule',
     icon: <Calendar size={18} strokeWidth={2} />,
   },
+  coach: { 
+    label: 'Coach', 
+    icon: <UserCog size={18} strokeWidth={2} /> 
+  },
+
 };
 
 const SelectedGame: React.FC<SelectedGameProps> = ({
@@ -446,6 +453,14 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 standings={standings}
                 userStanding={userStanding}
                 userTeamPlayers={userTeamPlayers}
+              />
+            )}
+
+            {!loading && activeTab === 'coach' && (
+              <CoachTab
+                savedGameId={game.id}
+                teamId={managedClubId ?? undefined}
+                team={userTeam}
               />
             )}
             </div>

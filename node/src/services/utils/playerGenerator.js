@@ -118,8 +118,16 @@ class PlayerGenerator {
     }));
 
     console.log(`✅ Generated ${allPlayers.length} players`);
+    
+    const teamTiers = {};
+    for (let i = 0; i < shuffledTeams.length; i++) {
+      const team = shuffledTeams[i];
+      const tier = tiers[i] || 'mid';
+      teamTiers[team.id] = tier;
+      allPlayers.push(...this.generateTeamRoster(team, tier));
+    }
+    return { players: allPlayers, teamTiers };
 
-    return allPlayers;
   }
 
   // ---------- generate roster for a single team ----------
