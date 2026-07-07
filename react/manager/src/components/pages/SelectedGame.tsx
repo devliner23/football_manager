@@ -143,61 +143,24 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     }
   };
 
-  const refreshAllData = useCallback(async () => {
-    try {
-      const [
-        teamsData,
-        playersData,
-        standingsData,
-        scheduleData,
-        nextGameData,
-        fullGameData,
-      ] = await Promise.all([
-        leagueAPI.getTeams(game.id),
-        leagueAPI.getPlayers(game.id),
-        leagueAPI.getStandings(game.id),
-        leagueAPI.getSchedule(game.id),
-        leagueAPI.getNextUserGame(game.id),
-        gameAPI.getGame(game.id),
-      ]);
-
-      if (teamsData)    setTeams([...teamsData]);
-      if (playersData)  setPlayers([...playersData]);
-      if (standingsData) setStandings([...standingsData]);
-      if (scheduleData) setSchedule({...scheduleData});
-
-      // Update next user game
-      if (nextGameData?.seasonComplete) {
-        setNextUserGame(null);
-        setLeagueGamesBeforeCount(0);
-      } else if (nextGameData?.nextUserGame) {
-        setNextUserGame(nextGameData.nextUserGame);
-        setLeagueGamesBeforeCount(nextGameData.leagueGamesBeforeCount ?? 0);
-      }
-
-      // Pull fresh scalar fields from the saved_game row.
-      // managed_club_id is set by initializeLeague AFTER game creation, so the
-      // prop we received may still be null — always prefer the DB value here.
-      const freshGame = fullGameData?.data;
-      if (freshGame) {
-        if (freshGame.managed_club_id) {
-          setManagedClubId(freshGame.managed_club_id);
-        }
-        if (freshGame.current_game_date) {
-          setLastSimulatedDate(freshGame.current_game_date);
-        }
-        setCurrentSeason(freshGame.current_season ?? currentSeason);
-      }
-    } catch (err) {
-      console.error('refreshAllData failed:', err);
-    }
-  }, [game.id]);
-
   useEffect(() => {
-    setLoading(true);
-    refreshAllData().finally(() => setLoading(false));
-    console.log(GameResults);
-  }, [game.id, refreshAllData]);
+    let cancelled = false;
+
+    const load = async (attempt = 0) => {
+      setLoading(true);
+      const resolvedClubId = await refreshAllData();
+      if (cancelled) return;
+      if (!resolvedClubId && attempt < 5) {
+        setTimeout(() => load(attempt + 1), 800);
+      } else {
+        setLoading(false);
+      }
+    };
+
+    load();
+    return () => { cancelled = true; };
+  }, [game.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
 
   // ── Derived data ────────────────────────────────────────────────────────────
 
@@ -298,24 +261,58 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     }
   };
 
-  useEffect(() => {
-    let cancelled = false;
-    let attempts = 0;
+  const refreshAllData = useCallback(async (): Promise<string | null> => {
+    try {
+      const [
+        teamsData,
+        playersData,
+        standingsData,
+        scheduleData,
+        nextGameData,
+        fullGameData,
+      ] = await Promise.all([
+        leagueAPI.getTeams(game.id),
+        leagueAPI.getPlayers(game.id),
+        leagueAPI.getStandings(game.id),
+        leagueAPI.getSchedule(game.id),
+        leagueAPI.getNextUserGame(game.id),
+        gameAPI.getGame(game.id),
+      ]);
 
-    const load = async () => {
-      setLoading(true);
-      await refreshAllData();
-      attempts++;
-      if (!cancelled && !managedClubId && attempts < 6) {
-        setTimeout(load, 800); // retry until managed_club_id resolves
-      } else {
-        setLoading(false);
+      if (teamsData)     setTeams([...teamsData]);
+      if (playersData)   setPlayers([...playersData]);
+      if (standingsData) setStandings([...standingsData]);
+      if (scheduleData)  setSchedule({ ...scheduleData });
+
+      if (nextGameData?.seasonComplete) {
+        setNextUserGame(null);
+        setLeagueGamesBeforeCount(0);
+      } else if (nextGameData?.nextUserGame) {
+        setNextUserGame(nextGameData.nextUserGame);
+        setLeagueGamesBeforeCount(nextGameData.leagueGamesBeforeCount ?? 0);
       }
-    };
 
-    load();
-    return () => { cancelled = true; };
-  }, [game.id, refreshAllData]); // note: don't gate on managedClubId in the dep array, use a ref/state check inside
+      const freshGame = fullGameData?.data;
+      let resolvedClubId: string | null = managedClubId;
+      if (freshGame) {
+        if (freshGame.managed_club_id) {
+          setManagedClubId(freshGame.managed_club_id);
+          resolvedClubId = freshGame.managed_club_id;
+        }
+        if (freshGame.current_game_date) {
+          setLastSimulatedDate(freshGame.current_game_date);
+        }
+        setCurrentSeason(prev => freshGame.current_season ?? prev);
+      }
+
+      return resolvedClubId;
+    } catch (err) {
+      console.error('refreshAllData failed:', err);
+      return null;
+    }
+  }, [game.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Single mount/refresh effect — replaces the two separate effects above
 
   return (
     <div className="selected-game-dashboard">

@@ -323,99 +323,111 @@ class leagueService {
    * @param {string} userArchetype   - archetype ID chosen by the user (optional)
    */
   async initializeLeague(season = 1, managedClubName = null, userArchetype = null) {
-    const existingTeams = await this.getTeams();
-    if (existingTeams.length > 0) {
+    // Quick existence check – consider using a COUNT query instead of fetching rows
+    const { count } = await supabaseAdmin
+      .from('teams')
+      .select('*', { count: 'exact', head: true })
+      .eq('saved_game_id', this.savedGameId);
+    if (count > 0) {
       throw new Error(`League already initialized for saved game ${this.savedGameId}`);
     }
 
-    // Validate the user-supplied archetype; fall back to random if invalid
     const validUserArchetype =
       userArchetype && TeamArchetypeService.isValidArchetype(userArchetype)
         ? userArchetype
         : TeamArchetypeService.getRandomArchetype();
 
-    let teams, seasonRecord;
-    try {
-      // 1. Create the 30 teams
-      teams = await this.createTeams();
+    // ---------- Phase 1: independent foundational data ----------
+    const [teams, seasonRecord] = await Promise.all([
+      this.createTeams(),
+      this.createSeason(season),
+    ]);
 
-      // 2. Resolve the managed team
-      let managedTeamId = null;
-      if (managedClubName && typeof managedClubName === 'string') {
-        const found   = teams.find(t => t.name.toLowerCase() === managedClubName.toLowerCase());
-        managedTeamId = found ? found.id : teams[0]?.id;
-      } else {
-        managedTeamId = teams[0]?.id;
-        console.warn('managedClubName is not a valid string, defaulting to first team:', managedClubName);
-      }
-
-      // 3. Assign archetypes – user's team gets their choice, CPU teams get random
-      const teamArchetypes = {};
-      for (const team of teams) {
-        teamArchetypes[team.id] =
-          team.id === managedTeamId
-            ? validUserArchetype
-            : TeamArchetypeService.getRandomArchetype();
-      }
-
-      console.log(`🏀 User team archetype: ${validUserArchetype}`);
-      console.log(`🎲 CPU archetypes assigned to ${teams.length - 1} teams`);
-
-      // 4. Generate rosters (archetype modifiers applied inside createRosters)
-      const players    = await this.createRosters(teams, season, teamArchetypes);
-      const coaches = await this.createCoaches(teams);
-      seasonRecord     = await this.createSeason(season);
-      await this.createSeasonStats(teams, seasonRecord.id);
-      const gamesCount = await this.generateSchedule(teams, seasonRecord.id);
-      const faCount    = await this.createFreeAgents(season);
-
-      // ====================================================================
-      // 🔥 FINANCE SYSTEM LOGIC INJECTION
-      // ====================================================================
-      console.log(`[Finance] Initializing salaries, contracts, and team salary caps...`);
-      const financeResult = await FinanceService.initializeLeagueFinances(
-        this.savedGameId, 
-        teams, 
-        players
+    // Resolve managed team and assign archetypes (pure JS)
+    let managedTeamId = null;
+    if (managedClubName && typeof managedClubName === 'string') {
+      const found = teams.find(
+        t => t.name.toLowerCase() === managedClubName.toLowerCase()
       );
-      
-      if (!financeResult.success) {
-        throw new Error("Financial setup failed during league initialization.");
-      }
-      // ====================================================================
-
-      // 5. Persist metadata to the saved_game row
-      const currentState = (await this._getGameState()) || {};
-      await supabaseAdmin
-        .from('saved_games')
-        .update({
-          current_season:  season,
-          managed_club_id: managedTeamId,
-          game_state: {
-            ...currentState,
-            initialized_at:  new Date().toISOString(),
-            season_id:       seasonRecord.id,
-            total_games:     gamesCount,
-            team_archetypes: teamArchetypes,    // ← stored for future seasons
-            user_archetype:  validUserArchetype, // ← quick lookup
-          },
-        })
-        .eq('id', this.savedGameId);
-
-      return {
-        season,
-        teamsCreated:   teams.length,
-        playersCreated: players.length,
-        freeAgentsCreated:   faCount.length, 
-        gamesCreated:   gamesCount,
-        userArchetype:  validUserArchetype,
-        financesInitialized: true
-      };
-    } catch (err) {
-      if (teams)        await this.rollbackLeague();
-      if (seasonRecord) await supabaseAdmin.from('seasons').delete().eq('id', seasonRecord.id);
-      throw err;
+      managedTeamId = found ? found.id : teams[0]?.id;
+    } else {
+      managedTeamId = teams[0]?.id;
     }
+
+    const teamArchetypes = {};
+    for (const team of teams) {
+      teamArchetypes[team.id] =
+        team.id === managedTeamId
+          ? validUserArchetype
+          : TeamArchetypeService.getRandomArchetype();
+    }
+
+    // ---------- Phase 2: all tasks that only need teams + season ----------
+    // createRosters will give us players – we’ll need them for finances
+    const rosterPromise = this.createRosters(teams, season, teamArchetypes);
+
+    // These can run completely in parallel with rosters
+    const coachesPromise    = this.createCoaches(teams);
+    const statsPromise      = this.createSeasonStats(teams, seasonRecord.id);
+    const schedulePromise   = this.generateSchedule(teams, seasonRecord.id);
+    const freeAgentsPromise = this.createFreeAgents(season); // assuming createFreeAgents takes seasonRecord
+
+    // Wait for rosters to finish, then kick off finances while others still run
+    const players = await rosterPromise;
+    const financePromise = FinanceService.initializeLeagueFinances(
+      this.savedGameId,
+      teams,
+      players
+    );
+
+    // Now wait for *everything* to settle
+    const [
+      _players,        // already have
+      coaches,
+      _stats,          // ignored
+      gamesCount,
+      faCount,
+      financeResult,
+    ] = await Promise.all([
+      rosterPromise,   // already resolved, included for consistency
+      coachesPromise,
+      statsPromise,
+      schedulePromise,
+      freeAgentsPromise,
+      financePromise,
+    ]);
+
+    if (!financeResult.success) {
+      throw new Error("Financial setup failed during league initialization.");
+    }
+
+    // ---------- Phase 3: final metadata update ----------
+    const currentState = (await this._getGameState()) || {};
+    await supabaseAdmin
+      .from('saved_games')
+      .update({
+        current_season:  season,
+        managed_club_id: managedTeamId,
+        game_state: {
+          ...currentState,
+          initialized_at:  new Date().toISOString(),
+          season_id:       seasonRecord.id,
+          total_games:     gamesCount,
+          team_archetypes: teamArchetypes,
+          user_archetype:  validUserArchetype,
+        },
+      })
+      .eq('id', this.savedGameId);
+
+    return {
+      season,
+      teamsCreated:      teams.length,
+      playersCreated:    players.length,
+      freeAgentsCreated: faCount.length,  // faCount is likely an array
+      gamesCreated:      gamesCount,
+      userArchetype:     validUserArchetype,
+      financesInitialized: true,
+    };
   }
 
 

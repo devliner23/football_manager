@@ -261,7 +261,7 @@ export const leagueAPI = {
       season,
       managedClubName: managedClub, 
       userArchetype: userArchetype
-    });
+    }, { timeout: 90_000 }); 
 
     return extractData(response);
   },

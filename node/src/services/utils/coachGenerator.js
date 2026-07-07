@@ -91,12 +91,18 @@ class CoachGenerator {
   }
 
   /**
-   * @param {Array} teams - team rows (must have .id)
-   * @param {Object} teamTiers - { [teamId]: 'contender'|'playoff'|'mid'|'lottery' }
+   * 🚀 NEW: Bulk save all coaches in one INSERT.
    */
-  generateLeagueCoaches(teams, teamTiers = {}) {
-    return teams.map(team => this.generateCoach(team.id, teamTiers[team.id] || 'mid'));
-  }
+  async saveCoaches(coaches) {
+    const { data, error } = await supabaseAdmin
+      .from('coaches')
+      .insert(coaches)
+      .select();
+    if (error) {
+      console.error('Error inserting coaches:', error);
+      throw error;
+    }
+    return data;
 }
 
 module.exports = CoachGenerator;
