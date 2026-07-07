@@ -173,7 +173,7 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
               </DateInput>
               <Button className="date-picker-button">📅</Button>
             </div>
-            <Popover className="date-picker-popover" placement="bottom start">
+            <Popover className="date-picker-popover" placement="bottom start" >
               <Calendar className="date-picker-calendar">
                 <header className="calendar-header">
                   <Button slot="previous">‹</Button>

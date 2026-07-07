@@ -145,6 +145,7 @@
   border-radius: 8px;
   padding: 8px 12px;
   transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
 }
 
 .date-picker-wrapper:focus-within {
@@ -204,6 +205,8 @@
   padding: 14px;
   z-index: 1200;
   animation: popoverDrop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  top: 50% !important; 
+  left: 50% !important;
 }
 
 @keyframes popoverDrop {
