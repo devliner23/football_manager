@@ -103,6 +103,8 @@ class CoachGenerator {
       throw error;
     }
     return data;
+
+  }
 }
 
 module.exports = CoachGenerator;
