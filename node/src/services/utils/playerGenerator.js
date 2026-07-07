@@ -181,6 +181,7 @@ class PlayerGenerator {
   generateLeague(teams) {
     console.log('👥 Generating league with realistic talent distribution...');
 
+    // Realistic tier distribution: ~4 contenders, 8 playoff, 8 mid, 6 lottery
     const tiers = [
       'contender', 'contender', 'contender', 'contender',
       'playoff', 'playoff', 'playoff', 'playoff', 'playoff', 'playoff', 'playoff', 'playoff',
@@ -190,26 +191,18 @@ class PlayerGenerator {
 
     const shuffledTeams = this.shuffleArray([...teams]);
     const allPlayers = [];
-    const teamTiers = {};                     // moved outside the duplicate loop
+    const teamTiers = {};
 
     for (let i = 0; i < shuffledTeams.length; i++) {
       const team = shuffledTeams[i];
       const tier = tiers[i] || 'mid';
-      teamTiers[team.id] = tier;              // store tier
+      teamTiers[team.id] = tier;
       const roster = this.generateTeamRoster(team, tier);
       allPlayers.push(...roster);
     }
 
-    // DEBUG (optional)
-    const sample = allPlayers.slice(0, 5).map(p => ({
-      name: p.full_name,
-      ovr: p.overall_rating,
-      college: p.college,
-      city: p.hometown_city
-    }));
-    console.log('Sample players:', sample);
-
     console.log(`✅ Generated ${allPlayers.length} players`);
+
     return { players: allPlayers, teamTiers };
   }
 

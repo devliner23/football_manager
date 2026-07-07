@@ -112,7 +112,8 @@ class leagueService {
 
     // 1. Generate base players via the existing PlayerGenerator
     const generator = new PlayerGenerator(this.savedGameId, season);
-    const basePlayers = generator.generateLeague(teams);
+    const { players: basePlayers, teamTiers } = generator.generateLeague(teams);
+    this._lastTeamTiers = teamTiers; // ← feeds CoachGenerator's tier-based coach quality
     console.log(`✅ Generated ${basePlayers.length} players. Applying archetype modifiers...`);
 
     // 2. Apply archetype attribute modifiers to each player

@@ -341,11 +341,12 @@ class playerProgressionService {
       traits[key] = clampTrait((traits[key] ?? 50) + drift * 0.5 * usageFactor);
     }
 
-    // ── Recalculate overall from updated traits, then pull toward potential ──
+// ── Recalculate overall from updated traits, then pull toward potential ──
     const recalculated = this._recalculateOverall(traits, player.position);
     const pull = potentialPullRate(age);
     const potentialPull = pull * (potential - recalculated) * usageFactor;
 
+    const ratingDelta = (recalculated - overall) + potentialPull;
 
     return { traits, ratingDelta };
   }
