@@ -136,7 +136,7 @@
 }
 
 .game-nav-item.active {
-  background: rgba(129, 140, 248, 0.15);
+  background: rgba(0 0 0, 0.5);
   color: var(--team-primary);
   box-shadow: 0 0 10px rgba(129, 140, 248, 0.2);
 }
@@ -201,7 +201,7 @@
   letter-spacing: 1px;
   text-transform: uppercase;
   color: #fff;
-  background: var(--team-primary, #FF6B35);
+  background: var(--team-primary);
   border: 2px solid rgba(255,255,255,0.25);
   margin-bottom: 20px;
   text-shadow: 0 2px 8px rgba(0,0,0,0.5);

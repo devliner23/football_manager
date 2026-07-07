@@ -46,9 +46,20 @@ class PlayerGenerator {
       PF: ['Stretch Big', 'Interior Force', 'Rebounder', 'Two-Way Star', 'Rim Protector'],
       C:  ['Rim Protector', 'Interior Force', 'Rebounder', 'Stretch Big', 'Two-Way Star']
     };
+    this.traitNames = [
+      'Clutch', 'Leader', 'Hard Worker', 'High Motor', 'Unselfish',
+      'Physical', 'Finesse', 'Vocal', 'Confident', 'Resilient',
+      'Quick Learner', 'Team Player', 'Alpha Dog', 'Spark Plug'
+    ];
+    this.nbaPlayers = [
+      'Jayson Tatum', 'Kevin Durant', 'LeBron James', 'Stephen Curry',
+      'Giannis Antetokounmpo', 'Luka Doncic', 'Joel Embiid', 'Nikola Jokic',
+      'Jimmy Butler', 'Devin Booker', 'Donovan Mitchell', 'Bam Adebayo',
+      'Anthony Davis', 'Paul George', 'Kawhi Leonard', 'Damian Lillard',
+      'Trae Young', 'Ja Morant', 'Zion Williamson', 'Shai Gilgeous-Alexander'
+    ];
   }
 
-  // ---------- helper: Gaussian random (unchanged) ----------
   randomGaussian(mean = 0, stdDev = 1) {
     let u = 0, v = 0;
     while (u === 0) u = Math.random();
@@ -74,6 +85,98 @@ class PlayerGenerator {
     return attributes;
   }
 
+  // ---------- NEW: simple traits (array of strings) ----------
+  generateTraitsArray() {
+    const count = Math.floor(Math.random() * 4); // 0–3 traits
+    const shuffled = this.shuffleArray([...this.traitNames]);
+    return shuffled.slice(0, count);
+  }
+
+  // ---------- NEW: college stats (based on position & overall) ----------
+  generateCollegeStats(position, overall) {
+    const ppgBase = (overall / 2) - 10 + this.randomInt(-2, 4);
+    const rpgBase = (position === 'C' || position === 'PF') ? 6 : 3;
+    const apgBase = (position === 'PG') ? 5 : 2;
+    return {
+      college_ppg: parseFloat((ppgBase + this.randomInt(-1, 2)).toFixed(1)),
+      college_rpg: parseFloat((rpgBase + this.randomInt(-1, 3)).toFixed(1)),
+      college_apg: parseFloat((apgBase + this.randomInt(-1, 2)).toFixed(1)),
+      college_spg: parseFloat((0.5 + Math.random() * 1.5).toFixed(1)),
+      college_bpg: parseFloat((position === 'C' ? 1.5 : 0.3 + Math.random() * 1).toFixed(1)),
+      college_fg_pct: parseFloat((40 + Math.random() * 20).toFixed(1)),
+      college_three_pct: parseFloat((28 + Math.random() * 18).toFixed(1)),
+      college_ft_pct: parseFloat((60 + Math.random() * 30).toFixed(1)),
+      college_minutes: parseFloat((20 + Math.random() * 15).toFixed(1)),
+    };
+  }
+
+  // ---------- NEW: physical measurements ----------
+  generateMeasurements(height) {
+    const wingspan = this.randomInt(Math.round(height * 0.95), Math.round(height * 1.1));
+    const standingReach = parseFloat((height * 0.8 + wingspan * 0.2).toFixed(1));
+    const handLength = parseFloat((7.5 + this.randomInt(0, 3) * 0.5).toFixed(1));
+    const handWidth = parseFloat((8.5 + this.randomInt(0, 3) * 0.5).toFixed(1));
+    const bodyFatPct = parseFloat((5 + Math.random() * 10).toFixed(1));
+    return { wingspan, standing_reach: standingReach, hand_length: handLength, hand_width: handWidth, body_fat_pct: bodyFatPct };
+  }
+
+  // ---------- NEW: intangibles ----------
+  generateIntangibles(overall) {
+    const tiers = ['Poor', 'Below Average', 'Average', 'Good', 'Excellent', 'Legendary'];
+    const base = overall / 10;
+    const workEthicIndex = this.clamp(Math.round(base + this.randomInt(-2, 2)), 0, 5);
+    const iqIndex = this.clamp(Math.round(base + this.randomInt(-2, 2)), 0, 5);
+    const leadershipIndex = this.clamp(Math.round(base + this.randomInt(-2, 2)), 0, 5);
+    const injuryHistory = this.pickRandom(['None', 'None', 'None', 'Minor', 'Moderate']);
+    return {
+      work_ethic: tiers[workEthicIndex],
+      basketball_iq: tiers[iqIndex],
+      leadership: tiers[leadershipIndex],
+      injury_history: injuryHistory,
+    };
+  }
+
+  // ---------- NEW: combine results ----------
+  generateCombine(position, overall) {
+    const speedFactor = overall / 100;
+    const agility = parseFloat((10.5 + (1 - speedFactor) * 2 + this.randomInt(-2, 2) * 0.1).toFixed(2));
+    const sprint = parseFloat((2.9 + (1 - speedFactor) * 0.8 + this.randomInt(-2, 2) * 0.05).toFixed(2));
+    const standVert = parseFloat((24 + speedFactor * 12 + this.randomInt(-4, 4)).toFixed(1));
+    const maxVert = parseFloat((standVert + 8 + this.randomInt(-3, 3)).toFixed(1));
+    const bench = (position === 'C' || position === 'PF') ? this.randomInt(8, 25) : this.randomInt(2, 15);
+    return {
+      lane_agility_time: agility,
+      three_quarter_sprint: sprint,
+      standing_vertical: standVert,
+      max_vertical: maxVert,
+      bench_press_reps: bench,
+    };
+  }
+
+  // ---------- NEW: awards ----------
+  generateAwards(overall) {
+    const awards = [];
+    if (overall >= 78 && Math.random() < 0.6) awards.push('All-American');
+    if (overall >= 72 && Math.random() < 0.4) awards.push('Conference Player of the Year');
+    if (overall >= 68 && Math.random() < 0.3) awards.push('All-Conference First Team');
+    if (overall >= 65 && Math.random() < 0.3) awards.push('All-Conference Second Team');
+    if (Math.random() < 0.2) awards.push('Academic All-American');
+    return awards;
+  }
+
+  // ---------- NEW: development & breakout ----------
+  generateDevelopmentTrend() {
+    return this.pickRandom(['Rising', 'Stable', 'Stable', 'Falling']);
+  }
+
+  getBreakoutPotential(potential, overall) {
+    const diff = potential - overall;
+    if (diff >= 12) return 'Very High';
+    if (diff >= 8) return 'High';
+    if (diff >= 4) return 'Medium';
+    return 'Low';
+  }
+
   // ---------- generate traits (unchanged) ----------
   generateTraits(position, rating, isStar) {
     const traits = {};
@@ -90,6 +193,14 @@ class PlayerGenerator {
   // ---------- NEW: background generation helpers ----------
   pickRandom(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  clamp(val, min, max) {
+    return Math.min(max, Math.max(min, val));
   }
 
   generateCollege() {
@@ -116,7 +227,7 @@ class PlayerGenerator {
   }
 
   generateJerseyNumber() {
-    return Math.floor(Math.random() * 100); // 0–99
+    return Math.floor(Math.random() * 100);
   }
 
   generatePlayerArchetype(position) {
@@ -127,8 +238,7 @@ class PlayerGenerator {
   // ---------- generate a full player (UPDATED with new fields) ----------
   generatePlayer(teamId, position, rating, isStar, rosterIndex) {
     const skillAttrs = this.generateSkillAttributes(position, rating);
-    const specialTraits = this.generateTraits(position, rating, isStar);
-    const traits = { ...skillAttrs, ...specialTraits };
+    const traitsArray = this.generateTraitsArray();
 
     const potential = this.generatePotential(rating, isStar, rosterIndex);
     const age = this.generateAge(isStar, rosterIndex);
@@ -138,13 +248,27 @@ class PlayerGenerator {
     const last_name = this.generateLastName();
     const full_name = `${first_name} ${last_name}`;
 
-    // New background fields
     const college = this.generateCollege();
     const collegeClass = this.generateCollegeClass(age);
     const hometown = this.generateHometown();
     const high_school = this.generateHighSchool();
     const jersey_number = this.generateJerseyNumber();
     const player_archetype = this.generatePlayerArchetype(position);
+
+    const collegeStats = this.generateCollegeStats(position, rating);
+    const measurements = this.generateMeasurements(height);
+    const intangibles = this.generateIntangibles(rating);
+    const combine = this.generateCombine(position, rating);
+    const awards = this.generateAwards(rating);
+
+    const socialMedia = this.randomInt(1000, 5000000);
+    const nilValuation = Math.round(socialMedia * 0.001) * 1000;
+
+    const comp1 = this.pickRandom(this.nbaPlayers);
+    const comp2 = this.pickRandom(this.nbaPlayers.filter(p => p !== comp1));
+
+    const devTrend = this.generateDevelopmentTrend();
+    const breakout = this.getBreakoutPotential(potential, rating);
 
     return {
       saved_game_id: this.savedGameId,
@@ -158,9 +282,13 @@ class PlayerGenerator {
       weight,
       overall_rating: rating,
       potential_rating: potential,
-      traits,                                          // object (skills + traits)
 
-      // New columns (all nullable, so safe to add)
+      // Skills (individual columns)
+      ...skillAttrs,
+
+      // Traits (JSON string array)
+      traits: JSON.stringify(traitsArray),
+
       college,
       college_class: collegeClass,
       hometown_city: hometown.city,
@@ -168,43 +296,78 @@ class PlayerGenerator {
       hometown_country: hometown.country,
       nationality: 'American',
       high_school,
-      draft_year: null,              // initial league players weren't drafted
+      jersey_number,
+
+      // Draft info (for league-generated players these are mostly null)
+      draft_class_year: null,
+      projected_draft_range: null,
+      draft_status: 'drafted',       // they're already on a team
+      draft_position: null,
+      drafted_by_team_id: teamId,    // the team they currently belong to
+      draft_year: null,
       draft_round: null,
       draft_pick: null,
       draft_team_id: null,
+
       player_archetype,
-      jersey_number,
+
+      // College stats
+      ...collegeStats,
+
+      // Physical measurements
+      ...measurements,
+
+      // Intangibles
+      ...intangibles,
+      character_concerns: Math.random() < 0.1,
+      scouting_notes: null,
+
+      // Comparisons & social
+      player_comparison_1: comp1,
+      player_comparison_2: comp2,
+      social_media_following: socialMedia,
+      nil_valuation: nilValuation,
+
+      // Combine
+      ...combine,
+
+      awards: JSON.stringify(awards),
+
+      tournament_appearances: this.randomInt(0, 4),
+      final_four_appearances: Math.random() < 0.15 ? 1 : 0,
+      championships: Math.random() < 0.08 ? 1 : 0,
+
+      development_trend: devTrend,
+      breakout_potential: breakout,
     };
   }
 
   // ---------- generate league (entry point) – MINOR FIX INCLUDED ----------
-  generateLeague(teams) {
-    console.log('👥 Generating league with realistic talent distribution...');
+    generateLeague(teams) {
+      console.log('👥 Generating league with realistic talent distribution...');
 
-    // Realistic tier distribution: ~4 contenders, 8 playoff, 8 mid, 6 lottery
-    const tiers = [
-      'contender', 'contender', 'contender', 'contender',
-      'playoff', 'playoff', 'playoff', 'playoff', 'playoff', 'playoff', 'playoff', 'playoff',
-      'mid', 'mid', 'mid', 'mid', 'mid', 'mid', 'mid', 'mid',
-      'lottery', 'lottery', 'lottery', 'lottery', 'lottery', 'lottery'
-    ];
+      const tiers = [
+        'contender', 'contender', 'contender', 'contender',
+        'playoff', 'playoff', 'playoff', 'playoff', 'playoff', 'playoff', 'playoff', 'playoff',
+        'mid', 'mid', 'mid', 'mid', 'mid', 'mid', 'mid', 'mid',
+        'lottery', 'lottery', 'lottery', 'lottery', 'lottery', 'lottery'
+      ];
 
-    const shuffledTeams = this.shuffleArray([...teams]);
-    const allPlayers = [];
-    const teamTiers = {};
+      const shuffledTeams = this.shuffleArray([...teams]);
+      const allPlayers = [];
+      const teamTiers = {};
 
-    for (let i = 0; i < shuffledTeams.length; i++) {
-      const team = shuffledTeams[i];
-      const tier = tiers[i] || 'mid';
-      teamTiers[team.id] = tier;
-      const roster = this.generateTeamRoster(team, tier);
-      allPlayers.push(...roster);
+      for (let i = 0; i < shuffledTeams.length; i++) {
+        const team = shuffledTeams[i];
+        const tier = tiers[i] || 'mid';
+        teamTiers[team.id] = tier;
+        const roster = this.generateTeamRoster(team, tier);
+        allPlayers.push(...roster);
+      }
+
+      console.log(`✅ Generated ${allPlayers.length} players`);
+      return { players: allPlayers, teamTiers };
     }
-
-    console.log(`✅ Generated ${allPlayers.length} players`);
-
-    return { players: allPlayers, teamTiers };
-  }
 
   // ---------- generate roster (unchanged) ----------
   generateTeamRoster(team, tier) {
