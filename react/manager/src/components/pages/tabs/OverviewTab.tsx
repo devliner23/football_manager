@@ -40,6 +40,7 @@ interface OverviewTabProps {
   onGameClick: (gameId: string) => void;
   allTeams: Team[];
   onSimulateToDate: (date: string) => void;
+  onContinue:() => void;
 }
 
 const OverviewTab: React.FC<OverviewTabProps> = ({
@@ -53,7 +54,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   refreshKey,
   onGameClick,
   allTeams,
-  onSimulateToDate
+  onSimulateToDate,
+  onContinue
 }) => {
   const [showTradeModal, setShowTradeModal] = useState(false);
 
@@ -138,8 +140,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
 
   const handleSimulateToNextGame = () => {
     if (!nextUserGame?.game_date || !onSimulateToDate) return;
-    const formatted = new Date(nextUserGame.game_date).toISOString().slice(0, 10);
-    onSimulateToDate(formatted); // single date string → backend simulate route
+    onContinue(); // single date string → backend simulate route
   };
 
   if (!userTeam) {

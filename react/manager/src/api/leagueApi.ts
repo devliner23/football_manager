@@ -456,21 +456,11 @@ export const leagueAPI = {
     return res.data.data ?? null;
   },
 
-  async getProspects(
-    savedGameId: string,
-    params: { position?: string; draftClassYear?: number; limit?: number; offset?: number } = {}
-  ): Promise<ProspectsResponse> {
-    const query = new URLSearchParams();
-    if (params.position) query.set('position', params.position);
-    if (params.draftClassYear) query.set('draftClassYear', String(params.draftClassYear));
-    if (params.limit) query.set('limit', String(params.limit));
-    if (params.offset) query.set('offset', String(params.offset));
-
-    const res = await fetch(`/api/league/${savedGameId}/prospects?${query.toString()}`, {
-      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-    });
-    if (!res.ok) throw new Error('Failed to fetch prospects');
-    return res.json();
+  getProspects: async (savedGameId: string): Promise<Prospect[]> => {
+    const response = await api.get<ApiResponse<Prospect[]>>(
+      `/api/league/${savedGameId}/prospects`
+    );
+    return extractData(response);
   },
   
 };

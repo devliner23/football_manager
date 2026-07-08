@@ -71,8 +71,8 @@ const ProspectsTab: React.FC<ProspectsTabProps> = ({ savedGameId }) => {
       setLoading(true);
       setError(null);
       try {
-        const res = await leagueAPI.getProspects(savedGameId, { limit: 200 });
-        if (!cancelled) setProspects(res.data || []);
+        const data = await leagueAPI.getProspects(savedGameId);
+        if (!cancelled) setProspects(data || []);
       } catch (err) {
         console.error('Failed to load prospects:', err);
         if (!cancelled) setError('Failed to load draft prospects.');

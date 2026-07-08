@@ -15,6 +15,7 @@ import PlayerModal from './PlayerModal';
 import ScheduleTab from './tabs/ScheduleTab';
 import LineupTab from './tabs/LineupTab';
 import CoachTab from './tabs/CoachTab';
+import ProspectsTab from './tabs/ProspectsTab';
 import './SelectedGame.css';
 
 
@@ -420,6 +421,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 onGameClick={(gameId) => setSelectedGameId(gameId)}
                 allTeams={teams}
                 onSimulateToDate={handleSimulateToDate}
+                onContinue={handleContinue}
                 />
             )}
             {!loading && activeTab === 'leagueRoster' && (
@@ -463,6 +465,12 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 savedGameId={game.id}
                 teamId={managedClubId ?? undefined}
                 team={userTeam}
+              />
+            )}
+
+            {!loading && activeTab === 'prospects' && (
+              <ProspectsTab
+                savedGameId={game.id}
               />
             )}
             </div>
