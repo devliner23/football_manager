@@ -8,7 +8,7 @@ import {
   Trophy,
 } from 'lucide-react';
 import { leagueAPI, GameResult } from '../../api/leagueApi';
-import IndividualGameView from './components/IndividualGameView';
+import IndividualGameView from './tabs/tabComponents/IndividualGameView';
 import './GameResults.css';
 
 interface GameResultsProps {

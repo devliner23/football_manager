@@ -1,6 +1,6 @@
 import React from 'react';
-import { GameResult } from '../../../api/leagueApi'; // adjust path
-import '../styles/IndividualGameView.css'; // new stylesheet (or add to Dashboard.css)
+import { GameResult } from '../../../../api/leagueApi';
+import './styles/IndividualGameView.css'; // new stylesheet (or add to Dashboard.css)
 
 interface IndividualGameViewProps {
   game: GameResult;

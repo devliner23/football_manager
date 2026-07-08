@@ -1,0 +1,352 @@
+/* Sim Summary Modal — Deep Slate Glass Theme */
+
+.sim-summary-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  background: rgba(4, 4, 7, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.sim-summary-container {
+  background: #0f111a;
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  color: var(--text-primary);
+  animation: simModalScaleUp 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes simModalScaleUp {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Header */
+.sim-summary-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #0f111a;
+  border-bottom: 1px solid var(--glass-border);
+  padding: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.sim-summary-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -0.3px;
+  color: var(--neon-blue-solid);
+  text-shadow: 0 0 12px var(--neon-blue-glow);
+}
+
+.sim-summary-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin: 6px 0 0 0;
+}
+
+.sim-summary-close {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sim-summary-close:hover {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: var(--neon-danger);
+  color: #ffffff;
+  transform: rotate(90deg);
+}
+
+/* Body */
+.sim-summary-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Quick stats row */
+.sim-quick-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.sim-stat-box {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.sim-stat-value {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.sim-stat-value.accent-blue {
+  color: var(--neon-blue-solid);
+  text-shadow: 0 0 10px var(--neon-blue-glow);
+}
+
+.sim-stat-value.accent-amber {
+  color: #fcd34d;
+  text-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+.sim-stat-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 6px;
+}
+
+/* Panels */
+.sim-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 18px;
+}
+
+.sim-panel-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin: 0 0 14px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Season totals */
+.sim-season-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sim-season-record {
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.sim-season-meta {
+  text-align: right;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.sim-season-meta span {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Section stacks (performers / progression) */
+.sim-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sim-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.sim-list-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sim-list-rank {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  width: 20px;
+}
+
+.sim-list-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+
+.sim-list-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.sim-list-stats {
+  display: flex;
+  gap: 16px;
+}
+
+.sim-stat-mini {
+  text-align: center;
+}
+
+.sim-stat-mini-value {
+  font-weight: 700;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.sim-stat-mini-label {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* Standings table */
+.sim-standings-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.sim-standings-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--glass-border);
+  padding-bottom: 8px;
+}
+
+.sim-standings-table td {
+  padding: 8px 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.sim-standings-rank {
+  color: var(--text-muted);
+}
+
+.sim-standings-team {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.sim-standings-win {
+  text-align: center;
+  color: #34d399;
+  font-weight: 600;
+}
+
+.sim-standings-loss {
+  text-align: center;
+  color: var(--neon-danger);
+  font-weight: 600;
+}
+
+/* Progression deltas */
+.sim-progression-delta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.sim-progression-before {
+  color: var(--text-muted);
+}
+
+.sim-progression-arrow {
+  font-weight: 700;
+}
+
+.sim-progression-arrow.up {
+  color: #34d399;
+}
+
+.sim-progression-arrow.down {
+  color: var(--neon-danger);
+}
+
+.sim-progression-after {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Footer */
+.sim-summary-footer {
+  position: sticky;
+  bottom: 0;
+  background: #0f111a;
+  border-top: 1px solid var(--glass-border);
+  padding: 16px 24px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sim-summary-continue-btn {
+  padding: 12px 28px;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(59, 130, 246, 0.12);
+  color: #cbd5e1;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sim-summary-continue-btn:hover {
+  transform: translateY(-2px);
+  background: rgba(59, 130, 246, 0.25);
+  border-color: var(--neon-blue-solid);
+  color: #ffffff;
+  box-shadow: 0 8px 25px var(--neon-blue-glow);
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .sim-quick-stats {
+    grid-template-columns: 1fr;
+  }
+  .sim-season-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .sim-season-meta {
+    text-align: left;
+  }
+}

@@ -115,58 +115,58 @@ const CoachTab: React.FC<CoachTabProps> = ({ savedGameId, teamId, team }) => {
   return (
     <div className="coach-tab">
       {/* ── Coach identity card ── */}
-      <div className="glass-panel coach-header-card">
-        <div className="coach-header-card-first-row">
-            <div className="coach-avatar-ring">
-              <div className="coach-avatar">{initials}</div>
-            </div>
-            <div>
-                <span className="panel-badge neon-blue-badge">HEAD COACH</span>
-                <h2 className="panel-title">{coach.full_name}</h2>
-            </div>
-        </div>
-        <p className="panel-subtitle">
-          {team ? `${team.city} ${team.name}` : 'Unassigned'} · Age {coach.age} · Overall{' '}
-          {coach.overall_rating}
-        </p>
-
-        <div className="coach-meta-row">
-          <div className="meta-item">
-            <span className="meta-label">Preferred Scheme</span>
-            <span className="meta-value text-white">
-              {ARCHETYPE_LABELS[coach.preferred_archetype] || coach.preferred_archetype}
-            </span>
-          </div>
-          <div className="meta-item">
-            <span className={`meta-value text-white coach-rating-pill tier-${tierFor(coach.overall_rating)}`}>
-              {coach.overall_rating}
-            </span>
-            <span className="meta-label">Overall Rating</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Attribute breakdown ── */}
-      <div className="glass-panel coach-attributes-card">
-        <h3 className="coach-section-title">
-          <Brain size={16} /> Attributes
-        </h3>
-        <div className="coach-attribute-grid">
-          {ATTRIBUTE_LABELS.map(({ key, label }) => {
-            const value = coach.attributes?.[key] ?? 0;
-            return (
-              <div className={`coach-attribute-row tier-${tierFor(value)}`} key={key}>
-                <span className="coach-attribute-label">{label}</span>
-                <div className="coach-attribute-bar-track">
-                  <div
-                    className="coach-attribute-bar-fill"
-                    style={{ width: `${Math.min(100, value)}%` }}
-                  />
-                </div>
-                <span className="coach-attribute-value">{value}</span>
+      <div className="coach-top-row">
+        <div className="glass-panel coach-header-card">
+          <div className="coach-header-card-first-row">
+              <div className="coach-avatar-ring">
+                <div className="coach-avatar">{initials}</div>
               </div>
-            );
-          })}
+              <div>
+                  <span className="panel-badge neon-blue-badge">HEAD COACH</span>
+                  <h2 className="panel-title">{coach.full_name}</h2>
+              </div>
+          </div>
+          <p className="panel-subtitle">
+            {team ? `${team.city} ${team.name}` : 'Unassigned'} · Age {coach.age} · Overall{' '}
+            {coach.overall_rating}
+          </p>
+          <div className="coach-meta-row">
+            <div className="meta-item">
+              <span className="meta-label">Preferred Scheme</span>
+              <span className="meta-value text-white">
+                {ARCHETYPE_LABELS[coach.preferred_archetype] || coach.preferred_archetype}
+              </span>
+            </div>
+            <div className="meta-item">
+              <span className={`meta-value text-white coach-rating-pill tier-${tierFor(coach.overall_rating)}`}>
+                {coach.overall_rating}
+              </span>
+              <span className="meta-label">Overall Rating</span>
+            </div>
+          </div>
+        </div>
+        {/* ── Attribute breakdown ── */}
+        <div className="glass-panel coach-attributes-card">
+          <h3 className="coach-section-title">
+            <Brain size={16} /> Attributes
+          </h3>
+          <div className="coach-attribute-grid">
+            {ATTRIBUTE_LABELS.map(({ key, label }) => {
+              const value = coach.attributes?.[key] ?? 0;
+              return (
+                <div className={`coach-attribute-row tier-${tierFor(value)}`} key={key}>
+                  <span className="coach-attribute-label">{label}</span>
+                  <div className="coach-attribute-bar-track">
+                    <div
+                      className="coach-attribute-bar-fill"
+                      style={{ width: `${Math.min(100, value)}%` }}
+                    />
+                  </div>
+                  <span className="coach-attribute-value">{value}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

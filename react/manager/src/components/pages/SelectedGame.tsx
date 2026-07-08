@@ -395,8 +395,9 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
             ))}
         </nav>
 
-        <div className="game-sidebar-footer">
-            {!loading && ( <GameSidebar
+        {/* <div className="game-sidebar-footer">
+            {!loading && ( 
+              <GameSidebar
                 season={currentSeason}
                 wins={userStanding?.wins ?? 0}
                 losses={userStanding?.losses ?? 0}
@@ -413,7 +414,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 onSimulateToDate={handleSimulateToDate}
                 lastSimulatedDate={lastSimulatedDate}
             /> )}
-        </div>
+        </div> */}
         </aside>
 
         {/* ── RIGHT MAIN CONTENT ── */}
@@ -451,6 +452,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 onGameClick={(gameId) => setSelectedGameId(gameId)}
                 allTeams={teams}
                 onSimulateToDate={handleSimulateToDate}
+                schedule={schedule}
                 />
             )}
             {!loading && activeTab === 'leagueRoster' && (

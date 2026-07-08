@@ -1,10 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { GameResult } from '../../../api/leagueApi';
-import IndividualGameView from '../components/IndividualGameView';
+import IndividualGameView from './tabComponents/IndividualGameView';
 import GamesListView from './tabComponents/GamesListView';
 import MiniCalendar from './tabComponents/MiniCalendar';
 import GameSnapshot from './tabComponents/GameSnapshot';
+import DayGamesModal from './tabComponents/DayGamesModal';
 import {
   Trophy,
   Flame,
@@ -35,7 +36,6 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate,
 
   // ── Modal for calendar tab ──
   const [calendarModalDate, setCalendarModalDate] = useState<Date | null>(null);
-  const [calendarModalGame, setCalendarModalGame] = useState<GameResult | null>(null);
 
   // ── League Schedule sub‑state ──
   const [gamesTabSelectedDate, setGamesTabSelectedDate] = useState<Date>(() => {
@@ -265,17 +265,10 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate,
     if (day === null) return;
     const date = new Date(calendarYear, calendarMonthIndex, day);
     setCalendarModalDate(date);
-    setCalendarModalGame(null);
-  };
-
-  const handleCalendarGameSelect = (game: GameResult) => {
-    setCalendarModalGame(game);
-    setCalendarModalDate(null);
   };
 
   const closeCalendarModal = () => {
     setCalendarModalDate(null);
-    setCalendarModalGame(null);
   };
 
   // ── Mini calendar date select for League Schedule ──
@@ -832,76 +825,16 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate,
         )}
       </div>
 
-      {/* ── Calendar modal (works for both calendar tab and future uses) ── */}
-      {(calendarModalDate || calendarModalGame) && (
-        ReactDOM.createPortal(
-          <div className="modal-backdrop" onClick={closeCalendarModal}>
-            <div className="day-modal" onClick={e => e.stopPropagation()}>
-              {calendarModalDate ? (
-                <>
-                  <div className="modal-header">
-                    <h3 className="modal-title">
-                      {calendarModalDate.toLocaleDateString(undefined, {
-                        weekday: 'long',
-                        month: 'long',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </h3>
-                    <button className="modal-close" onClick={closeCalendarModal}>✕</button>
-                  </div>
-                  <div className="modal-games-list">
-                    {(() => {
-                      const dateKey = calendarModalDate.toISOString().split('T')[0];
-                      const gamesOnDate = gamesByDate.get(dateKey) || [];
-                      return gamesOnDate.map(game => {
-                        const home = teamMap.get(game.home_team_id);
-                        const away = teamMap.get(game.away_team_id);
-                        return (
-                          <div
-                            key={game.id}
-                            className="modal-game-row clickable"
-                            onClick={() => handleCalendarGameSelect(game)}
-                            role="button"
-                            tabIndex={0}
-                          >
-                            <div className="modal-game-teams">
-                              <div className="modal-team home">
-                                <span className="team-abbr-full">{home?.abbreviation || 'TBD'}</span>
-                                <span className="team-name">{home?.name || ''}</span>
-                              </div>
-                              <div className="modal-vs">VS</div>
-                              <div className="modal-team away">
-                                <span className="team-abbr-full">{away?.abbreviation || 'TBD'}</span>
-                                <span className="team-name">{away?.name || ''}</span>
-                              </div>
-                            </div>
-                            <div className="modal-game-info">
-                              <div className="modal-score-big">
-                                {game.status === 'completed' && game.home_score != null
-                                  ? `${game.home_score} - ${game.away_score}`
-                                  : '—'}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </>
-              ) : calendarModalGame && teamMap.get(calendarModalGame.home_team_id) && teamMap.get(calendarModalGame.away_team_id) ? (
-                <IndividualGameView
-                  game={calendarModalGame}
-                  homeTeam={teamMap.get(calendarModalGame.home_team_id)!}
-                  awayTeam={teamMap.get(calendarModalGame.away_team_id)!}
-                  onClose={closeCalendarModal}
-                />
-              ) : null}
-            </div>
-          </div>,
-          document.getElementById('modal-root') || document.body
-        )
-      )}
+      <DayGamesModal
+        date={calendarModalDate}
+        games={
+          calendarModalDate
+            ? gamesByDate.get(calendarModalDate.toISOString().split('T')[0]) || []
+            : []
+        }
+        teams={teams}
+        onClose={closeCalendarModal}
+      />
     </div>
   );
 };

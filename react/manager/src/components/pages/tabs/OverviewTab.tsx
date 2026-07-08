@@ -1,33 +1,35 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { SavedGame, Team, Player } from '../../../shared/index';
+import { GameResult } from '../../../api/leagueApi';
 import GameResults from '../GameResults';
+import DayGamesModal from './tabComponents/DayGamesModal';
 import { useGameContext } from '../../../context/GameContext';
 import { 
   TrendingUp, 
   TrendingDown, 
   Calendar, 
-  ArrowRight, 
   User, 
-  Target, 
-  Play, 
-  Settings, 
   ArrowRightLeft, 
   Users, 
   BarChart3,
   Award,
-  Shield,
   Zap,
-  Activity,
+  DollarSign,
   Trophy,
   Home,
   Plane,
   Clock,
   Flame,
-  FastForward
+  Minus,
+  FastForward,
+  Activity, 
+  Crosshair, 
+  Shield
 } from 'lucide-react';
 import TradePanel from './tabComponents/TradePanel';
 import teamColors from '../../../data/teamColors.json';
 import "./styles/OverviewTab.css";
+import './styles/ScheduleTab.css'; // reuse cal-* calendar classes
 
 // ── Team Colors Types & Helpers ──────────────────────────────────────────────
 
@@ -53,10 +55,43 @@ const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
     : null;
 };
 
-// Get glass style with team's primary color
-const getTeamGlassStyle = (teamName: string): React.CSSProperties => {
-  const colors = (teamColors as TeamColorsMap)[teamName];
-  
+// Simple deterministic string hash, used only to pick a stable
+// LA franchise (see below) rather than picking one at random.
+const hashString = (s: string): number => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h << 5) - h + s.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+};
+
+// teamColors.json is keyed by real NBA "City Name" (e.g. "Boston Celtics"),
+// but the teams in this league have fictional names tied only to a city
+// (e.g. "Boston Sentinels"). So we match on city, not on the full team name.
+const getTeamColorsByCity = (city?: string, disambiguator?: string): TeamColorData | undefined => {
+  if (!city) return undefined;
+  const map = teamColors as TeamColorsMap;
+
+  // Los Angeles is the one city with two franchises in teamColors.json
+  // ("Los Angeles Lakers" and "LA Clippers"), so a plain city match is
+  // ambiguous. Use a stable hash of the fictional team name to pick
+  // consistently between the two rather than always defaulting to one.
+  if (city === 'Los Angeles') {
+    const laKeys = ['Los Angeles Lakers', 'LA Clippers'];
+    const idx = disambiguator ? hashString(disambiguator) % laKeys.length : 0;
+    return map[laKeys[idx]];
+  }
+
+  const entry = Object.entries(map).find(([key]) => key.startsWith(city));
+  return entry?.[1];
+};
+
+// Get glass style keyed off a team's city (with an optional name to
+// disambiguate LA franchises)
+const getTeamGlassStyle = (city?: string, disambiguator?: string): React.CSSProperties => {
+  const colors = getTeamColorsByCity(city, disambiguator);
+
   if (!colors) {
     // Fallback glass style for unknown teams
     return {
@@ -109,6 +144,7 @@ interface OverviewTabProps {
   onGameClick: (gameId: string) => void;
   allTeams: Team[];
   onSimulateToDate: (date: string) => void;
+  schedule?: Record<number, GameResult[]>;
 }
 
 const OverviewTab: React.FC<OverviewTabProps> = ({
@@ -123,18 +159,89 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   onGameClick,
   allTeams,
   onSimulateToDate,
+  schedule
 }) => {
   const [showTradeModal, setShowTradeModal] = useState(false);
 
-  const { nextUserGame, leagueGamesBeforeCount = 0 } = useGameContext() || {};
+  // ── Quick Continue day-list state ──
+  const qcAnchorDate = useMemo(
+    () => (game.current_game_date ? new Date(game.current_game_date) : new Date()),
+    [game.current_game_date]
+  );
+  const [qcVisibleCount, setQcVisibleCount] = useState(7);
+  const [qcSelectedDate, setQcSelectedDate] = useState<string | null>(
+    game.current_game_date ? game.current_game_date.slice(0, 10) : null
+  );
+  const qcListRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => {
-    if (nextUserGame) {
-      console.log("Overview Tab", nextUserGame);
-    } else {
-      console.log("Overview Tab not working", nextUserGame);
+  const qcFormatDate = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const qcAddDays = (base: Date, days: number) => {
+    const d = new Date(base);
+    d.setDate(d.getDate() + days);
+    return d;
+  };
+
+  const qcIsSameDay = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  const qcDays = useMemo(
+    () => Array.from({ length: qcVisibleCount }, (_, i) => qcAddDays(qcAnchorDate, i)),
+    [qcAnchorDate, qcVisibleCount]
+  );
+
+  const MAX_QC_DAYS = 90; // safety cap so the list can't grow forever
+
+  const handleQcScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 32) {
+      setQcVisibleCount((c) => Math.min(c + 7, MAX_QC_DAYS));
     }
-  }) // eslint-disable-line react-hooks/exhaustive-deps
+  };
+
+  const handleQuickContinueTo = () => {
+    if (qcSelectedDate) onSimulateToDate(qcSelectedDate);
+  };
+
+  const [dayModalDate, setDayModalDate] = useState<Date | null>(null);
+
+  const gamesByDate = useMemo(() => {
+    const map = new Map<string, GameResult[]>();
+    if (!schedule) return map;
+    Object.values(schedule).forEach((weekGames) => {
+      weekGames.forEach((g) => {
+        const src = g.game_date || g.played_at;
+        if (!src) return;
+        const key = new Date(src).toISOString().split('T')[0];
+        if (!map.has(key)) map.set(key, []);
+        map.get(key)!.push(g);
+      });
+    });
+    return map;
+  }, [schedule]);
+
+
+  // Pull everything SelectedGame actually provides via GameProvider,
+  // not just nextUserGame/leagueGamesBeforeCount.
+  const {
+    nextUserGame,
+    leagueGamesBeforeCount = 0,
+    season,
+    lastSimulatedDate,
+    playerCount,
+    ppg,
+    oppg,
+    loading: simLoading,
+    onContinue,
+    onViewStandings,
+  } = useGameContext() || {};
 
   const teamMap = useMemo(() => {
     const m = new Map<string, Team>();
@@ -173,18 +280,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       }));
 
   const getPlayerName = (player: Player) => `${player.first_name} ${player.last_name}`;
-
-  const leaderByStat = (stat: keyof Pick<Player, 'points' | 'rebounds' | 'assists'>) => {
-    const sorted = [...userTeamPlayers].sort((a, b) => (b[stat] ?? 0) - (a[stat] ?? 0));
-    return sorted.length > 0 ? getPlayerName(sorted[0]) : '-';
-  };
-
-  const leagueLeaders = (stat: keyof Pick<Player, 'points' | 'rebounds' | 'assists'>) => {
-    return [...players]
-      .sort((a, b) => (b[stat] ?? 0) - (a[stat] ?? 0))
-      .slice(0, 5)
-      .map((p) => ({ name: getPlayerName(p), value: p[stat] ?? 0 }));
-  };
 
   const teamAverages = () => {
     if (userTeamPlayers.length === 0) return { pts: '0.0', reb: '0.0', ast: '0.0' };
@@ -231,191 +326,288 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   const averages = teamAverages();
   const [wins = '0', losses = '0'] = record.split('-');
 
-  // Get team names for color lookup
-  const selfTeamName = nextUserGame?.home_team?.name || userTeam.name;
-  const oppTeamName = nextUserGame?.away_team?.name || '';
+  const displaySeason = season ?? game.current_season ?? 1;
+  const displayLastSimmed = lastSimulatedDate ?? game.current_game_date ?? null;
 
   return (
     <div className="overview-container">
       <div className="overview-grid">
-        
-        <header className="banner">
-          {/* Left: Team identity */}
-          <div className="banner__brand">
-            <figure 
-              className="banner__avatar" 
-              aria-hidden="true"
-              style={getTeamGlassStyle(userTeam.name)}
-            >
-              🏀
-            </figure>
-            <div className="banner__identity">
-              <p className="banner__meta">
-                {userTeam.city}
-              </p>
-              <h2 className="banner__team-name">{userTeam.name}</h2>
+        {/* ==================== 50% WIDTH BANNER ==================== */}
+        <div className="overview-top-split">
+          <header className="banner-overview">
+            {/* Brand identity */}
+            <div className="banner__brand">
+              <figure
+                className="banner__avatar"
+                aria-hidden="true"
+                style={getTeamGlassStyle(userTeam.name)}
+              >
+                🏀
+              </figure>
+              <div className="banner__identity">
+                <p className="banner__meta">{userTeam.city}</p>
+                <h2 className="banner__team-name">{userTeam.name}</h2>
+              </div>
+              <div className="banner__record-pill">
+                <span className="record-pill__wins">{wins}</span>
+                <span className="record-pill__dash">–</span>
+                <span className="record-pill__losses">{losses}</span>
+              </div>
             </div>
-          </div>
-
-          {/* Divider */}
-          <div className="banner__divider" aria-hidden="true" />
-
-          {/* Center-left: League snapshot chips */}
-          <section className="banner__league-info">
-            <div className="league-chip">
-              <span className="league-chip__label">League Date</span>
-              <span className="league-chip__value">
-                {game.current_game_date
-                  ? new Date(game.current_game_date).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })
-                  : 'Preseason'}
-              </span>
+            {/* League info chips */}
+            <div className="banner__info-row">
+              <div className="league-chip">
+                <span className="league-chip__label">Date</span>
+                <span className="league-chip__value">
+                  {game.current_game_date
+                    ? new Date(game.current_game_date).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                      })
+                    : 'Preseason'}
+                </span>
+              </div>
+              <div className="league-chip">
+                <span className="league-chip__label">Conference</span>
+                <span className="league-chip__value">{userTeam.conference ?? '—'}</span>
+              </div>
+              <div className="league-chip">
+                <span className="league-chip__label">Division</span>
+                <span className="league-chip__value">{userTeam.division ?? '—'}</span>
+              </div>
+              <div className="league-chip">
+                <span className="league-chip__label">Roster</span>
+                <span className="league-chip__value">
+                  {userTeamPlayers.length}<span className="league-chip__max"> / 15</span>
+                </span>
+              </div>
             </div>
-            <div className="league-chip">
-              <span className="league-chip__label">Conference</span>
-              <span className="league-chip__value">{userTeam.conference ?? '—'}</span>
+            {/* Win rate bar */}
+            <div className="banner__winrate">
+              <div className="winrate__header">
+                <span className="winrate__label">Season Win Rate</span>
+                <span className="winrate__pct">{winPct}%</span>
+              </div>
+              <div className="winrate__track">
+                <div
+                  className="winrate__fill"
+                  style={{ width: '62%' }}
+                />
+                <span
+                  className="winrate__marker"
+                  style={{ left: '50%' }}
+                />
+              </div>
+              <span className="winrate__note">League average: 50.0%</span>
             </div>
-            <div className="league-chip">
-              <span className="league-chip__label">Division</span>
-              <span className="league-chip__value">{userTeam.division ?? '—'}</span>
-            </div>
-            <div className="league-chip">
-              <span className="league-chip__label">League Size</span>
-              <span className="league-chip__value">{allTeams.length || 30} Teams</span>
-            </div>
-            <div className="league-chip league-chip--accent">
-              <span className="league-chip__label">Save File</span>
-              <span className="league-chip__value">{game.name}</span>
-            </div>
-          </section>
-
-          {/* Center: Key statistics */}
-          <section className="banner__stats">
-            <div className="stats-block">
-              <span className="stats-block__label">Record Breakdown</span>
-              <span className="stats-block__value stats-block__value--glow">
-                {wins}<span className="stats-block__slash">/</span>{losses}
-              </span>
-              <span className="stats-block__sub">{winPct} Win %</span>
-            </div>
-
-            <div className="stats-block">
-              <span className="stats-block__label">Roster Capacity</span>
-              <span className="stats-block__value">
-                {userTeamPlayers.length} <span className="stats-block__max">/ 15</span>
-              </span>
-              <span className="stats-block__sub">Active Contracts</span>
-            </div>
-
-            <div className="stats-block">
-              <span className="stats-block__label">Franchise Status</span>
-              <span className="stats-block__value stats-block__value--status">
-                <Activity className="icon icon--pulse" />
-                Stable
-              </span>
-              <span className="stats-block__sub">Luxury Tax Compliant</span>
-            </div>
-          </section>
-
-          {/* Right: Actions & standings tracker */}
-          <aside className="banner__actions">
-            <div className="actions-group">
+            {/* Quick actions */}
+            <div className="banner__actions-row">
               <button
-                className="btn btn--trade"
+                className="btn btn--trade btn--trade-wide"
                 onClick={() => setShowTradeModal(true)}
               >
                 <span className="btn__content btn__content--default">
-                  <ArrowRightLeft size={16} />
+                  <ArrowRightLeft size={18} />
                   Quick Actions
                 </span>
                 <span className="btn__content btn__content--hover">
-                  <span
-                    className="trade-sub-action"
-                    title="Propose Assets"
-                    aria-label="Propose Assets"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowTradeModal(true);
-                    }}
-                  >
-                    <Zap size={18} />
+                  <span className="trade-sub-action" title="Propose Assets" onClick={(e) => { e.stopPropagation(); setShowTradeModal(true); }}>
+                    <Zap size={22} />
                   </span>
-                  <span
-                    className="trade-sub-action"
-                    title="Negotiations"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowTradeModal(true);
-                    }}
-                  >
-                    <Users size={18} />
+                  <span className="trade-sub-action" title="Negotiations" onClick={(e) => { e.stopPropagation(); setShowTradeModal(true); }}>
+                    <Users size={22} />
                   </span>
-                  <span
-                    className="trade-sub-action"
-                    title="Calendar"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowTradeModal(true);
-                    }}
-                  >
-                    <Calendar size={18} />
+                  <span className="trade-sub-action" title="Calendar" onClick={(e) => { e.stopPropagation(); setShowTradeModal(true); }}>
+                    <Calendar size={22} />
                   </span>
-                  <span
-                    className="trade-sub-action"
-                    title="Standings"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowTradeModal(true);
-                    }}
-                  >
-                    <TrendingUp size={18} />
+                  <span className="trade-sub-action" title="Standings" onClick={(e) => { e.stopPropagation(); setShowTradeModal(true); }}>
+                    <TrendingUp size={22} />
                   </span>
                 </span>
               </button>
             </div>
-          </aside>
-        </header>
+          </header>
+          {/* ==================== 50% WIDTH KPI ANALYTICS ==================== */}
+          <div className="overview-kpi-panel">
+            <div className="kpi-panel__header">
+              <div className="kpi-panel__title-group">
 
-        {/* ==================== 20% WIDTH VERTICAL KPI PANEL ==================== */}
-        <div className="overview-kpi-vertical-stack">
-          <div className="kpi-card">
-            <div className="kpi-header">
-              <span className="kpi-label">Team PPG</span>
-              <BarChart3 className="kpi-icon" />
+                <span className="kpi-panel__subtitle">Per-Game Season Averages</span>
+              </div>
+              <div className="kpi-panel__badge">
+                <Activity size={12} />
+                Live
+              </div>
             </div>
-            <div className="kpi-value">{averages.pts}</div>
-            <div className="kpi-meta trend-up">
-              <TrendingUp size={12} /> vs League Avg
+            {/* ── Offensive Stats ── */}
+            <div className="kpi-group">
+              <div className="kpi-group__label">
+                <Crosshair size={11} />
+                Offense
+              </div>
+              <div className="kpi-group__grid">
+                <div className="kpi-stat">
+                  <div className="kpi-stat__top">
+                    <span className="kpi-stat__name">PPG</span>
+                    <span className="kpi-stat__rank rank--elite">#3</span>
+                  </div>
+                  <span className="kpi-stat__value">{averages.pts}</span>
+                  <div className="kpi-stat__bar">
+                    <div className="kpi-stat__bar-fill bar--elite" style={{ width: '85%' }} />
+                  </div>
+                  <span className="kpi-stat__compare trend-up">
+                    <TrendingUp size={10} /> +4.2 vs Lg
+                  </span>
+                </div>
+                <div className="kpi-stat">
+                  <div className="kpi-stat__top">
+                    <span className="kpi-stat__name">APG</span>
+                    <span className="kpi-stat__rank rank--good">#5</span>
+                  </div>
+                  <span className="kpi-stat__value">{averages.ast}</span>
+                  <div className="kpi-stat__bar">
+                    <div className="kpi-stat__bar-fill bar--good" style={{ width: '74%' }} />
+                  </div>
+                  <span className="kpi-stat__compare trend-up">
+                    <TrendingUp size={10} /> +2.1 vs Lg
+                  </span>
+                </div>
+                <div className="kpi-stat">
+                  <div className="kpi-stat__top">
+                    <span className="kpi-stat__name">FG%</span>
+                    <span className="kpi-stat__rank rank--neutral">#12</span>
+                  </div>
+                  <span className="kpi-stat__value">.472</span>
+                    <div className="kpi-stat__bar">
+                    <div className="kpi-stat__bar-fill bar--neutral" style={{ width: '56%' }} />
+                  </div>
+                  <span className="kpi-stat__compare trend-neutral">
+                    <Minus size={10} /> +0.8% vs Lg
+                  </span>
+                </div>
+                <div className="kpi-stat">
+                  <div className="kpi-stat__top">
+                    <span className="kpi-stat__name">3P%</span>
+                    <span className="kpi-stat__rank rank--bad">#22</span>
+                  </div>
+                  <span className="kpi-stat__value">.348</span>
+                    <div className="kpi-stat__bar">
+                    <div className="kpi-stat__bar-fill bar--danger" style={{ width: '35%' }} />
+                  </div>
+                  <span className="kpi-stat__compare trend-down">
+                    <TrendingDown size={10} /> -1.4% vs Lg
+                  </span>
+                </div>
+              </div>
             </div>
-          </div>
-
-          <div className="kpi-card">
-            <div className="kpi-header">
-              <span className="kpi-label">Team RPG</span>
-              <BarChart3 className="kpi-icon" />
+            {/* ── Defensive Stats ── */}
+            <div className="kpi-group">
+              <div className="kpi-group__label">
+                <Shield size={11} />
+                Defense
+              </div>
+              <div className="kpi-group__grid">
+                <div className="kpi-stat">
+                  <div className="kpi-stat__top">
+                    <span className="kpi-stat__name">RPG</span>
+                    <span className="kpi-stat__rank rank--good">#4</span>
+                  </div>
+                  <span className="kpi-stat__value">{averages.reb}</span>
+                  <div className="kpi-stat__bar">
+                    <div className="kpi-stat__bar-fill bar--good" style={{ width: '78%' }} />
+                  </div>
+                  <span className="kpi-stat__compare trend-up">
+                    <TrendingUp size={10} /> +3.5 vs Lg
+                  </span>
+                </div>
+                <div className="kpi-stat">
+                  <div className="kpi-stat__top">
+                    <span className="kpi-stat__name">STL</span>
+                    <span className="kpi-stat__rank rank--neutral">#14</span>
+                  </div>
+                  <span className="kpi-stat__value">7.8</span>
+                  <div className="kpi-stat__bar">
+                    <div className="kpi-stat__bar-fill bar--neutral" style={{ width: '50%' }} />
+                  </div>
+                  <span className="kpi-stat__compare trend-neutral">
+                    <Minus size={10} /> +0.3 vs Lg
+                  </span>
+                </div>
+                <div className="kpi-stat">
+                  <div className="kpi-stat__top">
+                    <span className="kpi-stat__name">BLK</span>
+                    <span className="kpi-stat__rank rank--good">#7</span>
+                  </div>
+                  <span className="kpi-stat__value">5.1</span>
+                  <div className="kpi-stat__bar">
+                    <div className="kpi-stat__bar-fill bar--good" style={{ width: '68%' }} />
+                  </div>
+                  <span className="kpi-stat__compare trend-up">
+                    <TrendingUp size={10} /> +0.8 vs Lg
+                  </span>
+                </div>
+                <div className="kpi-stat">
+                  <div className="kpi-stat__top">
+                    <span className="kpi-stat__name">TOV</span>
+                    <span className="kpi-stat__rank rank--bad">#25</span>
+                  </div>
+                  <span className="kpi-stat__value">14.3</span>
+                  <div className="kpi-stat__bar">
+                    <div className="kpi-stat__bar-fill bar--danger" style={{ width: '28%' }} />
+                  </div>
+                  <span className="kpi-stat__compare trend-down">
+                    <TrendingDown size={10} /> +1.2 vs Lg
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="kpi-value">{averages.reb}</div>
-            <div className="kpi-meta trend-up">
-              <TrendingUp size={12} /> Control
-            </div>
-          </div>
-
-          <div className="kpi-card">
-            <div className="kpi-header">
-              <span className="kpi-label">Team APG</span>
-              <BarChart3 className="kpi-icon" />
-            </div>
-            <div className="kpi-value">{averages.ast}</div>
-            <div className="kpi-meta trend-down">
-              <TrendingDown size={12} /> Efficiency
+            {/* ── Advanced Metrics Footer ── */}
+            <div className="kpi-advanced-row">
+              <div className="kpi-advanced-card kpi-advanced-card--offense">
+                <span className="kpi-advanced-card__label">Off Rtg</span>
+                <div className="kpi-advanced-card__body">
+                  <span className="kpi-advanced-card__value">112.4</span>
+                  <span className="kpi-advanced-card__rank">#6</span>
+                </div>
+                <span className="kpi-advanced-card__trend trend-up">
+                  <TrendingUp size={10} /> +3.1
+                </span>
+              </div>
+              <div className="kpi-advanced-card kpi-advanced-card--net">
+                <span className="kpi-advanced-card__label">Net Rtg</span>
+                <div className="kpi-advanced-card__body">
+                  <span className="kpi-advanced-card__value">+5.3</span>
+                  <span className="kpi-advanced-card__rank">#4</span>
+                </div>
+                <span className="kpi-advanced-card__trend trend-up">
+                  <TrendingUp size={10} /> +2.7
+                </span>
+              </div>
+              <div className="kpi-advanced-card kpi-advanced-card--defense">
+                <span className="kpi-advanced-card__label">Def Rtg</span>
+                <div className="kpi-advanced-card__body">
+                  <span className="kpi-advanced-card__value">107.1</span>
+                  <span className="kpi-advanced-card__rank">#8</span>
+                </div>
+                <span className="kpi-advanced-card__trend trend-up">
+                  <TrendingUp size={10} /> -1.4
+                </span>
+              </div>
+              <div className="kpi-advanced-card kpi-advanced-card--pace">
+                <span className="kpi-advanced-card__label">Pace</span>
+                <div className="kpi-advanced-card__body">
+                  <span className="kpi-advanced-card__value">98.7</span>
+                  <span className="kpi-advanced-card__rank">#11</span>
+                </div>
+                <span className="kpi-advanced-card__trend trend-neutral">
+                  <Minus size={10} /> +0.2
+                </span>
+              </div>
             </div>
           </div>
         </div>
-
-        {/* ==================== SIMULATION SPOTLIGHT + PLACEHOLDER ==================== */}
+      
+        {/* ==================== SIMULATION SPOTLIGHT + QUICK CONTINUE ==================== */}
         <div className="overview-highlight-row">
 
           <div className="sim-spotlight-card">
@@ -441,11 +633,11 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                 return (
                   <div className="sim-broadcast">
                     <div className="sim-broadcast__scoreboard">
-                      {/* ✅ USER TEAM AVATAR WITH GLASS + PRIMARY COLOR */}
+                      {/* ✅ USER TEAM AVATAR — colored by city */}
                       <div className="sim-team-panel sim-team-panel--self">
                         <div 
                           className="sim-team-avatar sim-team-avatar--self"
-                          style={getTeamGlassStyle(self?.name || userTeam.name)}
+                          style={getTeamGlassStyle(self?.city || userTeam.city, self?.name || userTeam.name)}
                         >
                           {self?.abbreviation || userTeam.abbreviation}
                         </div>
@@ -464,11 +656,11 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                         </span>
                       </div>
 
-                      {/* ✅ OPPONENT TEAM AVATAR WITH GLASS + PRIMARY COLOR */}
+                      {/* ✅ OPPONENT TEAM AVATAR — colored by city */}
                       <div className="sim-team-panel sim-team-panel--opp">
                         <div 
                           className="sim-team-avatar sim-team-avatar--opp"
-                          style={getTeamGlassStyle(opponent?.name || '')}
+                          style={getTeamGlassStyle(opponent?.city, opponent?.name)}
                         >
                           {opponent?.abbreviation || '???'}
                         </div>
@@ -525,9 +717,70 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
             )}
           </div>
 
-          {/* PLACEHOLDER */}
-          <div className="sim-spotlight-placeholder">
-            <span className="sim-spotlight-placeholder__label">Coming Soon</span>
+          <div className="sim-spotlight-placeholder quick-continue-card">
+            <div className="qc-card">
+              <div className="qc-list-header">
+                <Calendar size={14} strokeWidth={2} />
+                <span>Quick Continue</span>
+              </div>
+
+              <div className="qc-day-list" ref={qcListRef} onScroll={handleQcScroll}>
+                {qcDays.map((d) => {
+                  const dateKey = qcFormatDate(d);
+                  const isSelected = dateKey === qcSelectedDate;
+                  const isToday = qcIsSameDay(d, qcAnchorDate);
+
+                  return (
+                    <div
+                      key={dateKey}
+                      className={`qc-day-row ${isSelected ? 'selected' : ''} ${isToday ? 'is-today' : ''}`}
+                      onClick={() => {setQcSelectedDate(dateKey); setDayModalDate(d);}}
+                      role="button"
+                      tabIndex={0}
+                    >
+                      <div className="qc-day-row-left">
+                        {isToday ? (
+                          <div>
+                            <span className="qc-day-weekday-active">
+                              {d.toLocaleDateString(undefined, { weekday: 'short' })}
+                            </span>
+                            <span className="qc-day-num-active">{d.getDate()}</span>
+                            <span className="qc-day-month-active">
+                              {d.toLocaleDateString(undefined, { month: 'short' })}
+                            </span>
+                          </div>
+                      ) : (
+                        <div>
+                          <span className="qc-day-weekday">
+                            {d.toLocaleDateString(undefined, { weekday: 'short' })}
+                          </span>
+                          <span className="qc-day-num">{d.getDate()}</span>
+                          <span className="qc-day-month">
+                            {d.toLocaleDateString(undefined, { month: 'short' })}
+                          </span>
+                        </div>
+                  )}
+
+                      </div>
+                      
+                    </div>
+                  );
+                })}
+              </div>
+
+              {}
+
+              <button
+                className="glass-btn btn-primary-blue-glow large-btn quick-continue-btn"
+                onClick={handleQuickContinueTo}
+                disabled={!qcSelectedDate}
+              >
+                <FastForward size={16} />
+                {qcSelectedDate
+                  ? `Continue To ${new Date(qcSelectedDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+                  : 'Select a date'}
+              </button>
+            </div>
           </div>
 
         </div>
@@ -634,6 +887,14 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
         </div>
 
       </div>
+
+
+      <DayGamesModal
+        date={dayModalDate}
+        games={dayModalDate ? gamesByDate.get(dayModalDate.toISOString().split('T')[0]) || [] : []}
+        teams={allTeams}
+        onClose={() => setDayModalDate(null)}
+      />
     </div>
   );
 };

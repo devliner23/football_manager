@@ -5,162 +5,6 @@
   flex-direction: column;
   gap: 24px;
   color: var(--text-primary);
-}
-
-.coach-tab-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 240px;
-}
-
-/* ── Shared glass card base (mirrors .glass-panel) ── */
-.coach-header-card,
-.coach-attributes-card,
-.coach-actions-card {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: 16px;
-  padding: 28px 32px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: inset 0 1px 0 var(--glass-highlight);
-}
-
-.coach-header-card {
-    border-left: 3px solid var(--team-primary);
-    width: 400px
-}
-
-/* ── Header card ── */
-.coach-header-card-first-row {
-    display: flex; 
-    flex-direction: row; 
-    width: 260px;
-    justify-content: space-between
-}
-
-.coach-header-card-first-row > div {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end
-}
-
-.coach-header-card .panel-title {
-  font-size: 1.7rem;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  margin: 8px 0 6px 0;
-}
-
-.coach-header-card .panel-subtitle {
-  color: var(--text-muted);
-  font-size: 0.95rem;
-  margin: 0 0 24px 0;
-}
-
-.coach-meta-row {
-  display: flex;
-  gap: 40px;
-  border-top: 1px solid var(--glass-border);
-  padding-top: 18px;
-}
-
-/* ── Section titles ── */
-.coach-section-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--neon-blue-solid);
-  text-shadow: 0 0 10px var(--neon-blue-glow);
-  margin: 0 0 20px 0;
-}
-
-/* ── Attribute bars ── */
-.coach-attribute-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.coach-attribute-row {
-  display: grid;
-  grid-template-columns: 150px 1fr 36px;
-  align-items: center;
-  gap: 14px;
-}
-
-.coach-attribute-label {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.coach-attribute-bar-track {
-  height: 8px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid var(--glass-border);
-  overflow: hidden;
-}
-
-.coach-attribute-bar-fill {
-  height: 100%;
-  border-radius: 6px;
-  background: linear-gradient(90deg, var(--neon-blue), var(--neon-blue-solid));
-  box-shadow: 0 0 10px var(--neon-blue-glow);
-  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.coach-attribute-value {
-  font-size: 0.85rem;
-  font-weight: 700;
-  text-align: right;
-  color: var(--text-primary);
-}
-
-/* ── Actions ── */
-.coach-actions-card .panel-subtitle {
-  color: var(--text-muted);
-  font-size: 0.85rem;
-}
-
-.coach-actions-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-}
-
-.coach-actions-grid .glass-btn {
-  padding: 14px 18px;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@media (max-width: 640px) {
-  .coach-meta-row { flex-direction: column; gap: 12px; }
-  .coach-attribute-row { grid-template-columns: 110px 1fr 30px; }
-  .coach-actions-grid { grid-template-columns: 1fr; }
-}
-
-/* CoachTab.css — refined dark-glass theme, matches Dashboard.css tokens */
-
-.coach-tab {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-  color: var(--text-primary);
   animation: coachFadeIn 0.35s ease-out;
 }
 
@@ -174,6 +18,21 @@
   align-items: center;
   justify-content: center;
   min-height: 240px;
+}
+
+/* ── Top row layout ── */
+.coach-top-row {
+  display: flex; 
+  flex-direction: row; 
+  gap: 20px;
+}
+
+.coach-top-row > :first-child {
+  flex: 0 0 30%;
+}
+
+.coach-top-row > :last-child {
+  flex: 1;
 }
 
 /* ── Shared glass card base ── */
@@ -194,6 +53,10 @@
   transition: box-shadow 0.25s ease, transform 0.25s ease;
 }
 
+.coach-header-card {
+  border-left: 3px solid var(--team-primary);
+}
+
 .coach-attributes-card:hover,
 .coach-actions-card:hover {
   box-shadow:
@@ -211,7 +74,7 @@
   height: 2px;
   background: linear-gradient(90deg,
     transparent,
-    var(--neon-blue-solid),
+    var(--team-primary),
     transparent
   );
   opacity: 0.7;
@@ -224,7 +87,7 @@
   top: -80px; right: -80px;
   width: 220px;
   height: 220px;
-  background: radial-gradient(circle, var(--neon-blue-glow) 0%, transparent 70%);
+  background: radial-gradient(circle, var(--team-primary-glow) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -236,6 +99,18 @@
   flex-direction: column;
 }
 
+.coach-header-card-first-row {
+  display: flex; 
+  flex-direction: row; 
+  justify-content: space-between;
+}
+
+.coach-header-card-first-row > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
 .coach-avatar-ring {
   width: 64px;
   height: 64px;
@@ -243,12 +118,12 @@
   padding: 3px;
   margin-bottom: 16px;
   background: conic-gradient(
-    var(--neon-blue-solid),
-    var(--neon-blue),
-    rgba(59, 130, 246, 0.15),
-    var(--neon-blue-solid)
+    var(--team-primary),
+    var(--team-primary-hover),
+    color-mix(in srgb, var(--team-primary) 15%, transparent),
+    var(--team-primary)
   );
-  box-shadow: 0 0 16px var(--neon-blue-glow);
+  box-shadow: 0 0 16px var(--team-primary-glow);
 }
 
 .coach-avatar {
@@ -262,7 +137,7 @@
   font-size: 1.1rem;
   font-weight: 800;
   letter-spacing: 0.5px;
-  color: var(--neon-blue-solid);
+  color: var(--team-primary);
 }
 
 .coach-header-card .panel-title {
@@ -313,7 +188,7 @@
   color: var(--text-muted);
 }
 
-/* Rating pill for the headline overall number */
+/* Rating pill */
 .coach-rating-pill {
   display: inline-flex;
   align-items: center;
@@ -336,8 +211,8 @@
   font-weight: 800;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: var(--neon-blue-solid);
-  text-shadow: 0 0 10px var(--neon-blue-glow);
+  color: var(--team-primary);
+  text-shadow: 0 0 10px var(--team-primary-glow);
   margin: 0 0 22px 0;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--glass-border);
@@ -382,10 +257,11 @@
 .coach-attribute-bar-fill {
   height: 100%;
   border-radius: 6px;
-  background: linear-gradient(90deg, var(--neon-blue), var(--neon-blue-solid));
-  box-shadow: 0 0 10px var(--neon-blue-glow);
+  background: linear-gradient(90deg, var(--team-primary), var(--team-primary-hover));
+  box-shadow: 0 0 10px var(--team-primary-glow);
   transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
+  width: 0%; /* Default, overridden by inline style */
 }
 
 /* Faint moving sheen on the bar fill */
@@ -411,48 +287,6 @@
   text-align: right;
   color: var(--text-primary);
   font-variant-numeric: tabular-nums;
-}
-
-/* ── Tier accent coloring (elite / strong / average / weak) ── */
-.tier-elite .coach-attribute-bar-fill,
-.coach-rating-pill.tier-elite {
-  background: linear-gradient(90deg, #f59e0b, #fcd34d);
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
-}
-.coach-rating-pill.tier-elite {
-  color: #451a03;
-  border-color: rgba(245, 158, 11, 0.5);
-}
-.tier-elite .coach-attribute-value { color: #fcd34d; }
-
-.tier-strong .coach-attribute-bar-fill,
-.coach-rating-pill.tier-strong {
-  background: linear-gradient(90deg, var(--neon-blue), var(--neon-blue-solid));
-}
-.coach-rating-pill.tier-strong {
-  color: #eff6ff;
-  border-color: rgba(59, 130, 246, 0.5);
-  background: rgba(59, 130, 246, 0.18);
-}
-
-.tier-average .coach-attribute-bar-fill {
-  background: linear-gradient(90deg, #64748b, #94a3b8);
-  box-shadow: none;
-}
-.coach-rating-pill.tier-average {
-  color: var(--text-muted);
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--glass-border);
-}
-
-.tier-weak .coach-attribute-bar-fill,
-.coach-rating-pill.tier-weak {
-  background: linear-gradient(90deg, var(--neon-danger), #fca5a5);
-  box-shadow: 0 0 10px var(--neon-danger-glow);
-}
-.coach-rating-pill.tier-weak {
-  color: #450a0a;
-  border-color: rgba(239, 68, 68, 0.5);
 }
 
 /* ── Actions card ── */
@@ -496,6 +330,15 @@
 
 /* ── Responsive ── */
 @media (max-width: 640px) {
+  .coach-top-row {
+    flex-direction: column;
+  }
+  
+  .coach-top-row > :first-child,
+  .coach-top-row > :last-child {
+    flex: 1;
+  }
+  
   .coach-meta-row { flex-direction: column; gap: 14px; }
   .coach-attribute-row { grid-template-columns: 120px 1fr 32px; gap: 10px; }
   .coach-actions-grid { grid-template-columns: 1fr; }
