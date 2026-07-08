@@ -29,7 +29,71 @@ export interface NextUserGameResponse {
   leagueGamesBeforeCount: number; // games that will auto-sim before the user's game
   nextUserGame: UserGameInfo | null;
 }
- 
+
+// ── Add these interfaces to leagueApi.ts ──────────────────────────────────────
+
+export interface SimSummary {
+  summary: {
+    gamesSimulated: number;
+    datesCovered: {
+      from: string | null;
+      to: string | null;
+    };
+  };
+  userTeamImpact: {
+    thisSim: {
+      record: string;
+      pointsFor: number;
+      pointsAllowed: number;
+    };
+    seasonTotal: {
+      record: string;
+      pointsFor: number;
+      pointsAgainst: number;
+    } | null;
+  };
+  standingsSnapshot: Array<{
+    teamId: string;
+    name: string;
+    abbreviation: string;
+    wins: number;
+    losses: number;
+  }>;
+  topPerformers: Array<{
+    playerId: string;
+    playerName: string;
+    teamAbbreviation: string;
+    points: number;
+    rebounds: number;
+    assists: number;
+    blocks: number;
+    steals: number;
+  }>;
+  playerProgression: Array<{
+    playerId: string;
+    playerName: string;
+    overallBefore: number;
+    overallAfter: number;
+    delta: number;
+  }>;
+}
+
+export interface SimulateToDateResponse {
+  gamesSimulated: number;
+  gamesRemaining: number;
+  complete: boolean;
+  results: Array<{
+    gameId: string;
+    game_date: string;
+    homeTeamId: string;
+    awayTeamId: string;
+    homeScore: number;
+    awayScore: number;
+    overtime: boolean;
+  }>;
+  summary: SimSummary | null;
+}
+
 export interface SimulateToNextGameResponse {
   seasonComplete: boolean;
   gamesSimulated: number;
@@ -43,6 +107,7 @@ export interface SimulateToNextGameResponse {
     overtime: boolean;
   }>;
   nextUserGame: UserGameInfo | null;
+  summary: SimSummary | null; // ✅ Added
 }
 
 export interface LineupData {
@@ -352,13 +417,13 @@ export const leagueAPI = {
     return extractData(response);
   },
 
-  simulateToDate: async (savedGameId: string, targetDate: string) => {
-    const { data } = await api.post(`/api/league/${savedGameId}/simulate-to-date`, { targetDate });
-    return data.data; // { seasonComplete, gamesSimulated, results }
+  simulateToDate: async (savedGameId: string, targetDate: string): Promise<SimulateToDateResponse> => {
+    const response = await api.post<ApiResponse<SimulateToDateResponse>>(
+      `/api/league/${savedGameId}/simulate-to-date`, 
+      { targetDate }
+    );
+    return extractData(response);
   },
-
-  // Add these three methods to the leagueAPI object in leagueApi.ts
-// (alongside getTeams, getPlayers, tradePlayer, etc.)
 
   getFreeAgents: async (
     savedGameId: string,

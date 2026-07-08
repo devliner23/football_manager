@@ -102,9 +102,13 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
   };
 
   const handleSimulateNextDay = () => {
+    if (nextUserGame?.game_date) {
+      onSimulateToDate(nextUserGame.game_date.slice(0, 10));
+      return;
+    }
+    // No upcoming user game — fall back to +1 day
     const base = lastSimulatedDate ? lastSimulatedDate.slice(0, 10) : todayAsString();
-    const nextDay = addDays(base, 1);
-    onSimulateToDate(nextDay);
+    onSimulateToDate(addDays(base, 1));
   };
 
   const addDays = (dateStr: string, days: number): string => {

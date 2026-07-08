@@ -40,7 +40,6 @@ interface OverviewTabProps {
   onGameClick: (gameId: string) => void;
   allTeams: Team[];
   onSimulateToDate: (date: string) => void;
-  onContinue:() => void;
 }
 
 const OverviewTab: React.FC<OverviewTabProps> = ({
@@ -55,7 +54,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   onGameClick,
   allTeams,
   onSimulateToDate,
-  onContinue
 }) => {
   const [showTradeModal, setShowTradeModal] = useState(false);
 
@@ -138,10 +136,10 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     return Math.round((gameDay.getTime() - today.getTime()) / 86400000);
   }, [nextUserGame]);
 
-  const handleSimulateToNextGame = () => {
-    if (!nextUserGame?.game_date || !onSimulateToDate) return;
-    onContinue(); // single date string → backend simulate route
-  };
+const handleSimulateToNextGame = () => {
+  if (!nextUserGame?.game_date || !onSimulateToDate) return;
+  onSimulateToDate(nextUserGame.game_date.slice(0, 10));
+};
 
   if (!userTeam) {
     return (
@@ -254,6 +252,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                   <span
                     className="trade-sub-action"
                     title="Propose Assets"
+                    aria-label="Propose Assets"
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowTradeModal(true);

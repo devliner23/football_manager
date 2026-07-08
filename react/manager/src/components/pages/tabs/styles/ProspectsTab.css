@@ -1,12 +1,6 @@
 /* Uses variables defined in Dashboard.css :root — no redefinition needed */
 
 .prospects-panel {
-  --team-primary: var(--neon-blue);
-  --team-primary-neon: var(--neon-blue-glow);
-  --team-primary-neon-spread: rgba(59, 130, 246, 0.15);
-  --team-secondary: #f59e0b;
-  --team-secondary-neon-spread: rgba(245, 158, 11, 0.12);
-
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(10px);
@@ -163,7 +157,6 @@
 
 .prospect-card:hover {
   transform: translateY(-3px);
-  border-color: var(--team-secondary));
   box-shadow: 0 10px 25px var(--team-secondary), 0 0 15px var(--team-accent);
 }
 

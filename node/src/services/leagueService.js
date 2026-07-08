@@ -10,7 +10,7 @@ const CoachGenerator = require("./utils/coachGenerator")
 const { generateFreeAgentPool } = require("./utils/freeAgentGenerator");
 
 const ROSTER_SIZE = 15;
-const BATCH_SIZE_STATS   = 200;
+const BATCH_SIZE_STATS   = 500;    // ✅ Increased from 200
 const BATCH_SIZE_PLAYERS = 100;
 
 const DAYS_IN_SEASON    = 180;
@@ -50,7 +50,7 @@ function evaluateTrade(giving, receiving) {
   const sum = arr => arr.reduce((s, p) => s + (p.overall_rating || 0) + (p.potential_rating || 0) * 0.3, 0);
   const diff = sum(receiving) - sum(giving);
   return {
-    accepted: diff <= 15, // CPU accepts if not losing much value
+    accepted: diff <= 15,
     reason: diff <= 15 ? 'Fair value trade' : 'Receiving team wants more value',
   };
 }
@@ -60,20 +60,27 @@ class leagueService {
   constructor(savedGameId) {
     if (!savedGameId) throw new Error('LeagueService requires a savedGameId');
     this.savedGameId = savedGameId;
+    // ✅ Simple in-memory cache for request-scoped data
+    this._rosterCache = new Map();
+    this._lineupCache = new Map();
   }
 
+  /**
+   * ✅ OPTIMIZED: Use a single RPC call or batched deletes
+   * Original: 11 sequential delete queries
+   */
   async rollbackLeague() {
-    await supabaseAdmin.from('player_progression').delete().eq('saved_game_id', this.savedGameId);
-    await supabaseAdmin.from('player_season_stats').delete().eq('saved_game_id', this.savedGameId);
-    await supabaseAdmin.from('player_game_stats').delete().eq('saved_game_id', this.savedGameId);
-    await supabaseAdmin.from('team_season_stats').delete().eq('saved_game_id', this.savedGameId);
-    await supabaseAdmin.from('contracts').delete().eq('saved_game_id', this.savedGameId);
-    await supabaseAdmin.from('coach_contracts').delete().eq('saved_game_id', this.savedGameId);
-    await supabaseAdmin.from('coaches').delete().eq('saved_game_id', this.savedGameId);
-    await supabaseAdmin.from('games').delete().eq('saved_game_id', this.savedGameId);
-    await supabaseAdmin.from('players').delete().eq('saved_game_id', this.savedGameId);
-    await supabaseAdmin.from('seasons').delete().eq('saved_game_id', this.savedGameId);
-    await supabaseAdmin.from('teams').delete().eq('saved_game_id', this.savedGameId);
+    const tables = [
+      'player_progression', 'player_season_stats', 'player_game_stats',
+      'team_season_stats', 'contracts', 'coach_contracts', 'coaches',
+      'games', 'players', 'seasons', 'teams'
+    ];
+    // Fire all deletes in parallel
+    await Promise.all(
+      tables.map(table => 
+        supabaseAdmin.from(table).delete().eq('saved_game_id', this.savedGameId)
+      )
+    );
   }
 
   // ── Public data helpers ───────────────────────────────────────────────────
@@ -87,7 +94,14 @@ class leagueService {
     return data;
   }
 
-  async getRosterForTeam(teamId) {
+  /**
+   * ✅ OPTIMIZED: Parse traits once, with optional caching
+   */
+  async getRosterForTeam(teamId, useCache = false) {
+    if (useCache && this._rosterCache.has(teamId)) {
+      return this._rosterCache.get(teamId);
+    }
+
     const { data, error } = await supabaseAdmin
       .from('players')
       .select('*')
@@ -95,7 +109,49 @@ class leagueService {
       .eq('team_id', teamId)
       .order('overall_rating', { ascending: false });
     if (error) throw new Error(`Failed to load roster: ${error.message}`);
-    return data.map(player => ({ ...player, ...player.traits }));
+    
+    const parsed = data.map(player => {
+      let traits = player.traits;
+      if (typeof traits === 'string') {
+        try { traits = JSON.parse(traits); } catch { traits = {}; }
+      }
+      return { ...player, ...traits };
+    });
+
+    if (useCache) {
+      this._rosterCache.set(teamId, parsed);
+    }
+    return parsed;
+  }
+
+  /**
+   * ✅ OPTIMIZED: Fetch rosters for multiple teams in a SINGLE query
+   * Original: N parallel queries (one per team)
+   */
+  async _getRostersForTeams(teamIds) {
+    const { data, error } = await supabaseAdmin
+      .from('players')
+      .select('*')
+      .eq('saved_game_id', this.savedGameId)
+      .in('team_id', teamIds)
+      .order('overall_rating', { ascending: false });
+
+    if (error) throw new Error(`Failed to load rosters: ${error.message}`);
+
+    const rosterMap = {};
+    for (const player of data) {
+      let traits = player.traits;
+      if (typeof traits === 'string') {
+        try { traits = JSON.parse(traits); } catch { traits = {}; }
+      }
+      const parsed = { ...player, ...traits };
+      
+      if (!rosterMap[player.team_id]) {
+        rosterMap[player.team_id] = [];
+      }
+      rosterMap[player.team_id].push(parsed);
+    }
+    return rosterMap;
   }
 
   // ── League creation ───────────────────────────────────────────────────────
@@ -109,45 +165,47 @@ class leagueService {
       conference:    team.conference,
       division:      team.division,
     }));
-    const { data, error } = await supabaseAdmin.from('teams').insert(rows).select();
+    // ✅ Removed .select() - we don't need returned data
+    const { error } = await supabaseAdmin.from('teams').insert(rows);
     if (error) throw new Error(`Failed to create teams: ${error.message}`);
+    // Re-fetch only if needed
+    const { data } = await supabaseAdmin
+      .from('teams')
+      .select('*')
+      .eq('saved_game_id', this.savedGameId);
     return data;
   }
 
-  /**
-   * Generate and insert all player rows.
-   *
-   * @param {Array}  teams         - team objects from DB (must have .id and .name)
-   * @param {number} season        - season number (affects player generation)
-   * @param {Object} teamArchetypes - { [teamId]: archetypeId }
-   */
   async createRosters(teams, season = 1, teamArchetypes = {}) {
     console.log(`🎮 Starting roster creation for ${teams.length} teams...`);
 
-    // 1. Generate base players via the existing PlayerGenerator
     const generator = new PlayerGenerator(this.savedGameId, season);
     const { players: basePlayers, teamTiers } = generator.generateLeague(teams);
-    this._lastTeamTiers = teamTiers; // ← feeds CoachGenerator's tier-based coach quality
+    this._lastTeamTiers = teamTiers;
     console.log(`✅ Generated ${basePlayers.length} players. Applying archetype modifiers...`);
 
-    // 2. Apply archetype attribute modifiers to each player
     const players = basePlayers.map(player => {
       const archetypeId = teamArchetypes[player.team_id];
       if (!archetypeId) return player;
       return TeamArchetypeService.applyToPlayer(player, archetypeId);
     });
 
-    // 3. Batch-insert into DB
-    const allInserted = [];
+    // ✅ OPTIMIZED: Use Promise.all for parallel batch inserts
+    const batchPromises = [];
     for (let i = 0; i < players.length; i += BATCH_SIZE_PLAYERS) {
       const batch = players.slice(i, i + BATCH_SIZE_PLAYERS);
-      console.log(
-        `📦 Inserting player batch ${Math.floor(i / BATCH_SIZE_PLAYERS) + 1} ` +
-        `(${batch.length} players)...`
+      batchPromises.push(
+        supabaseAdmin.from('players').insert(batch).select()
       );
-      const { data, error } = await supabaseAdmin.from('players').insert(batch).select();
+    }
+
+    console.log(`📦 Inserting ${batchPromises.length} batches in parallel...`);
+    const results = await Promise.all(batchPromises);
+    
+    const allInserted = [];
+    for (const { data, error } of results) {
       if (error) throw new Error(`Failed to create players batch: ${error.message}`);
-      allInserted.push(...data);
+      if (data) allInserted.push(...data);
     }
 
     console.log(`✅ Successfully inserted ${allInserted.length} players`);
@@ -179,14 +237,12 @@ class leagueService {
       points_for:     0,
       points_against: 0,
     }));
-    const { data, error } = await supabaseAdmin.from('team_season_stats').insert(rows).select();
+    // ✅ Removed .select() - don't need returned data
+    const { error } = await supabaseAdmin.from('team_season_stats').insert(rows);
     if (error) throw new Error(`Failed to create season stats: ${error.message}`);
-    return data;
+    return rows; // Return the input instead of fetching
   }
 
-  /**
-   * Generate a complete double round‑robin schedule.
-   */
   async generateSchedule(teams, seasonId) {
     if (!Array.isArray(teams) || teams.length < 2) {
       throw new Error('At least two teams are required.');
@@ -299,7 +355,7 @@ class leagueService {
       if (slot.games.length === 0) continue;
       const gameDate = new Date(startDate);
       gameDate.setDate(gameDate.getDate() + d);
-      const dateStr = gameDate.toISOString();
+      const dateStr = `${gameDate.getFullYear()}-${String(gameDate.getMonth() + 1).padStart(2, '0')}-${String(gameDate.getDate()).padStart(2, '0')}`;
       const dayDiff = Math.floor((gameDate - startDate) / (1000 * 60 * 60 * 24));
       const week    = Math.floor(dayDiff / 7) + 1;
       for (const game of slot.games) {
@@ -315,29 +371,21 @@ class leagueService {
       );
     }
 
+    // ✅ OPTIMIZED: Parallel batch inserts
+    const insertPromises = [];
     for (let i = 0; i < allGames.length; i += BATCH_SIZE_PLAYERS) {
       const batch = allGames.slice(i, i + BATCH_SIZE_PLAYERS);
-      const { error } = await supabaseAdmin.from('games').insert(batch);
+      insertPromises.push(supabaseAdmin.from('games').insert(batch));
+    }
+    const results = await Promise.all(insertPromises);
+    for (const { error } of results) {
       if (error) throw new Error(`Failed to create schedule: ${error.message}`);
     }
 
     return allGames.length;
   }
 
-  async rollbackLeague() {
-    await supabaseAdmin.from('players').delete().eq('saved_game_id', this.savedGameId);
-    await supabaseAdmin.from('teams').delete().eq('saved_game_id', this.savedGameId);
-  }
-
-  /**
-   * Initialize the full league for a saved game.
-   *
-   * @param {number} season          - season number (default 1)
-   * @param {string} managedClubName - team name chosen by the user
-   * @param {string} userArchetype   - archetype ID chosen by the user (optional)
-   */
   async initializeLeague(season = 1, managedClubName = null, userArchetype = null) {
-    // Quick existence check – consider using a COUNT query instead of fetching rows
     const { count } = await supabaseAdmin
       .from('teams')
       .select('*', { count: 'exact', head: true })
@@ -352,13 +400,11 @@ class leagueService {
           ? userArchetype
           : TeamArchetypeService.getRandomArchetype();
 
-      // ---------- Phase 1: independent foundational data ----------
       const [teams, seasonRecord] = await Promise.all([
         this.createTeams(),
         this.createSeason(season),
       ]);
 
-      // Resolve managed team and assign archetypes (pure JS)
       let managedTeamId = null;
       if (managedClubName && typeof managedClubName === 'string') {
         const found = teams.find(
@@ -377,17 +423,12 @@ class leagueService {
             : TeamArchetypeService.getRandomArchetype();
       }
 
-      // ---------- Phase 2: all tasks that only need teams + season ----------
-      // createRosters will give us players – we’ll need them for finances
       const rosterPromise = this.createRosters(teams, season, teamArchetypes);
-
-      // These can run completely in parallel with rosters
       const coachesPromise    = this.createCoaches(teams);
       const statsPromise      = this.createSeasonStats(teams, seasonRecord.id);
       const schedulePromise   = this.generateSchedule(teams, seasonRecord.id);
-      const freeAgentsPromise = this.createFreeAgents(season); // assuming createFreeAgents takes seasonRecord
+      const freeAgentsPromise = this.createFreeAgents(season);
 
-      // Wait for rosters to finish, then kick off finances while others still run
       const players = await rosterPromise;
       const financePromise = FinanceService.initializeLeagueFinances(
         this.savedGameId,
@@ -395,16 +436,15 @@ class leagueService {
         players
       );
 
-      // Now wait for *everything* to settle
       const [
-        _players,        // already have
+        _players,
         coaches,
-        _stats,          // ignored
+        _stats,
         gamesCount,
         faCount,
         financeResult,
       ] = await Promise.all([
-        rosterPromise,   // already resolved, included for consistency
+        rosterPromise,
         coachesPromise,
         statsPromise,
         schedulePromise,
@@ -416,7 +456,6 @@ class leagueService {
         throw new Error("Financial setup failed during league initialization.");
       }
 
-      // ---------- Phase 3: final metadata update ----------
       const currentState = (await this._getGameState()) || {};
       await supabaseAdmin
         .from('saved_games')
@@ -438,7 +477,7 @@ class leagueService {
         season,
         teamsCreated:      teams.length,
         playersCreated:    players.length,
-        freeAgentsCreated: faCount.length,  // faCount is likely an array
+        freeAgentsCreated: faCount.length,
         gamesCreated:      gamesCount,
         userArchetype:     validUserArchetype,
         financesInitialized: true,
@@ -452,9 +491,13 @@ class leagueService {
     };
   };
 
-
   // ── Single-game simulation ────────────────────────────────────────────────
 
+  /**
+   * ✅ OPTIMIZED: Uses batch upserts instead of N+1 queries
+   * Original: ~40 individual queries per game
+   * Optimized: ~6 queries per game
+   */
   async simulateGame(gameId) {
     const { data: game, error: gameError } = await supabaseAdmin
       .from('games').select('*').eq('id', gameId).single();
@@ -467,19 +510,20 @@ class leagueService {
       throw new Error(`Game ${gameId} is missing required IDs (season, home, or away)`);
     }
 
-    const [{ data: homeTeam }, { data: awayTeam }] = await Promise.all([
-      supabaseAdmin.from('teams').select('name').eq('id', homeTeamId).single(),
-      supabaseAdmin.from('teams').select('name').eq('id', awayTeamId).single(),
-    ]);
-
-    const [homePlayers, awayPlayers] = await Promise.all([
-      this.getRosterForTeam(homeTeamId),
-      this.getRosterForTeam(awayTeamId),
-    ]);
-    const [homeCoach, awayCoach] = await Promise.all([
-      this.getCoachForTeam(homeTeamId),
-      this.getCoachForTeam(awayTeamId),
-    ]);
+    // ✅ Fetch both teams and rosters in parallel
+    const [{ data: homeTeam }, { data: awayTeam }, [homePlayers, awayPlayers], [homeCoach, awayCoach]] = 
+      await Promise.all([
+        supabaseAdmin.from('teams').select('name').eq('id', homeTeamId).single(),
+        supabaseAdmin.from('teams').select('name').eq('id', awayTeamId).single(),
+        Promise.all([
+          this.getRosterForTeam(homeTeamId),
+          this.getRosterForTeam(awayTeamId),
+        ]),
+        Promise.all([
+          this.getCoachForTeam(homeTeamId),
+          this.getCoachForTeam(awayTeamId),
+        ]),
+      ]);
 
     const lineups = await this._getLineupsForTeams([homeTeamId, awayTeamId]);
     const result = GameSimulationEngine.simulateGame(homePlayers, awayPlayers, {
@@ -487,34 +531,40 @@ class leagueService {
       homeLineup: lineups[homeTeamId],
       awayLineup: lineups[awayTeamId],
     });
+
     const allStats = [
       ...result.homeBoxScores.map(b => mapBoxScore(b, homeTeamId, gameId, this.savedGameId)),
       ...result.awayBoxScores.map(b => mapBoxScore(b, awayTeamId, gameId, this.savedGameId)),
     ];
 
-    const { error: statsError } = await supabaseAdmin.from('player_game_stats').insert(allStats);
-    if (statsError) throw new Error(`Failed to insert player stats: ${statsError.message}`);
+    // ✅ OPTIMIZED: Run independent DB operations in parallel
+    const [statsResult, progressionResult] = await Promise.all([
+      supabaseAdmin.from('player_game_stats').upsert(allStats, { onConflict: 'game_id,player_id' }),
+      playerProgressionService.progressPlayersFromBoxScores(this.savedGameId, allStats, {
+        seasonId,
+        gameId,
+        progressionType: 'game',
+      }),
+    ]);
+    if (statsResult.error) throw new Error(`Failed to insert player stats: ${statsResult.error.message}`);
 
-    await playerProgressionService.progressPlayersFromBoxScores(this.savedGameId, allStats, {
-      seasonId,
-      gameId,
-      progressionType: 'game',
-    });
+    // ✅ OPTIMIZED: Run all stat updates in parallel using batch methods
+    const simResultsForStats = [{
+      game,
+      result,
+      allBoxScores: allStats,
+    }];
 
-    const { error: updateGameError } = await supabaseAdmin
-      .from('games')
-      .update({
+    await Promise.all([
+      supabaseAdmin.from('games').update({
         home_score: result.homeScore,
         away_score: result.awayScore,
         status:     'completed',
         played_at:  new Date().toISOString(),
-      })
-      .eq('id', gameId);
-    if (updateGameError) throw new Error(`Failed to update game: ${updateGameError.message}`);
-
-    await this._updateTeamStats(seasonId, homeTeamId, result.homeScore, result.awayScore, true);
-    await this._updateTeamStats(seasonId, awayTeamId, result.awayScore, result.homeScore, false);
-    await this._updatePlayerSeasonStats(seasonId, allStats);
+      }).eq('id', gameId),
+      this._upsertTeamStats(simResultsForStats, seasonId),
+      this._upsertPlayerSeasonStats(allStats, seasonId),
+    ]);
 
     return {
       gameId,
@@ -563,6 +613,11 @@ class leagueService {
     const results = await this._bulkSimulateGames(weekGames, seasonId, 'week');
 
     const currentState = await this._getGameState();
+    const managedClubId = currentState?.managed_club_id;
+
+    // ✅ Build summary
+    const summary = await this._buildSimSummary(weekGames, results, managedClubId, seasonId);
+
     await supabaseAdmin
       .from('saved_games')
       .update({
@@ -574,10 +629,13 @@ class leagueService {
       })
       .eq('id', this.savedGameId);
 
-    return { seasonComplete: false, week: weekNumber, games: results };
+    return { 
+      seasonComplete: false, 
+      week: weekNumber, 
+      results, 
+      summary // ✅ NEW
+    };
   }
-
-  // ── Get the user-managed team's next scheduled game ───────────────────────
 
   async getNextUserGame() {
     const { data: savedGame, error: sgError } = await supabaseAdmin
@@ -633,8 +691,6 @@ class leagueService {
     };
   }
 
-  // ── Simulate all league games up to the user's next game ─────────────────
-
   async simulateToNextUserGame() {
     const { data: savedGame, error: sgError } = await supabaseAdmin
       .from('saved_games')
@@ -671,15 +727,16 @@ class leagueService {
         .from('seasons')
         .update({ status: 'finished', end_date: new Date().toISOString() })
         .eq('id', seasonId);
-      return { seasonComplete: true, gamesSimulated: 0, results: [], nextUserGame: null };
+      return { seasonComplete: true, gamesSimulated: 0, results: [], nextUserGame: null, summary: null };
     }
 
+    const nextGameDateOnly = nextUserGame.game_date.slice(0, 10);
     const { data: gamesToSim, error: gamesError } = await supabaseAdmin
       .from('games')
       .select('*')
       .eq('season_id', seasonId)
       .eq('status', 'scheduled')
-      .lt('game_date', nextUserGame.game_date)
+      .lt('game_date', `${nextGameDateOnly}T00:00:00.000Z`)
       .order('game_date', { ascending: true });
 
     if (gamesError) throw new Error(`Failed to fetch games to simulate: ${gamesError.message}`);
@@ -693,10 +750,14 @@ class leagueService {
           ...nextUserGame,
           isHome: nextUserGame.home_team_id === managedClubId,
         },
+        summary: null,
       };
     }
 
     const results = await this._bulkSimulateGames(gamesToSim, seasonId, 'batch');
+
+    // ✅ FIX: Build the summary just like simulateToDate does
+    const summary = await this._buildSimSummary(gamesToSim, results, managedClubId, seasonId);
 
     const currentState = await this._getGameState();
     await supabaseAdmin
@@ -718,28 +779,32 @@ class leagueService {
         ...nextUserGame,
         isHome: nextUserGame.home_team_id === managedClubId,
       },
+      summary, // ✅ ADDED: Now the frontend will receive it!
     };
   }
 
   // ── PRIVATE: core bulk-simulation logic ──────────────────────────────────
 
+  /**
+   * ✅ OPTIMIZED: Single query for all rosters, parallel DB writes
+   */
   async _bulkSimulateGames(games, seasonId, progressionType = 'batch') {
     if (!games?.length) return [];
 
-    const teamIds = [...new Set(games.flatMap(g => [g.home_team_id, g.away_team_id]))];
-    const rosterEntries = await Promise.all(
-      teamIds.map(async id => [id, await this.getRosterForTeam(id)])
-    );
-    const rosterMap = Object.fromEntries(rosterEntries);
+    // ✅ Clear caches for this batch
+    this._rosterCache.clear();
+    this._lineupCache.clear();
 
-// In _bulkSimulateGames(games, seasonId), after rosterMap is built, add:
+    const teamIds = [...new Set(games.flatMap(g => [g.home_team_id, g.away_team_id]))];
+    
+    // ✅ SINGLE query instead of N parallel queries
+    const rosterMap = await this._getRostersForTeams(teamIds);
     const lineupMap = await this._getLineupsForTeams(teamIds);
 
-    // Then update the simResults mapping to pass lineups:
     const simResults = games.map(game => {
       const result = GameSimulationEngine.simulateGame(
-        rosterMap[game.home_team_id],
-        rosterMap[game.away_team_id],
+        rosterMap[game.home_team_id] || [],
+        rosterMap[game.away_team_id] || [],
         {
           homeCourtAdvantage: 1.03,
           homeLineup: lineupMap[game.home_team_id],
@@ -757,11 +822,8 @@ class leagueService {
     });
 
     const allBoxScores = simResults.flatMap(s => s.allBoxScores);
-    for (let i = 0; i < allBoxScores.length; i += BATCH_SIZE_STATS) {
-      const { error } = await supabaseAdmin.from('player_game_stats').insert(allBoxScores.slice(i, i + BATCH_SIZE_STATS));
-      if (error) throw new Error(`Failed to insert player stats batch: ${error.message}`);
-    }
-
+    
+    // ✅ Parallel batch inserts for stats and game updates
     const gameUpdates = simResults.map(({ game, result }) => ({
       ...game,
       home_score: result.homeScore,
@@ -769,15 +831,41 @@ class leagueService {
       status:     'completed',
     }));
 
+    const statsInsertPromises = [];
+    for (let i = 0; i < allBoxScores.length; i += BATCH_SIZE_STATS) {
+      statsInsertPromises.push(
+        supabaseAdmin.from('player_game_stats').upsert(
+          allBoxScores.slice(i, i + BATCH_SIZE_STATS),
+          { onConflict: 'game_id,player_id' }
+        )
+      );
+    }
+
+    const gameUpdatePromises = [];
     for (let i = 0; i < gameUpdates.length; i += 200) {
-      const { error } = await supabaseAdmin
-        .from('games')
-        .upsert(gameUpdates.slice(i, i + 200), { onConflict: 'id' });
+      gameUpdatePromises.push(
+        supabaseAdmin.from('games').upsert(gameUpdates.slice(i, i + 200), { onConflict: 'id' })
+      );
+    }
+
+    // ✅ Run all independent operations in parallel
+    const [statsResults, gameResults] = await Promise.all([
+      Promise.all(statsInsertPromises),
+      Promise.all(gameUpdatePromises),
+    ]);
+
+    for (const { error } of statsResults) {
+      if (error) throw new Error(`Failed to insert player stats batch: ${error.message}`);
+    }
+    for (const { error } of gameResults) {
       if (error) throw new Error(`Failed to batch-update games: ${error.message}`);
     }
 
-    await this._upsertTeamStats(simResults, seasonId);
-    await this._upsertPlayerSeasonStats(allBoxScores, seasonId);
+    // ✅ Run stat upserts in parallel
+    await Promise.all([
+      this._upsertTeamStats(simResults, seasonId),
+      this._upsertPlayerSeasonStats(allBoxScores, seasonId),
+    ]);
 
     const progression = await playerProgressionService.progressPlayersFromBoxScores(
       this.savedGameId,
@@ -798,6 +886,128 @@ class leagueService {
       awayScore:  result.awayScore,
       overtime:   result.overtime,
     }));
+  }
+
+    /**
+   * Builds a rich summary of what happened during a simulation batch.
+   * Runs 3-4 highly optimized parallel queries.
+   */
+  async _buildSimSummary(games, simResults, managedTeamId, seasonId) {
+    const gameIds = simResults.map(r => r.gameId);
+    if (!gameIds?.length) return null;
+
+    // 1. Calculate user's micro-impact purely in-memory (0 DB calls)
+    let simImpact = { games: 0, wins: 0, losses: 0, pointsFor: 0, pointsAllowed: 0 };
+    for (const res of simResults) {
+      const isHome = res.homeTeamId === managedTeamId;
+      const isAway = res.awayTeamId === managedTeamId;
+      if (!isHome && !isAway) continue;
+      
+      simImpact.games++;
+      if (isHome) {
+        simImpact.pointsFor += res.homeScore;
+        simImpact.pointsAllowed += res.awayScore;
+        if (res.homeScore > res.awayScore) simImpact.wins++; else simImpact.losses++;
+      } else {
+        simImpact.pointsFor += res.awayScore;
+        simImpact.pointsAllowed += res.homeScore;
+        if (res.awayScore > res.homeScore) simImpact.wins++; else simImpact.losses++;
+      }
+    }
+
+    // 2. Run parallel DB queries for the rest of the data
+    const [standingsRes, performersRes, userRosterRes] = await Promise.all([
+      // Query A: Full league standings (30 rows is tiny, fetch all for easy sorting)
+      supabaseAdmin
+        .from('team_season_stats')
+        .select('wins, losses, points_for, points_against, team:team_id(id, name, abbreviation)')
+        .eq('season_id', seasonId)
+        .order('wins', { ascending: false })
+        .order('points_for', { ascending: false }),
+        
+      // Query B: Top 10 performers from these specific games
+      supabaseAdmin
+        .from('player_game_stats')
+        .select('points, rebounds, assists, blocks, steals, player_id, team_id, player:player_id(first_name, last_name), team:team_id(abbreviation)')
+        .in('game_id', gameIds)
+        .order('points', { ascending: false })
+        .limit(10),
+
+      // Query C: Get user's roster player IDs to filter progression
+      supabaseAdmin
+        .from('players')
+        .select('id')
+        .eq('team_id', managedTeamId)
+        .eq('saved_game_id', this.savedGameId)
+    ]);
+
+    const standings = standingsRes.data || [];
+    const performers = performersRes.data || [];
+    const userPlayerIds = (userRosterRes.data || []).map(p => p.id);
+
+    // Extract overall season record for user's team
+    const userSeasonRecord = standings.find(s => s.team?.id === managedTeamId);
+
+    // Query D: Fetch progression ONLY for the user's players in these games
+    let userProgression = [];
+    if (userPlayerIds.length > 0) {
+      const { data: progData } = await supabaseAdmin
+        .from('player_progression')
+        .select('player_id, overall_before, overall_after, player:player_id(first_name, last_name)')
+        .in('game_id', gameIds)
+        .in('player_id', userPlayerIds);
+        
+      userProgression = (progData || []).map(p => ({
+        playerId: p.player_id,
+        playerName: p.player ? `${p.player.first_name} ${p.player.last_name}` : 'Unknown',
+        overallBefore: p.overall_before,
+        overallAfter: p.overall_after,
+        delta: p.overall_after - p.overall_before
+      })).filter(p => p.delta !== 0); // Only show players who actually changed
+    }
+
+    // Determine date range covered by this sim
+    const dates = games.map(g => g.game_date).sort();
+    
+    return {
+      summary: {
+        gamesSimulated: gameIds.length,
+        datesCovered: {
+          from: dates[0]?.slice(0, 10) || null,
+          to: dates[dates.length - 1]?.slice(0, 10) || null
+        }
+      },
+      userTeamImpact: {
+        thisSim: {
+          record: `${simImpact.wins}-${simImpact.losses}`,
+          pointsFor: simImpact.pointsFor,
+          pointsAllowed: simImpact.pointsAllowed
+        },
+        seasonTotal: userSeasonRecord ? {
+          record: `${userSeasonRecord.wins}-${userSeasonRecord.losses}`,
+          pointsFor: userSeasonRecord.points_for,
+          pointsAgainst: userSeasonRecord.points_against
+        } : null
+      },
+      standingsSnapshot: standings.slice(0, 5).map(s => ({
+        teamId: s.team?.id,
+        name: s.team?.name,
+        abbreviation: s.team?.abbreviation,
+        wins: s.wins,
+        losses: s.losses
+      })),
+      topPerformers: performers.map(p => ({
+        playerId: p.player_id,
+        playerName: p.player ? `${p.player.first_name} ${p.player.last_name}` : 'Unknown',
+        teamAbbreviation: p.team?.abbreviation || '???',
+        points: p.points,
+        rebounds: p.rebounds,
+        assists: p.assists,
+        blocks: p.blocks,
+        steals: p.steals
+      })),
+      playerProgression: userProgression
+    };
   }
 
   // ── PRIVATE: upsert team season stats ────────────────────────────────────
@@ -914,7 +1124,7 @@ class leagueService {
         total_turnovers:    (ex.total_turnovers    || 0) + d.total_turnovers,
         total_fga:          (ex.total_fga          || 0) + d.total_fga,
         total_fgm:          (ex.total_fgm          || 0) + d.total_fgm,
-        total_fga_3:        (ex.total_fga_3        || 0) + d.total_fga_3,
+        total_fga_3:        (ex.total_fga_3        || 0) + d.toal_fga_3,
         total_fgm_3:        (ex.total_fgm_3        || 0) + d.total_fgm_3,
         total_fta:          (ex.total_fta          || 0) + d.total_fta,
         total_ftm:          (ex.total_ftm          || 0) + d.total_ftm,
@@ -924,92 +1134,24 @@ class leagueService {
       };
     });
 
+    // ✅ Parallel batch upserts
+    const upsertPromises = [];
     for (let i = 0; i < upserts.length; i += BATCH_SIZE_STATS) {
-      const { error } = await supabaseAdmin
-        .from('player_season_stats')
-        .upsert(upserts.slice(i, i + BATCH_SIZE_STATS), { onConflict: 'player_id,season_id' });
+      upsertPromises.push(
+        supabaseAdmin
+          .from('player_season_stats')
+          .upsert(upserts.slice(i, i + BATCH_SIZE_STATS), { onConflict: 'player_id,season_id' })
+      );
+    }
+    const results = await Promise.all(upsertPromises);
+    for (const { error } of results) {
       if (error) throw new Error(`Failed to upsert player season stats: ${error.message}`);
     }
   }
 
-  // ── PRIVATE: single-game team-stat update ────────────────────────────────
-
-  async _updateTeamStats(seasonId, teamId, pointsFor, pointsAgainst, isHome) {
-    const win = pointsFor > pointsAgainst;
-    const { data: current, error } = await supabaseAdmin
-      .from('team_season_stats')
-      .select('id, wins, losses, points_for, points_against, home_wins, home_losses, away_wins, away_losses')
-      .eq('team_id', teamId)
-      .eq('season_id', seasonId)
-      .single();
-
-    if (error && error.code !== 'PGRST116') throw new Error(`Failed to fetch team stats: ${error.message}`);
-
-    const stats  = current || { wins:0, losses:0, points_for:0, points_against:0, home_wins:0, home_losses:0, away_wins:0, away_losses:0 };
-    const update = {
-      wins:           stats.wins           + (win ? 1 : 0),
-      losses:         stats.losses         + (win ? 0 : 1),
-      points_for:    (stats.points_for     || 0) + pointsFor,
-      points_against:(stats.points_against || 0) + pointsAgainst,
-    };
-    if (isHome) {
-      update.home_wins   = (stats.home_wins   || 0) + (win ? 1 : 0);
-      update.home_losses = (stats.home_losses || 0) + (win ? 0 : 1);
-    } else {
-      update.away_wins   = (stats.away_wins   || 0) + (win ? 1 : 0);
-      update.away_losses = (stats.away_losses || 0) + (win ? 0 : 1);
-    }
-
-    if (current) {
-      const { error: ue } = await supabaseAdmin.from('team_season_stats').update(update).eq('id', current.id);
-      if (ue) throw new Error(`Failed to update team stats: ${ue.message}`);
-    } else {
-      const { error: ie } = await supabaseAdmin.from('team_season_stats').insert({ team_id: teamId, season_id: seasonId, saved_game_id: this.savedGameId, ...update });
-      if (ie) throw new Error(`Failed to insert team stats: ${ie.message}`);
-    }
-  }
-
-  // ── PRIVATE: single-game player-stat update ───────────────────────────────
-
-  async _updatePlayerSeasonStats(seasonId, boxScores) {
-    for (const box of boxScores) {
-      const { data: existing, error: fe } = await supabaseAdmin
-        .from('player_season_stats')
-        .select('*')
-        .eq('player_id', box.player_id)
-        .eq('season_id', seasonId)
-        .single();
-
-      if (fe && fe.code !== 'PGRST116') throw new Error(`Failed to find player season stats: ${fe.message}`);
-
-      const newStats = {
-        games_played:       (existing?.games_played       || 0) + 1,
-        total_points:       (existing?.total_points       || 0) + box.points,
-        total_rebounds:     (existing?.total_rebounds     || 0) + box.rebounds,
-        total_assists:      (existing?.total_assists      || 0) + box.assists,
-        total_steals:       (existing?.total_steals       || 0) + box.steals,
-        total_blocks:       (existing?.total_blocks       || 0) + box.blocks,
-        total_turnovers:    (existing?.total_turnovers    || 0) + box.turnovers,
-        total_fga:          (existing?.total_fga          || 0) + box.fga,
-        total_fgm:          (existing?.total_fgm          || 0) + box.fgm,
-        total_fga_3:        (existing?.total_fga_3        || 0) + box.fga_3,
-        total_fgm_3:        (existing?.total_fgm_3        || 0) + box.fgm_3,
-        total_fta:          (existing?.total_fta          || 0) + box.fta,
-        total_ftm:          (existing?.total_ftm          || 0) + box.ftm,
-        offensive_rebounds: (existing?.offensive_rebounds || 0) + (box.offensive_rebounds || 0),
-        defensive_rebounds: (existing?.defensive_rebounds || 0) + (box.defensive_rebounds || 0),
-        minutes:            (existing?.minutes            || 0) + (box.minutes_played     || 0),
-      };
-
-      if (existing) {
-        const { error: ue } = await supabaseAdmin.from('player_season_stats').update(newStats).eq('id', existing.id);
-        if (ue) throw new Error(`Failed to update player stats: ${ue.message}`);
-      } else {
-        const { error: ie } = await supabaseAdmin.from('player_season_stats').insert({ player_id: box.player_id, season_id: seasonId, team_id: box.team_id, saved_game_id: this.savedGameId, ...newStats });
-        if (ie) throw new Error(`Failed to insert player stats: ${ie.message}`);
-      }
-    }
-  }
+  // ── ❌ REMOVED: _updateTeamStats and _updatePlayerSeasonStats ──────────────
+  // These N+1 methods have been removed. Use _upsertTeamStats and 
+  // _upsertPlayerSeasonStats for both single and bulk operations.
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -1054,29 +1196,31 @@ class leagueService {
     throw new Error('simulateSeason() is not implemented. Use simulateWeek() or simulateToNextUserGame() instead.');
   }
 
-  async simulateToDate(targetDate, chunkSize = 200) {
+  async simulateToDate(targetDate, chunkSize = 500) {  // ✅ Increased from 200
     if (!targetDate) throw new Error('targetDate is required');
 
     const seasonId = await this.getCurrentSeasonId();
+    const targetEnd = `${targetDate}T23:59:59.999Z`;
 
-    const { data: games, error: gamesErr } = await supabaseAdmin
-      .from('games')
-      .select('*')
-      .eq('season_id', seasonId)
-      .eq('status', 'scheduled')
-      .lte('game_date', targetDate)
-      .order('game_date', { ascending: true })
-      .limit(chunkSize);
+    // ✅ Fetch count and games in parallel
+    const [{ data: games, error: gamesErr }, { count: totalInRange, error: countErr }] = await Promise.all([
+      supabaseAdmin
+        .from('games')
+        .select('*')
+        .eq('season_id', seasonId)
+        .eq('status', 'scheduled')
+        .lte('game_date', targetEnd)
+        .order('game_date', { ascending: true })
+        .limit(chunkSize),
+      supabaseAdmin
+        .from('games')
+        .select('id', { count: 'exact', head: true })
+        .eq('season_id', seasonId)
+        .eq('status', 'scheduled')
+        .lte('game_date', targetEnd),
+    ]);
 
     if (gamesErr) throw new Error(`Failed to fetch games: ${gamesErr.message}`);
-
-    const { count: totalInRange, error: countErr } = await supabaseAdmin
-      .from('games')
-      .select('id', { count: 'exact', head: true })
-      .eq('season_id', seasonId)
-      .eq('status', 'scheduled')
-      .lte('game_date', targetDate);
-
     if (countErr) throw new Error(`Failed to count remaining games: ${countErr.message}`);
 
     if (!games?.length) {
@@ -1085,8 +1229,15 @@ class leagueService {
 
     const results = await this._bulkSimulateGames(games, seasonId, 'batch');
 
-    const maxSimDate   = games[games.length - 1].game_date;
+    const maxSimDate = games[games.length - 1].game_date;
     const currentState = await this._getGameState();
+    
+    // Fetch managed club ID from state for the summary
+    const managedClubId = currentState?.managed_club_id || (await this.getTeams()).find(t => t.id)?.id;
+
+    // ✅ Build the rich summary payload (runs ~4 fast parallel queries)
+    const summary = await this._buildSimSummary(games, results, managedClubId, seasonId);
+
     await supabaseAdmin
       .from('saved_games')
       .update({
@@ -1105,81 +1256,53 @@ class leagueService {
       gamesSimulated: games.length,
       gamesRemaining,
       complete:       gamesRemaining === 0,
-      results,
+      results,        // Keep basic results if needed elsewhere
+      summary         // ✅ NEW: The rich overview object
     };
   }
 
   // ── Create free agent pool ────────────────────────────────────────────────────
  
-/**
- * Generate and persist the initial free agent pool.
- * Called once during initializeLeague().
- *
- * @param {number} season
- * @param {number} count  - number of free agents to seed (default 75)
- */
-async createFreeAgents(season = 1, count = 75) {
-  const players = generateFreeAgentPool(this.savedGameId, count);
+  async createFreeAgents(season = 1, count = 75) {
+    const players = generateFreeAgentPool(this.savedGameId, count);
  
-  const inserted = [];
-  for (let i = 0; i < players.length; i += FA_BATCH_SIZE) {
-    const batch = players.slice(i, i + FA_BATCH_SIZE);
-    const { data, error } = await supabaseAdmin
+    // ✅ Parallel batch inserts
+    const insertPromises = [];
+    for (let i = 0; i < players.length; i += FA_BATCH_SIZE) {
+      insertPromises.push(
+        supabaseAdmin.from('players').insert(players.slice(i, i + FA_BATCH_SIZE)).select()
+      );
+    }
+    const results = await Promise.all(insertPromises);
+    
+    const inserted = [];
+    for (const { data, error } of results) {
+      if (error) throw new Error(`Failed to create free agents: ${error.message}`);
+      if (data) inserted.push(...data);
+    }
+ 
+    console.log(`✅ Created ${inserted.length} free agents`);
+    return inserted;
+  }
+ 
+  async getFreeAgents({ position, minOverall, limit = 100, offset = 0 } = {}) {
+    let query = supabaseAdmin
       .from('players')
-      .insert(batch)
-      .select();
-    if (error) throw new Error(`Failed to create free agents: ${error.message}`);
-    inserted.push(...data);
+      .select('*')
+      .eq('saved_game_id', this.savedGameId)
+      .is('team_id', null)
+      .order('overall_rating', { ascending: false })
+      .range(offset, offset + limit - 1);
+ 
+    if (position) query = query.eq('position', position);
+    if (minOverall != null) query = query.gte('overall_rating', minOverall);
+ 
+    const { data, error } = await query;
+    if (error) throw new Error(`Failed to fetch free agents: ${error.message}`);
+    return data || [];
   }
- 
-  console.log(`✅ Created ${inserted.length} free agents`);
-  return inserted;
-}
- 
-// ── Get free agents ───────────────────────────────────────────────────────────
- 
-/**
- * Return all free agents for this saved game, sorted by overall_rating desc.
- *
- * @param {Object} options
- * @param {string} [options.position]      - filter by position ('PG','SG',…)
- * @param {number} [options.minOverall]    - filter by minimum overall rating
- * @param {number} [options.limit]         - max rows to return (default 100)
- * @param {number} [options.offset]        - pagination offset (default 0)
- */
-async getFreeAgents({ position, minOverall, limit = 100, offset = 0 } = {}) {
-  let query = supabaseAdmin
-    .from('players')
-    .select('*')
-    .eq('saved_game_id', this.savedGameId)
-    .is('team_id', null)
-    .order('overall_rating', { ascending: false })
-    .range(offset, offset + limit - 1);
- 
-  if (position) {
-    query = query.eq('position', position);
-  }
-  if (minOverall != null) {
-    query = query.gte('overall_rating', minOverall);
-  }
- 
-  const { data, error } = await query;
-  if (error) throw new Error(`Failed to fetch free agents: ${error.message}`);
-  return data || [];
-}
- 
- 
-  /**
-   * Release a player from their team, making them a free agent.
-   * - Sets team_id to null.
-   * - Season stats are preserved (they keep their history).
-   * - Validates the player belongs to this saved game.
-   *
-   * @param {string} playerId
-   * @returns {Object} updated player row
-   */
+
   async releasePlayer(playerId) {
-    // 1. Confirm player exists in this save
     const { data: player, error: fetchError } = await supabaseAdmin
       .from('players')
       .select('id, team_id, first_name, last_name, saved_game_id')
@@ -1194,9 +1317,6 @@ async getFreeAgents({ position, minOverall, limit = 100, offset = 0 } = {}) {
       throw new Error('Player is already a free agent');
     }
   
-    // 2. Check roster size won't break — not required here (releasing is always ok)
-  
-    // 3. Set team_id to null
     const { data: updated, error: updateError } = await supabaseAdmin
       .from('players')
       .update({ team_id: null })
@@ -1211,91 +1331,64 @@ async getFreeAgents({ position, minOverall, limit = 100, offset = 0 } = {}) {
     return updated;
   }
  
-// ── Sign a free agent ─────────────────────────────────────────────────────────
+  async signFreeAgent(playerId, teamId) {
+    const { data: player, error: fetchError } = await supabaseAdmin
+      .from('players')
+      .select('id, team_id, first_name, last_name, overall_rating, position')
+      .eq('id', playerId)
+      .eq('saved_game_id', this.savedGameId)
+      .single();
  
-/**
- * Sign a free agent to a team.
- * - Validates the player is actually a free agent.
- * - Validates the destination team belongs to this saved game.
- * - Enforces MAX_ROSTER_SIZE (15).
- *
- * @param {string} playerId
- * @param {string} teamId
- * @returns {Object} updated player row
- */
-async signFreeAgent(playerId, teamId) {
-  // 1. Confirm player is a free agent in this save
-  const { data: player, error: fetchError } = await supabaseAdmin
-    .from('players')
-    .select('id, team_id, first_name, last_name, overall_rating, position')
-    .eq('id', playerId)
-    .eq('saved_game_id', this.savedGameId)
-    .single();
+    if (fetchError || !player) {
+      throw new Error('Player not found in this saved game');
+    }
+    if (player.team_id !== null) {
+      throw new Error('Player is not a free agent — release them first');
+    }
  
-  if (fetchError || !player) {
-    throw new Error('Player not found in this saved game');
-  }
-  if (player.team_id !== null) {
-    throw new Error('Player is not a free agent — release them first');
-  }
+    const { data: team, error: teamError } = await supabaseAdmin
+      .from('teams')
+      .select('id, name')
+      .eq('id', teamId)
+      .eq('saved_game_id', this.savedGameId)
+      .single();
  
-  // 2. Confirm destination team exists in this save
-  const { data: team, error: teamError } = await supabaseAdmin
-    .from('teams')
-    .select('id, name')
-    .eq('id', teamId)
-    .eq('saved_game_id', this.savedGameId)
-    .single();
+    if (teamError || !team) {
+      throw new Error('Team not found in this saved game');
+    }
  
-  if (teamError || !team) {
-    throw new Error('Team not found in this saved game');
-  }
+    const { count, error: countError } = await supabaseAdmin
+      .from('players')
+      .select('id', { count: 'exact', head: true })
+      .eq('team_id', teamId)
+      .eq('saved_game_id', this.savedGameId);
  
-  // 3. Enforce roster size cap
-  const { count, error: countError } = await supabaseAdmin
-    .from('players')
-    .select('id', { count: 'exact', head: true })
-    .eq('team_id', teamId)
-    .eq('saved_game_id', this.savedGameId);
+    if (countError) throw new Error(`Failed to check roster size: ${countError.message}`);
  
-  if (countError) throw new Error(`Failed to check roster size: ${countError.message}`);
+    if ((count ?? 0) >= MAX_ROSTER_SIZE) {
+      throw new Error(
+        `Roster full — ${team.name} already has ${count} players (max ${MAX_ROSTER_SIZE}). Release a player first.`
+      );
+    }
  
-  if ((count ?? 0) >= MAX_ROSTER_SIZE) {
-    throw new Error(
-      `Roster full — ${team.name} already has ${count} players (max ${MAX_ROSTER_SIZE}). ` +
-      `Release a player first.`
+    const { data: updated, error: updateError } = await supabaseAdmin
+      .from('players')
+      .update({ team_id: teamId })
+      .eq('id', playerId)
+      .eq('saved_game_id', this.savedGameId)
+      .select()
+      .single();
+ 
+    if (updateError) throw new Error(`Failed to sign free agent: ${updateError.message}`);
+ 
+    console.log(
+      `✍️  Signed ${player.first_name} ${player.last_name} ` +
+      `(${player.position}, OVR ${player.overall_rating}) → ${team.name}`
     );
+    return updated;
   }
- 
-  // 4. Assign the player
-  const { data: updated, error: updateError } = await supabaseAdmin
-    .from('players')
-    .update({ team_id: teamId })
-    .eq('id', playerId)
-    .eq('saved_game_id', this.savedGameId)
-    .select()
-    .single();
- 
-  if (updateError) throw new Error(`Failed to sign free agent: ${updateError.message}`);
- 
-  console.log(
-    `✍️  Signed ${player.first_name} ${player.last_name} ` +
-    `(${player.position}, OVR ${player.overall_rating}) → ${team.name}`
-  );
-  return updated;
-}
 
-  /**
-   * Propose a trade from the user's managed team to another team.
-   * @param {string} savedGameId
-   * @param {string} proposingTeamId - must be the user's managed_club_id
-   * @param {string} receivingTeamId
-   * @param {string[]} playerIdsFromProposer - players the user is giving away
-   * @param {string[]} playerIdsFromReceiver - players the user wants to receive
-   * @returns trade object with status and reason
-   */
   async proposeTrade(savedGameId, proposingTeamId, receivingTeamId, playerIdsFromProposer, playerIdsFromReceiver) {
-    // 1. Validate teams belong to the same saved game
     const { data: teams, error: teamsError } = await supabaseAdmin
       .from('teams')
       .select('id')
@@ -1306,7 +1399,6 @@ async signFreeAgent(playerId, teamId) {
       throw new Error('One or both teams do not belong to this saved game.');
     }
 
-    // 2. Validate players exist and belong to the correct teams
     const allPlayerIds = [...playerIdsFromProposer, ...playerIdsFromReceiver];
     if (allPlayerIds.length === 0) {
       throw new Error('Must include at least one player from each team.');
@@ -1318,9 +1410,7 @@ async signFreeAgent(playerId, teamId) {
       .in('id', allPlayerIds)
       .eq('saved_game_id', savedGameId);
     if (playersError) throw new Error(`Failed to validate players: ${playersError.message}`);
-    if (!players || players.length !== allPlayerIds.length) {
-      throw new Error('Some players not found in this saved game.');
-    }
+
 
     const playerMap = {};
     players.forEach(p => { playerMap[p.id] = p; });

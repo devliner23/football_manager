@@ -363,38 +363,51 @@ class TeamArchetypeService {
    * @returns {Object} updated player
    */
   static applyToPlayer(player, archetypeId) {
-    if (!archetypeId) return player;
+      if (!archetypeId) return player;
 
-    const modifiedTraits = this.applyAttributeModifiers(
-      player.position,
-      player.traits || {},
-      archetypeId
-    );
+      // ✅ FIX: Parse traits if it's a string (from generatePlayer)
+      let traits = player.traits;
+      if (typeof traits === 'string') {
+        try {
+          traits = JSON.parse(traits);
+        } catch (e) {
+          console.warn('Failed to parse traits:', e);
+          traits = {};
+        }
+      }
+      if (!traits || typeof traits !== 'object') {
+        traits = {};
+      }
 
-    const newOverall = this.recalculateOverall(modifiedTraits, player.position);
+      const modifiedTraits = this.applyAttributeModifiers(
+        player.position,
+        traits,  // ✅ Now properly an object
+        archetypeId
+      );
 
-    // Age / potential modifiers
-    const archetype = this.getArchetype(archetypeId);
-    let age              = player.age;
-    let potential_rating = player.potential_rating;
+      const newOverall = this.recalculateOverall(modifiedTraits, player.position);
 
-    if (archetype?.ageRange) {
-      const [minAge, maxAge] = archetype.ageRange;
-      age = Math.max(minAge, Math.min(maxAge, age));
-    }
-    if (archetype?.potentialBoost) {
-      potential_rating = Math.max(40, Math.min(99, potential_rating + archetype.potentialBoost));
-    }
+      const archetype = this.getArchetype(archetypeId);
+      let age              = player.age;
+      let potential_rating = player.potential_rating;
 
-    return {
-      ...player,
-      traits:           modifiedTraits,
-      overall_rating:   newOverall,
-      potential_rating,
-      age,
-    };
+      if (archetype?.ageRange) {
+        const [minAge, maxAge] = archetype.ageRange;
+        age = Math.max(minAge, Math.min(maxAge, age));
+      }
+      if (archetype?.potentialBoost) {
+        potential_rating = Math.max(40, Math.min(99, potential_rating + archetype.potentialBoost));
+      }
+
+      return {
+        ...player,
+        traits:           modifiedTraits,
+        overall_rating:   newOverall,
+        potential_rating,
+        age,
+      };
   }
-
+  
   // ── Position distribution ──────────────────────────────────────────────────
 
   /** Generate an array of positions for a full roster, respecting archetype weights. */

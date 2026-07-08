@@ -1,7 +1,15 @@
 // src/components/SelectedGame/SelectedGame.tsx
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { SavedGame } from '../../shared';
-import { leagueAPI, Team, Player, StandingsRow, GameResult, UserGameInfo } from '../../api/leagueApi';
+import { 
+  leagueAPI, 
+  Team, 
+  Player, 
+  StandingsRow, 
+  GameResult, 
+  UserGameInfo, 
+  SimSummary // ✅ Added import
+} from '../../api/leagueApi';
 import { gameAPI } from '../../api/client';
 import GameHeader from './GameHeader';
 import GameSidebar from './GameSidebar';
@@ -16,11 +24,10 @@ import ScheduleTab from './tabs/ScheduleTab';
 import LineupTab from './tabs/LineupTab';
 import CoachTab from './tabs/CoachTab';
 import ProspectsTab from './tabs/ProspectsTab';
+import SimSummaryModal from './tabs/tabComponents/SimSummaryModal';
 import './SelectedGame.css';
 
-
 import { GameProvider } from '../../context/GameContext';
-
 import { RingLoader } from "react-spinners";
 
 import {
@@ -36,7 +43,6 @@ import {
   GraduationCap
 } from 'lucide-react';
 import GameResults from './GameResults';
-
 
 interface SelectedGameProps {
   game: SavedGame;
@@ -76,7 +82,6 @@ const tabConfig = {
     label: 'Draft Prospects',
     icon: <GraduationCap size={18} strokeWidth={2} />,
   },
-
 };
 
 const SelectedGame: React.FC<SelectedGameProps> = ({
@@ -102,9 +107,11 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
   );
   const [currentSeason, setCurrentSeason] = useState(game.current_season);
 
-  // managed_club_id is NULL at game-creation time (the game row is inserted before
-  // initializeLeague runs and sets the real UUID).  We store it in local state so
-  // that refreshAllData() can overwrite it with the value that is now in the DB.
+  // ✅ NEW: Modal State for Sim Summary
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [simSummary, setSimSummary] = useState<SimSummary | null>(null);
+  const [simMeta, setSimMeta] = useState({ gamesSimulated: 0, gamesRemaining: 0 });
+
   const [managedClubId, setManagedClubId] = useState<string | null>(
     game.managed_club_id ?? null
   );
@@ -113,7 +120,6 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     console.log("Game current_game_date", game.current_game_date);
   }, [game.id])
 
-  // Load all league data
   const loadLeagueData = async () => {
     setLoading(true);
     try {
@@ -167,14 +173,12 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     return () => { cancelled = true; };
   }, [game.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-
   // ── Derived data ────────────────────────────────────────────────────────────
 
   const getTeamById = (teamId: string) => teams.find((t) => t.id === teamId);
   const getPlayersForTeam = (teamId: string) =>
     players.filter((p) => p.team_id === teamId);
 
-  // Find the managed team using the refreshed UUID, not game.managed_club_id
   const userTeam = useMemo(() => {
     if (!teams.length || !managedClubId) return undefined;
     const found = teams.find(t => t.id === managedClubId);
@@ -187,8 +191,6 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     return found;
   }, [teams, managedClubId]);
 
-  // Derive wins/losses from standings (team_season_stats) rather than the
-  // teams table, which does not carry those columns.
   const userStanding = useMemo(
     () => standings.find(s => s.team_id === managedClubId) ?? null,
     [standings, managedClubId]
@@ -207,11 +209,21 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     return (((userStanding.wins ?? 0) / total) * 100).toFixed(1);
   })();
 
-  // Handlers
+  // ✅ UPDATED: Trigger modal on continue
   const handleContinue = async () => {
     setLoading(true);
     try {
-      await leagueAPI.simulateToNextGame(game.id);
+      const result = await leagueAPI.simulateToNextGame(game.id);
+      
+      if (result.summary) {
+        setSimSummary(result.summary);
+        setSimMeta({
+          gamesSimulated: result.gamesSimulated,
+          gamesRemaining: 0, // Not applicable for single chunk to next game
+        });
+        // We set modal to open, but it will wait for loading to finish to show cleanly
+        setIsModalOpen(true); 
+      }
     } catch (err) {
       console.error('simulateToNextGame error:', err);
     } finally {
@@ -242,24 +254,46 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
     }
   };
 
+  // ✅ UPDATED: Accumulate summary data in while loop, trigger modal
   const handleSimulateToDate = async (targetDate: string) => {
     setLoading(true);
+    let latestSummary: SimSummary | null = null;
+    let totalSimulated = 0;
+    let remaining = 0;
 
     try {
-      let complete       = false;
-      let totalSimulated = 0;
-
+      let complete = false;
       while (!complete) {
         const result = await leagueAPI.simulateToDate(game.id, targetDate);
 
         totalSimulated += result.gamesSimulated ?? 0;
-        complete        = result.complete ?? true;
+        remaining = result.gamesRemaining ?? 0;
+        complete = result.complete ?? true;
+
+        // Keep the latest summary (usually covers the final chunk's stats)
+        if (result.summary) {
+          latestSummary = result.summary;
+        }
 
         if (!complete) await new Promise(r => setTimeout(r, 200));
+      }
+
+      // If we got a summary, inject the TOTAL games simulated into it
+      if (latestSummary) {
+        setSimSummary({ 
+          ...latestSummary, 
+          summary: { 
+            ...latestSummary.summary, 
+            gamesSimulated: totalSimulated // Ensure total is accurate across chunks
+          } 
+        });
+        setSimMeta({ gamesSimulated: totalSimulated, gamesRemaining: remaining });
+        setIsModalOpen(true);
       }
     } catch (err) {
       console.error('Simulation chunk error:', err);
     } finally {
+      // Refresh all component states unconditionally
       await refreshAllData();
       setRefreshKey(k => k + 1);
       setLoading(false);
@@ -316,9 +350,12 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
       console.error('refreshAllData failed:', err);
       return null;
     }
-  }, [game.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [game.id, managedClubId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Single mount/refresh effect — replaces the two separate effects above
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSimSummary(null);
+  };
 
   return (
     <div className="selected-game-dashboard">
@@ -341,12 +378,10 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
         }}>
         {/* ── LEFT SIDEBAR (tab navigation) ── */}
         <aside className="game-sidebar">
-        {/* Logo / Game name */}
         <div className="game-sidebar-logo">
             <span className="game-logo-text">Hardwood GM</span>
         </div>
 
-        {/* Tab navigation */}
         <nav className="game-nav-menu">
             {(Object.keys(tabConfig) as TabType[]).map((tab) => (
             <button
@@ -360,7 +395,6 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
             ))}
         </nav>
 
-        {/* Optional: a small season progress indicator (kept simple) */}
         <div className="game-sidebar-footer">
             { <GameSidebar
                 season={currentSeason}
@@ -371,7 +405,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 ppg="N/A"
                 oppg="N/A"
                 onContinue={handleContinue}
-                onSimulate={handleSimulate}
+                onSimulate={ handleSimulate}
                 onViewStandings={() => setActiveTab('standings')}
                 loading={loading}
                 nextUserGame={nextUserGame}
@@ -384,7 +418,6 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
 
         {/* ── RIGHT MAIN CONTENT ── */}
         <main className="game-main-content">
-        {/* Header row */}
         <div className="game-header-row">
             <button className="game-back-btn" onClick={onBack}>
             ← Back
@@ -397,16 +430,13 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
             </div>
         </div>
 
-        {/* Loading overlay (kept from original) */}
         {loading && (
             <div className="game-loading-overlay">
             <div className="pulse-ring-loader"></div>
             </div>
         )}
 
-        {/* Two‑column content area */}
         <div className="game-content-columns">
-            {/* Left column – active tab content */}
             <div className="game-content-left">
             {!loading && activeTab === 'overview' && (
                 <OverviewTab
@@ -421,7 +451,6 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 onGameClick={(gameId) => setSelectedGameId(gameId)}
                 allTeams={teams}
                 onSimulateToDate={handleSimulateToDate}
-                onContinue={handleContinue}
                 />
             )}
             {!loading && activeTab === 'leagueRoster' && (
@@ -477,10 +506,18 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
         </div>
         </main>
 
-        {/* Player modal stays at the root level */}
         <PlayerModal
         player={selectedPlayer}
         onClose={() => setSelectedPlayer(null)}
+        />
+
+        {/* ✅ NEW: Simulation Summary Modal */}
+        <SimSummaryModal
+          isOpen={isModalOpen && !loading} // Only show once loading spinner is gone
+          onClose={handleCloseModal}
+          summary={simSummary}
+          gamesSimulated={simMeta.gamesSimulated}
+          gamesRemaining={simMeta.gamesRemaining}
         />
         </GameProvider>
     </div>
