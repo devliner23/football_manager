@@ -1124,7 +1124,7 @@ class leagueService {
         total_turnovers:    (ex.total_turnovers    || 0) + d.total_turnovers,
         total_fga:          (ex.total_fga          || 0) + d.total_fga,
         total_fgm:          (ex.total_fgm          || 0) + d.total_fgm,
-        total_fga_3:        (ex.total_fga_3        || 0) + d.toal_fga_3,
+        total_fga_3:        (ex.total_fga_3        || 0) + d.total_fga_3,
         total_fgm_3:        (ex.total_fgm_3        || 0) + d.total_fgm_3,
         total_fta:          (ex.total_fta          || 0) + d.total_fta,
         total_ftm:          (ex.total_ftm          || 0) + d.total_ftm,

@@ -63,12 +63,12 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
   onSimulate,
   onViewStandings,
   loading,
-  nextUserGame,
-  leagueGamesBeforeCount = 0,
   lastSimulatedDate,
   onSimulateToDate,
 }) => {
   const [simDate, setSimDate] = useState<string>("");
+
+  const { nextUserGame, leagueGamesBeforeCount = 0 } = useGameContext() || {};
 
   // Sync with latest simulated date.
   // IMPORTANT: parse the date string directly instead of going through
@@ -81,13 +81,20 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
       setSimDate(lastSimulatedDate.slice(0, 10));
     } else {
       setSimDate(todayAsString());
+
     }
   }, [lastSimulatedDate]);
 
   // Convert string ↔ CalendarDate for the DatePicker
-  const toCalendarDate = (dateStr: string): CalendarDate | null => {
-    if (!dateStr) return null;
-    const [y, m, d] = dateStr.split('-').map(Number);
+  const toCalendarDate = (dateStr: string): CalendarDate => {
+    if (!dateStr) return new CalendarDate(2026, 1, 1);
+    const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number);
+    
+    // Safety check for invalid values
+    if (isNaN(y) || isNaN(m) || isNaN(d)) {
+      return new CalendarDate(2026, 1, 1);
+    }
+    
     return new CalendarDate(y, m, d);
   };
 
@@ -120,6 +127,10 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
     const nd = String(date.getDate()).padStart(2, '0');
     return `${ny}-${nm}-${nd}`;
   };
+
+const placeholderDate = (nextUserGame?.game_date
+  ? toCalendarDate(nextUserGame.game_date)
+  : null) ?? new CalendarDate(2026, 1, 1);
 
   return (
     <aside className="glass-sidebar">
@@ -168,7 +179,7 @@ const GameSidebar: React.FC<GameSidebarProps> = ({
             className="sim-date-picker-card"
             value={toCalendarDate(simDate)}
             onChange={handleDateChange}
-            placeholderValue={new CalendarDate(2026, 1, 1)}
+            placeholderValue={placeholderDate}
             isDisabled={loading}
           >
             <div className="date-picker-wrapper">

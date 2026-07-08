@@ -396,7 +396,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
         </nav>
 
         <div className="game-sidebar-footer">
-            { <GameSidebar
+            {!loading && ( <GameSidebar
                 season={currentSeason}
                 wins={userStanding?.wins ?? 0}
                 losses={userStanding?.losses ?? 0}
@@ -412,7 +412,7 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 leagueGamesBeforeCount={leagueGamesBeforeCount}
                 onSimulateToDate={handleSimulateToDate}
                 lastSimulatedDate={lastSimulatedDate}
-            /> }
+            /> )}
         </div>
         </aside>
 

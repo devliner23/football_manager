@@ -357,19 +357,24 @@
   font-size: 1rem;
   font-weight: 800;
   letter-spacing: 0.02em;
+  /* Added for glassmorphism base */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .sim-team-avatar--self {
-  background: rgba(var(--neon-blue-rgb), 0.15);
-  border: 1px solid rgba(var(--neon-blue-rgb), 0.35);
-  color: var(--neon-blue-light);
-  box-shadow: 0 0 15px rgba(var(--neon-blue-rgb), 0.15);
+  /* Uses dynamic team color variable, falling back to neon-blue */
+  background: linear-gradient(135deg, rgba(var(--team-color-rgb, var(--neon-blue-rgb)), 0.25) 0%, rgba(var(--team-color-rgb, var(--neon-blue-rgb)), 0.08) 100%);
+  border: 1px solid rgba(var(--team-color-rgb, var(--neon-blue-rgb)), 0.4);
+  color: var(--team-color-solid, var(--neon-blue-light));
+  box-shadow: 0 0 15px rgba(var(--team-color-rgb, var(--neon-blue-rgb)), 0.15);
 }
 
 .sim-team-avatar--opp {
-  background: rgba(var(--neon-danger-rgb), 0.1);
-  border: 1px solid var(--neon-danger-glow);
-  color: var(--neon-danger-solid);
+  /* Uses dynamic team color variable, falling back to neon-danger */
+  background: linear-gradient(135deg, rgba(var(--team-color-rgb, var(--neon-danger-rgb)), 0.25) 0%, rgba(var(--team-color-rgb, var(--neon-danger-rgb)), 0.08) 100%);
+  border: 1px solid rgba(var(--team-color-rgb, var(--neon-danger-rgb)), 0.4);
+  color: var(--team-color-solid, var(--neon-danger-solid));
 }
 
 .sim-team-name {
@@ -448,7 +453,6 @@
   transform: none;
   box-shadow: none;
 }
-
 /* ----- Empty state (season complete, etc.) ----- */
 .empty-state {
   padding: 32px 16px;

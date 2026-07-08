@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { SavedGame, Team, Player } from '../../../shared/index';
 import GameResults from '../GameResults';
 import { useGameContext } from '../../../context/GameContext';
@@ -26,7 +26,76 @@ import {
   FastForward
 } from 'lucide-react';
 import TradePanel from './tabComponents/TradePanel';
+import teamColors from '../../../data/teamColors.json';
 import "./styles/OverviewTab.css";
+
+// ── Team Colors Types & Helpers ──────────────────────────────────────────────
+
+interface TeamColorData {
+  primary: string;
+  secondary: string;
+  accent: string;
+  mascot: string;
+  background: string;
+}
+
+type TeamColorsMap = Record<string, TeamColorData>;
+
+// Convert hex (#RRGGBB) to RGB components
+const hexToRgb = (hex: string): { r: number; g: number; b: number } | null => {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result
+    ? {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+      }
+    : null;
+};
+
+// Get glass style with team's primary color
+const getTeamGlassStyle = (teamName: string): React.CSSProperties => {
+  const colors = (teamColors as TeamColorsMap)[teamName];
+  
+  if (!colors) {
+    // Fallback glass style for unknown teams
+    return {
+      background: 'rgba(255, 255, 255, 0.08)',
+      backdropFilter: 'blur(12px)',
+      WebkitBackdropFilter: 'blur(12px)',
+      border: '1px solid rgba(255, 255, 255, 0.15)',
+      boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)',
+    };
+  }
+
+  const rgb = hexToRgb(colors.primary);
+  if (!rgb) {
+    return {
+      background: 'rgba(255, 255, 255, 0.08)',
+      backdropFilter: 'blur(12px)',
+      WebkitBackdropFilter: 'blur(12px)',
+      border: '1px solid rgba(255, 255, 255, 0.15)',
+    };
+  }
+
+  const { r, g, b } = rgb;
+
+  return {
+    background: `linear-gradient(135deg, rgba(${r}, ${g}, ${b}, 0.25) 0%, rgba(${r}, ${g}, ${b}, 0.08) 100%)`,
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    border: `1px solid rgba(${r}, ${g}, ${b}, 0.4)`,
+    boxShadow: `
+      0 4px 15px rgba(0, 0, 0, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1),
+      0 0 20px rgba(${r}, ${g}, ${b}, 0.15)
+    `,
+    color: colors.primary,
+    textShadow: `0 0 10px rgba(${r}, ${g}, ${b}, 0.5)`,
+  };
+};
+
+// ── Component ────────────────────────────────────────────────────────────────
 
 interface OverviewTabProps {
   game: SavedGame;
@@ -58,6 +127,14 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   const [showTradeModal, setShowTradeModal] = useState(false);
 
   const { nextUserGame, leagueGamesBeforeCount = 0 } = useGameContext() || {};
+
+  useEffect(() => {
+    if (nextUserGame) {
+      console.log("Overview Tab", nextUserGame);
+    } else {
+      console.log("Overview Tab not working", nextUserGame);
+    }
+  }) // eslint-disable-line react-hooks/exhaustive-deps
 
   const teamMap = useMemo(() => {
     const m = new Map<string, Team>();
@@ -136,10 +213,10 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     return Math.round((gameDay.getTime() - today.getTime()) / 86400000);
   }, [nextUserGame]);
 
-const handleSimulateToNextGame = () => {
-  if (!nextUserGame?.game_date || !onSimulateToDate) return;
-  onSimulateToDate(nextUserGame.game_date.slice(0, 10));
-};
+  const handleSimulateToNextGame = () => {
+    if (!nextUserGame?.game_date || !onSimulateToDate) return;
+    onSimulateToDate(nextUserGame.game_date.slice(0, 10));
+  };
 
   if (!userTeam) {
     return (
@@ -154,6 +231,10 @@ const handleSimulateToNextGame = () => {
   const averages = teamAverages();
   const [wins = '0', losses = '0'] = record.split('-');
 
+  // Get team names for color lookup
+  const selfTeamName = nextUserGame?.home_team?.name || userTeam.name;
+  const oppTeamName = nextUserGame?.away_team?.name || '';
+
   return (
     <div className="overview-container">
       <div className="overview-grid">
@@ -161,7 +242,11 @@ const handleSimulateToNextGame = () => {
         <header className="banner">
           {/* Left: Team identity */}
           <div className="banner__brand">
-            <figure className="banner__avatar" aria-hidden="true">
+            <figure 
+              className="banner__avatar" 
+              aria-hidden="true"
+              style={getTeamGlassStyle(userTeam.name)}
+            >
               🏀
             </figure>
             <div className="banner__identity">
@@ -237,8 +322,6 @@ const handleSimulateToNextGame = () => {
 
           {/* Right: Actions & standings tracker */}
           <aside className="banner__actions">
-
-
             <div className="actions-group">
               <button
                 className="btn btn--trade"
@@ -272,7 +355,7 @@ const handleSimulateToNextGame = () => {
                   </span>
                   <span
                     className="trade-sub-action"
-                    title="Negotiations"
+                    title="Calendar"
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowTradeModal(true);
@@ -282,7 +365,7 @@ const handleSimulateToNextGame = () => {
                   </span>
                   <span
                     className="trade-sub-action"
-                    title="Negotiations"
+                    title="Standings"
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowTradeModal(true);
@@ -295,6 +378,7 @@ const handleSimulateToNextGame = () => {
             </div>
           </aside>
         </header>
+
         {/* ==================== 20% WIDTH VERTICAL KPI PANEL ==================== */}
         <div className="overview-kpi-vertical-stack">
           <div className="kpi-card">
@@ -357,8 +441,12 @@ const handleSimulateToNextGame = () => {
                 return (
                   <div className="sim-broadcast">
                     <div className="sim-broadcast__scoreboard">
+                      {/* ✅ USER TEAM AVATAR WITH GLASS + PRIMARY COLOR */}
                       <div className="sim-team-panel sim-team-panel--self">
-                        <div className="sim-team-avatar sim-team-avatar--self">
+                        <div 
+                          className="sim-team-avatar sim-team-avatar--self"
+                          style={getTeamGlassStyle(self?.name || userTeam.name)}
+                        >
                           {self?.abbreviation || userTeam.abbreviation}
                         </div>
                         <span className="sim-team-name">{self?.name || userTeam.name}</span>
@@ -376,8 +464,12 @@ const handleSimulateToNextGame = () => {
                         </span>
                       </div>
 
+                      {/* ✅ OPPONENT TEAM AVATAR WITH GLASS + PRIMARY COLOR */}
                       <div className="sim-team-panel sim-team-panel--opp">
-                        <div className="sim-team-avatar sim-team-avatar--opp">
+                        <div 
+                          className="sim-team-avatar sim-team-avatar--opp"
+                          style={getTeamGlassStyle(opponent?.name || '')}
+                        >
                           {opponent?.abbreviation || '???'}
                         </div>
                         <span className="sim-team-name">{opponent?.name || 'TBD'}</span>
