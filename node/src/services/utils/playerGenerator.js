@@ -1,17 +1,18 @@
 const { supabaseAdmin } = require('../../config/supabase');
+const TeamArchetypeService = require('./teamArchetypeService');
 const playerData = require('../../data/playerData.json');
 
 const CANONICAL_TRAIT_MAP = {
-  three_point:        'three_point_scoring',
-  mid_range:          'mid_range_scoring',
-  inside_scoring:     'inside_scoring',
-  passing:            'passing',
-  ball_handling:      'ball_handling',
-  perimeter_defense:  'perimeter_defense',
-  post_defense:       'interior_defense',
-  rebounding:         'rebounding',
-  speed:              'speed',
-  strength:           'strength',
+  three_point_scoring: 'three_point_scoring',
+  mid_range_scoring:   'mid_range_scoring',
+  inside_scoring:      'inside_scoring',
+  passing:             'passing',
+  ball_handling:       'ball_handling',
+  perimeter_defense:   'perimeter_defense',
+  post_defense:        'interior_defense',
+  rebounding:          'rebounding',
+  speed:               'speed',
+  strength:            'strength',
 };
 
 // Sensible fallbacks if playerData.json is missing/mis-configured
@@ -105,17 +106,24 @@ class PlayerGenerator {
   }
 
   // ---------- skill attributes (FIXED) ----------
-  // Skills are driven by overall rating so the AVERAGE skill equals overall.
-  // Positional modifiers shift the *distribution shape* without changing the mean.
   generateSkillAttributes(position, overallRating) {
     const sa = this.skillAttributes || {};
     const modifiers = (sa.positionModifiers && sa.positionModifiers[position]) || {};
-    const keys  = sa.keys  && sa.keys.length  ? sa.keys  : DEFAULT_SKILL_KEYS;
+    let keys = sa.keys && sa.keys.length ? sa.keys : DEFAULT_SKILL_KEYS;
+    
+    // SAFETY NET: Normalize legacy keys from playerData.json to match DB columns
+    const KEY_ALIASES = {
+      'inside': 'inside_scoring',
+      'mid_range': 'mid_range_scoring',
+      'three_point': 'three_point_scoring',
+      'post_defense': 'interior_defense',
+    };
+    keys = keys.map(k => KEY_ALIASES[k] || k);
+
     const noise = (typeof sa.attributeNoise === 'number') ? sa.attributeNoise : DEFAULT_ATTR_BOUNDS.noise;
     const min   = (typeof sa.minAttr === 'number')        ? sa.minAttr        : DEFAULT_ATTR_BOUNDS.min;
     const max   = (typeof sa.maxAttr === 'number')        ? sa.maxAttr        : DEFAULT_ATTR_BOUNDS.max;
 
-    // Compute mean modifier so we can re-center around overall.
     let modSum = 0, modCount = 0;
     for (const key of keys) {
       const m = modifiers[key];
@@ -126,7 +134,6 @@ class PlayerGenerator {
     const attributes = {};
     for (const key of keys) {
       const mod = (typeof modifiers[key] === 'number') ? modifiers[key] : 0;
-      // Centered so average skill = overallRating
       let raw = overallRating + (mod - meanModifier) + this.randomGaussian(0, noise);
       attributes[key] = this.clamp(Math.round(raw), min, max);
     }
@@ -147,7 +154,6 @@ class PlayerGenerator {
   }
 
   generateJerseyNumber() {
-    // College numbers typically 0-55; avoid 0 default-spam
     const pool = [0, 1, 2, 3, 4, 5, 10, 11, 12, 13, 14, 15, 20, 21, 22, 23, 24, 25,
                   30, 31, 32, 33, 34, 35, 40, 41, 42, 43, 44, 45, 50, 51, 52, 53, 54, 55];
     return this.pickRandom(pool);
@@ -158,7 +164,6 @@ class PlayerGenerator {
     return this.shuffleArray([...this.traitNames]).slice(0, count);
   }
 
-  // ---------- college stats (FIXED ternary clarity + bounds) ----------
   generateCollegeStats(position, overall) {
     const ppgBase = (overall / 2) - 10 + this.randomInt(-2, 4);
     const rpgBase = (position === 'C' || position === 'PF') ? 6 : 3;
@@ -187,10 +192,8 @@ class PlayerGenerator {
     return { wingspan, standing_reach: standingReach, hand_length: handLength, hand_width: handWidth, body_fat_pct: bodyFatPct };
   }
 
-  // ---------- intangibles (FIXED scaling) ----------
   generateIntangibles(overall) {
     const tiers = ['Poor', 'Below Average', 'Average', 'Good', 'Excellent', 'Legendary'];
-    // Scale so overall 50 -> idx 0, overall 100 -> idx 5
     const base = (overall - 50) / 10;
     const workEthicIndex   = this.clamp(Math.round(base + this.randomInt(-1, 1)), 0, 5);
     const iqIndex          = this.clamp(Math.round(base + this.randomInt(-1, 1)), 0, 5);
@@ -204,7 +207,6 @@ class PlayerGenerator {
     };
   }
 
-  // ---------- combine ----------
   generateCombine(position, overall) {
     const speedFactor = overall / 100;
     const agility   = parseFloat((10.5 + (1 - speedFactor) * 2 + this.randomInt(-2, 2) * 0.1).toFixed(2));
@@ -221,7 +223,6 @@ class PlayerGenerator {
     };
   }
 
-  // ---------- awards ----------
   generateAwards(overall) {
     const awards = [];
     if (overall >= 88 && Math.random() < 0.7) awards.push('National Player of the Year');
@@ -246,18 +247,15 @@ class PlayerGenerator {
     return 'Minimal';
   }
 
-  // ---------- traits (now actually stored) ----------
   buildTraitsObject(skillAttrs) {
     const traits = {};
     for (const [canonicalKey, flatColumn] of Object.entries(CANONICAL_TRAIT_MAP)) {
-      // Try direct match, then canonical key itself, then 50 fallback
       const value = skillAttrs[flatColumn] ?? skillAttrs[canonicalKey] ?? 50;
       traits[canonicalKey] = value;
     }
     return traits;
   }
 
-  // ---------- physical ----------
   generateAge(isStar, index) {
     if (index > 12) {
       const [min, max] = this.ageRanges.rookie;
@@ -281,21 +279,19 @@ class PlayerGenerator {
     return this.randomInt(min, max);
   }
 
-  // ---------- potential (FIXED: never below overall) ----------
   generatePotential(rating, isStar, index) {
     let potential = rating;
     if (index > 12) {
-      potential += 8 + this.randomInt(0, 12);   // young bench → high upside
+      potential += 8 + this.randomInt(0, 12);
     } else if (isStar) {
       potential += this.randomInt(2, 6);
     } else {
-      potential += this.randomInt(0, 4);         // never negative
+      potential += this.randomInt(0, 4);
     }
     return this.clamp(Math.floor(potential), rating, 99);
   }
 
-  // ---------- rating distribution (FIXED: realistic, no pile-up) ----------
-  generatePlayerRating(teamTier, isStarter, rosterIndex) {
+  generatePlayerRating(teamTier, isStarter, rosterIndex, archetypeId = null) {
     const tierMeans = {
       contender: { starter: 82, bench: 72 },
       playoff:   { starter: 78, bench: 70 },
@@ -304,31 +300,31 @@ class PlayerGenerator {
     };
 
     const tCfg = tierMeans[teamTier] || tierMeans.mid;
-    const mean = isStarter ? tCfg.starter : tCfg.bench;
+    let mean   = isStarter ? tCfg.starter : tCfg.bench;
+    let stdDev = isStarter ? 4 : 6;
 
-    // Tighter std dev for starters (they cluster near tier mean),
-    // slightly wider for bench (more variance in bench quality).
-    const stdDev = isStarter ? 4 : 6;
+    const curve = TeamArchetypeService.getTalentCurve(archetypeId);
+    if (curve) {
+      mean   = (mean + curve.mean) / 2;
+      stdDev = (stdDev + curve.stdDev) / 2;
+    }
+
     let rating = this.randomGaussian(mean, stdDev);
 
-    // Rare superstar starter bump, applied smoothly
     if (isStarter && Math.random() < 0.08) {
       rating += this.randomInt(6, 12);
     }
-    // End-of-bench penalty (slots 13, 14)
     if (rosterIndex > 12) {
       rating -= this.randomInt(2, 6);
     }
 
-    // Use 55 floor so we don't pile everyone at 60; ceiling at 99
     return this.clamp(Math.round(rating), 55, 99);
   }
 
-  // ---------- single player ----------
   generatePlayer(teamId, position, rating, isStar, rosterIndex) {
     const skillAttrs = this.generateSkillAttributes(position, rating);
     const traitTags  = this.generateTraitTags();
-    const traits     = this.buildTraitsObject(skillAttrs); // now actually used
+    const traits     = this.buildTraitsObject(skillAttrs);
 
     const potential       = this.generatePotential(rating, isStar, rosterIndex);
     const age             = this.generateAge(isStar, rosterIndex);
@@ -373,7 +369,7 @@ class PlayerGenerator {
       overall_rating: rating,
       potential_rating: potential,
 
-      // Skills (individual columns)
+      // Skills (individual columns mapped to DB)
       ...skillAttrs,
 
       // Traits: structured (JSON object) + tags (JSON array)
@@ -389,7 +385,6 @@ class PlayerGenerator {
       high_school,
       jersey_number,
 
-      // Draft info
       draft_class_year: null,
       projected_draft_range: null,
       draft_status: 'drafted',
@@ -426,15 +421,14 @@ class PlayerGenerator {
     };
   }
 
-  // ---------- roster ----------
-  generateTeamRoster(team, tier) {
+  generateTeamRoster(team, tier, archetypeId = null) {
     const roster = [];
-    const positions = ['PG', 'SG', 'SF', 'PF', 'C'];
+    const positions = TeamArchetypeService.generatePositionDistribution(archetypeId, 15);
 
     for (let i = 0; i < 15; i++) {
-      const position   = positions[i % 5];
+      const position   = positions[i];
       const isStarter  = i < 5;
-      const rating     = this.generatePlayerRating(tier, isStarter, i);
+      const rating     = this.generatePlayerRating(tier, isStarter, i, archetypeId);
       const isStar     = rating >= 85;
 
       roster.push(this.generatePlayer(team.id, position, rating, isStar, i));
@@ -442,11 +436,9 @@ class PlayerGenerator {
     return roster;
   }
 
-  // ---------- league entry point ----------
-  generateLeague(teams) {
+  generateLeague(teams, teamArchetypes = {}) {
     console.log('👥 Generating league with realistic talent distribution...');
 
-    // Distribute team tiers — extends gracefully if more than 26 teams
     const tierCycle = ['contender', 'playoff', 'mid', 'lottery'];
     const tierCounts = { contender: 4, playoff: 8, mid: 8, lottery: 6 };
     const tiers = [];
@@ -462,10 +454,10 @@ class PlayerGenerator {
       const team = shuffledTeams[i];
       const tier = tiers[i] || 'mid';
       teamTiers[team.id] = tier;
-      allPlayers.push(...this.generateTeamRoster(team, tier));
+      const archetypeId = teamArchetypes[team.id] || null;
+      allPlayers.push(...this.generateTeamRoster(team, tier, archetypeId));
     }
 
-    // Log distribution for sanity-check
     const dist = { '55-64': 0, '65-69': 0, '70-74': 0, '75-79': 0, '80-84': 0, '85-89': 0, '90+': 0 };
     for (const p of allPlayers) {
       const r = p.overall_rating;
@@ -482,11 +474,9 @@ class PlayerGenerator {
     return { players: allPlayers, teamTiers };
   }
 
-  // ---------- names ----------
   generateFirstName() { return this.pickRandom(this.firstNames); }
   generateLastName()  { return this.pickRandom(this.lastNames); }
 
-  // ---------- DB ----------
   async savePlayers(players) {
     const batchSize = 50;
     const results = [];

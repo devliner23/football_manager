@@ -105,12 +105,12 @@
     "offensiveSkillWeights": {
       "isolation":     { "ball_handling": 0.30, "mid_range": 0.40, "three_point": 0.30 },
       "spot_up":       { "three_point": 0.70, "mid_range": 0.30 },
-      "post_up":       { "inside": 0.60, "strength": 0.40 },
+      "post_up":       { "inside_scoring": 0.60, "strength": 0.40 },
       "pick_and_roll": {
-        "handler":     { "ball_handling": 0.25, "mid_range": 0.25, "inside": 0.25, "passing": 0.25 },
-        "screener":    { "inside": 0.55, "strength": 0.20, "mid_range": 0.25 }
+        "handler":     { "ball_handling": 0.25, "mid_range": 0.25, "inside_scoring": 0.25, "passing": 0.25 },
+        "screener":    { "inside_scoring": 0.55, "strength": 0.20, "mid_range": 0.25 }
       },
-      "transition":    { "speed": 0.50, "inside": 0.30, "ball_handling": 0.20 }
+      "transition":    { "speed": 0.50, "inside_scoring": 0.30, "ball_handling": 0.20 }
     },
     "defensiveSkillWeights": {
       "isolation":     { "perimeter_defense": 1.0 },

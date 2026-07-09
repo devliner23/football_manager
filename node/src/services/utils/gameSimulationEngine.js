@@ -307,12 +307,10 @@ class GameSimulationEngine {
         gameState[lastKey] = result.playType;
       }
 
-      // ── Passing graph reinforcement: strengthen the handler -> assister
-      // edge on a successful assist, weaken it slightly on a turnover. ──
       {
         const graph = isHomeOffense ? gameState.homePassGraph : gameState.awayPassGraph;
-        if (result.assist && result.assistedBy && result.handler) {
-          graph.addToEdge(result.handler.id, result.assistedBy.id, 0.6);
+        if (result.assist && result.assistedBy && result.shooter) {
+          graph.addToEdge(result.assistedBy.id, result.shooter.id, 0.6);
         }
         if (result.turnovers && result.handler) {
           // Diffuse ball-dominance away from a handler who just turned it over
@@ -405,7 +403,7 @@ class GameSimulationEngine {
     });
   }
 
-  // ── Possession simulation (revised with new play types & helpers) ────
+// ── Possession simulation (revised with new play types & helpers) ────
   static _simulatePossession(offense, defense, isHomePossession, gameState) {
       const config = gameState.config;
       const primaryHandler = this._selectPrimaryHandler(offense);
@@ -414,6 +412,12 @@ class GameSimulationEngine {
       const defenseScheme = this._selectDefensiveScheme(defense);
 
       // ── Execute the play ──────────────────────────────────────────
+      // Each _execute* helper returns the shotResult AND the actual player
+      // who took the shot (`shooter`), since that player is frequently NOT
+      // the primary ball handler (spot-up shooter, roll man, post player,
+      // cutter, or a random player in transition). Box-score stats must key
+      // off this player, not the handler, or a player's stats stop
+      // reflecting their own trait profile.
       let shotResult;
       switch (playType) {
         case 'isolation':
@@ -426,9 +430,9 @@ class GameSimulationEngine {
           break;
         }
         case 'spot_up': {
-          const shooter = this._selectShooter(offense, gameState, isHomePossession, primaryHandler);
+          const shooterPick = this._selectShooter(offense, gameState, isHomePossession, primaryHandler);
           const defender = this._selectClosestDefender(defense);
-          shotResult = this._executeSpotUp(shooter, defender, defenseScheme, gameState);
+          shotResult = this._executeSpotUp(shooterPick, defender, defenseScheme, gameState);
           break;
         }
         case 'post_up': {
@@ -446,6 +450,10 @@ class GameSimulationEngine {
         default:
           shotResult = this._executeIsolation(primaryHandler, primaryDefender, defenseScheme, gameState);
       }
+
+      // The player who actually shot the ball. Falls back to the handler
+      // for any play type that doesn't set it explicitly.
+      const shooter = shotResult.shooter || primaryHandler;
 
       // ── Turnover check ────────────────────────────────────────────
       const turnover = Math.random() < this._calculateTurnoverProbability(primaryHandler, primaryDefender, playType, gameState);
@@ -502,30 +510,38 @@ class GameSimulationEngine {
         fouler = defense[Math.floor(Math.random() * defense.length)];
       }
 
-      // ── Assist attribution: walk the passing graph one hop from the
-      // primary handler instead of a flat rating-weighted lottery. This
-      // makes assist patterns follow the team's actual ball-movement
-      // tendencies (which themselves evolve via graph reinforcement). ──
+      // ── Assist attribution ──────────────────────────────────────────
+      // assistedBy is the PASSER credited with the assist; `shooter` is the
+      // player who scores. In the common case the primary handler initiated
+      // the possession and fed a teammate (spot-up shooter, roll man, post
+      // player, cutter) — the handler is the natural passer there. When the
+      // handler takes (and makes) the shot himself, there is no in-model
+      // primary passer, so fall back to the passing graph / a rating-
+      // weighted lottery among teammates to represent an earlier assist.
       let assistedBy = null;
       if (shotResult.assist && !turnover) {
-        const graph = isHomePossession ? gameState.homePassGraph : gameState.awayPassGraph;
-        const teammateIds = new Set(offense.filter(p => p.id !== primaryHandler.id).map(p => p.id));
-        const nextId = graph.step(primaryHandler.id);
-        if (nextId && teammateIds.has(nextId)) {
-          assistedBy = offense.find(p => p.id === nextId) || null;
-        }
-        if (!assistedBy) {
-          // fallback: rating-weighted lottery among teammates (old behaviour)
-          const teammates = offense.filter(p => p.id !== primaryHandler.id);
-          if (teammates.length) {
-            const scores = teammates.map(p => p.passing || 50);
-            const total = scores.reduce((s, v) => s + v, 0);
-            let r = Math.random() * total;
-            for (let i = 0; i < teammates.length; i++) {
-              r -= scores[i];
-              if (r <= 0) { assistedBy = teammates[i]; break; }
+        if (shooter.id !== primaryHandler.id) {
+          assistedBy = primaryHandler;
+        } else {
+          const graph = isHomePossession ? gameState.homePassGraph : gameState.awayPassGraph;
+          const teammateIds = new Set(offense.filter(p => p.id !== shooter.id).map(p => p.id));
+          const nextId = graph.step(shooter.id);
+          if (nextId && teammateIds.has(nextId)) {
+            assistedBy = offense.find(p => p.id === nextId) || null;
+          }
+          if (!assistedBy) {
+            // fallback: rating-weighted lottery among teammates (old behaviour)
+            const teammates = offense.filter(p => p.id !== shooter.id);
+            if (teammates.length) {
+              const scores = teammates.map(p => p.passing || 50);
+              const total = scores.reduce((s, v) => s + v, 0);
+              let r = Math.random() * total;
+              for (let i = 0; i < teammates.length; i++) {
+                r -= scores[i];
+                if (r <= 0) { assistedBy = teammates[i]; break; }
+              }
+              if (!assistedBy) assistedBy = teammates[teammates.length - 1];
             }
-            if (!assistedBy) assistedBy = teammates[teammates.length - 1];
           }
         }
       }
@@ -537,6 +553,7 @@ class GameSimulationEngine {
         shotResult,
         turnovers: turnover,
         handler: primaryHandler,
+        shooter,                             // the player actually credited with the shot
         defender: primaryDefender,
         defensivePlayers: defense,           // fixed: use the `defense` parameter
         assist: shotResult.assist || false,
@@ -988,9 +1005,10 @@ class GameSimulationEngine {
   }
 
   // ── Play executions (updated to use new shot quality/attempt) ────────
+// ── Play executions (updated to use new shot quality/attempt) ────────
   static _executeIsolation(handler, defender, scheme, gameState) {
     const qual = this._calculateShotQuality(handler, defender, 'isolation', gameState, scheme);
-    return this._attemptShot(handler, defender, qual, 'isolation', gameState);
+    return { ...this._attemptShot(handler, defender, qual, 'isolation', gameState), shooter: handler };
   }
 
   static _executePickAndRoll(handler, screener, defender, rollDefender, scheme, gameState) {
@@ -999,38 +1017,38 @@ class GameSimulationEngine {
     const defQuality = (rollDefender.post_defense + rollDefender.rebounding) / 200;
     if (Math.random() < rollSuccess * (1 - defQuality * 0.5)) {
       const qual = this._calculateShotQuality(screener, rollDefender, 'post_up', gameState, scheme);
-      return this._attemptShot(screener, rollDefender, qual, 'post_up', gameState);
+      return { ...this._attemptShot(screener, rollDefender, qual, 'post_up', gameState), shooter: screener };
     } else {
       const qual = this._calculateShotQuality(handler, defender, 'isolation', gameState, scheme);
-      return this._attemptShot(handler, defender, qual, 'isolation', gameState);
+      return { ...this._attemptShot(handler, defender, qual, 'isolation', gameState), shooter: handler };
     }
   }
 
   static _executeSpotUp(shooter, defender, scheme, gameState) {
     const qual = this._calculateShotQuality(shooter, defender, 'spot_up', gameState, scheme);
-    return this._attemptShot(shooter, defender, qual, 'spot_up', gameState);
+    return { ...this._attemptShot(shooter, defender, qual, 'spot_up', gameState), shooter };
   }
 
   static _executePostUp(postPlayer, defender, scheme, gameState) {
     const qual = this._calculateShotQuality(postPlayer, defender, 'post_up', gameState, scheme);
-    return this._attemptShot(postPlayer, defender, qual, 'post_up', gameState);
+    return { ...this._attemptShot(postPlayer, defender, qual, 'post_up', gameState), shooter: postPlayer };
   }
 
   static _executeTransition(offense, defense, scheme, gameState) {
     const player = offense[Math.floor(Math.random() * offense.length)];
     const defender = defense[Math.floor(Math.random() * defense.length)];
     const qual = this._calculateShotQuality(player, defender, 'transition', gameState, scheme);
-    return this._attemptShot(player, defender, qual, 'transition', gameState);
+    return { ...this._attemptShot(player, defender, qual, 'transition', gameState), shooter: player };
   }
 
-  /** New: Cut play execution (off‑ball movement to the rim) */
+  /** Cut play execution (off‑ball movement to the rim) */
   static _executeCut(offense, defense, scheme, gameState) {
     const cutter = offense.reduce((best, p) =>
       (p.speed * 0.4 + p.inside_scoring * 0.6) > (best.speed * 0.4 + best.inside_scoring * 0.6) ? p : best
     );
     const closestDef = this._selectClosestDefender(defense);
     const qual = this._calculateShotQuality(cutter, closestDef, 'cut', gameState, scheme);
-    return this._attemptShot(cutter, closestDef, qual, 'cut', gameState);
+    return { ...this._attemptShot(cutter, closestDef, qual, 'cut', gameState), shooter: cutter };
   }
 
   // ── Momentum, chemistry, fatigue (unchanged) ────────────────────────
@@ -1101,7 +1119,7 @@ class GameSimulationEngine {
     };
   }
 
-  static _accumulateStats(gameState, result, isHomeOffense) {
+static _accumulateStats(gameState, result, isHomeOffense) {
     const offStats = isHomeOffense ? gameState.homeStats : gameState.awayStats;
     const defStats = isHomeOffense ? gameState.awayStats : gameState.homeStats;
 
@@ -1118,10 +1136,14 @@ class GameSimulationEngine {
     };
 
     const handler = result.handler;
+    const shooter = result.shooter || handler;
     const sr = result.shotResult;
 
-    ensure(offStats, handler.id);
-    const ps = offStats.playerStats.get(handler.id);
+    // Shot attempts/makes/points belong to the player who actually took the
+    // shot (their traits drove _calculateShotQuality/_attemptShot), not
+    // necessarily the primary ball handler.
+    ensure(offStats, shooter.id);
+    const ps = offStats.playerStats.get(shooter.id);
 
     if (!result.turnovers && sr) {
       ps.fga += sr.fga || 0;
@@ -1133,7 +1155,13 @@ class GameSimulationEngine {
       ps.points += result.points || 0;
     }
 
-    if (result.turnovers) ps.turnovers++;
+    // Turnovers stay on the primary ball handler — losing the ball is a
+    // ball-security event tied to whoever had it, independent of who the
+    // play was designed to get the shot for.
+    if (result.turnovers) {
+      ensure(offStats, handler.id);
+      offStats.playerStats.get(handler.id).turnovers++;
+    }
 
     if (result.assist && result.assistedBy) {
       ensure(offStats, result.assistedBy.id);

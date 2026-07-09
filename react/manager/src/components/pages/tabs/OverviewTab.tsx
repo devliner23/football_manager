@@ -885,7 +885,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
 
               {/* ── Simulate Week ── */}
               <button
-                className="btn--trade btn--trade-wide qc-sim-btn"
+                className="btn--trade"
                 onClick={handleSimulateToWeekEnd}
                 disabled={simLoading}
               >

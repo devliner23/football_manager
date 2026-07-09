@@ -89,22 +89,19 @@ const leagueController = {
     } catch (error) { next(error); }
   },
 
-  // ── POST /api/league/:savedGameId/initialize ───────────────────────────────
-  // Body: { season?, managedClubName, userArchetype? }
-
   async initializeLeague(req, res, next) {
     try {
       const { savedGameId } = req.params;
       const {
         season          = 1,
         managedClubName = null,
-        userArchetype   = null,   // ← new
+        userArchetype   = null,   // ← optional override
       } = req.body;
 
       console.log('📦 Initialization body:', req.body);
-      console.log('🆔 managedClubName:', managedClubName, '| archetype:', userArchetype);
+      console.log('🆔 managedClubName:', managedClubName, '| archetype override:', userArchetype);
 
-      // Validate archetype if provided
+      // Validate archetype override if provided
       if (userArchetype && !TeamArchetypeService.isValidArchetype(userArchetype)) {
         return res.status(400).json({
           error: `Invalid archetype "${userArchetype}". ` +
@@ -115,8 +112,12 @@ const leagueController = {
       const game = await loadOwnedGame(savedGameId, req.user.id);
       if (!game) return res.status(404).json({ error: 'Game not found or unauthorized' });
 
+      // Prefer an explicit override from this request; otherwise use the
+      // archetype the user already chose at game-creation time.
+      const effectiveArchetype = userArchetype || game.archetype_choice || null;
+
       const leagueService = new LeagueService(savedGameId);
-      const result        = await leagueService.initializeLeague(season, managedClubName, userArchetype);
+      const result        = await leagueService.initializeLeague(season, managedClubName, effectiveArchetype);
 
       res.json({
         success: true,

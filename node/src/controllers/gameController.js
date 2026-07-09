@@ -1,18 +1,23 @@
 // controllers/gameController.js
 const { supabase, supabaseAdmin } = require('../config/supabase');
 const gameService = require('../services/gameService');
+const TeamArchetypeService = require('../services/utils/teamArchetypeService');
 
 const VALID_DIFFICULTIES = ['rookie', 'pro', 'all_star', 'hall_of_fame'];
 
 const gameController = {
 
-  // ── Create a new save file ────────────────────────────────────────────
-  // Called by the frontend with { name, managed_club_id (team name string), difficulty }
+// ── Create a new save file ────────────────────────────────────────────
+  // Called by the frontend with { name, managed_club_id (team name string), difficulty, archetype_choice }
   // managed_club_id is stored in game_state.managed_team_name and resolved to a real UUID
   // by leagueService.initializeLeague() once teams are created.
+  // archetype_choice is stored on its own column (not game_state) so
+  // leagueService / PlayerGenerator can read it directly when the league
+  // is initialized, and so it can be picked at game-creation time before
+  // the league (or even the managed team's UUID) exists.
   async createGame(req, res, next) {
     try {
-      const { name, managed_club_id, difficulty = 'pro' } = req.body;
+      const { name, managed_club_id, difficulty = 'pro', archetype_choice = null } = req.body;
 
       if (!name || !managed_club_id) {
         return res.status(400).json({
@@ -26,6 +31,13 @@ const gameController = {
         });
       }
 
+      if (archetype_choice && !TeamArchetypeService.isValidArchetype(archetype_choice)) {
+        return res.status(400).json({
+          error: `Invalid archetype_choice "${archetype_choice}". ` +
+                 `Valid options: ${TeamArchetypeService.getArchetypes().map(a => a.id).join(', ')}`,
+        });
+      }
+
       // Use supabaseAdmin so we can set user_id server-side from the verified JWT.
       // managed_club_id is a team *name* at this point (e.g. "Lakers") — teams don't
       // exist yet. We store the name in game_state and resolve it to a UUID inside
@@ -33,10 +45,11 @@ const gameController = {
       const { data, error } = await supabaseAdmin
         .from('saved_games')
         .insert({
-          user_id:         req.user.id,
+          user_id:          req.user.id,
           name,
           difficulty,
-          managed_club_id: null,       // resolved after league init
+          managed_club_id:  null,       // resolved after league init
+          archetype_choice,
           game_state: {
             managed_team_name: managed_club_id,  // "Lakers", "Celtics", etc.
           },
