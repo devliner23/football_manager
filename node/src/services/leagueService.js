@@ -643,7 +643,6 @@ class leagueService {
 
   async getNextUserGame() {
     const state = await this._getGameState();
-    console.log(state)
     const managedClubId = state?.managed_club_id;
     if (!managedClubId) throw new Error('No managed team set');
 
@@ -776,16 +775,7 @@ class leagueService {
       allBoxScores.push(...homeStats, ...awayStats);
     }
 
-    const gameUpdates = new Array(len);
-    for (let i = 0; i < len; i++) {
-      gameUpdates[i] = {
-        id: games[i].id,
-        home_score: simResults[i].result.homeScore,
-        away_score: simResults[i].result.awayScore,
-        status: 'completed',
-      };
-    }
-
+    // --- Player game stats (upsert is safe here — onConflict handles duplicates) ---
     const statsBatches = [];
     for (let i = 0; i < allBoxScores.length; i += BATCH_SIZE_LARGE) {
       statsBatches.push(
@@ -796,16 +786,22 @@ class leagueService {
       );
     }
 
-    const gameBatches = [];
-    for (let i = 0; i < len; i += BATCH_SIZE_MEDIUM) {
-      gameBatches.push(
-        supabaseAdmin.from('games').upsert(gameUpdates.slice(i, i + BATCH_SIZE_MEDIUM), { onConflict: 'id' })
-      );
+    // --- Game updates: individual .update() — never upserts, never risks a partial INSERT ---
+    const gameUpdates = new Array(len);
+    for (let i = 0; i < len; i++) {
+      gameUpdates[i] = supabaseAdmin
+        .from('games')
+        .update({
+          home_score: simResults[i].result.homeScore,
+          away_score: simResults[i].result.awayScore,
+          status: 'completed',
+        })
+        .eq('id', games[i].id);
     }
 
     const [statsResults, gameResults] = await Promise.all([
       Promise.all(statsBatches),
-      Promise.all(gameBatches),
+      Promise.all(gameUpdates),
     ]);
 
     for (const { error } of statsResults) {
