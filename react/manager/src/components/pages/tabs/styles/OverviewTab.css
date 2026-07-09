@@ -2137,3 +2137,322 @@
   cursor: not-allowed;
   box-shadow: none !important;
 }
+
+/* ─── Sim Forward wrapper ─── */
+.sim-forward-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.btn--trade:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ─── Overlay ─── */
+.sfp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  animation: sfpFadeIn 0.15s ease-out;
+}
+
+@keyframes sfpFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Sim buttons inside qc-card ── */
+.qc-sim-btn {
+  margin-top: 10px;
+}
+
+.qc-sim-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.sim-forward-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+/* ── Overlay ── */
+.sfp-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  animation: sfpFadeIn 0.15s ease-out;
+}
+
+@keyframes sfpFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Card ── */
+.sfp-card {
+  background: rgba(17, 16, 41, 0.96);
+  border: 1px solid rgba(100, 140, 255, 0.12);
+  border-radius: 16px;
+  padding: 20px;
+  width: 320px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 40px rgba(100, 140, 255, 0.08);
+  animation: sfpSlideUp 0.2s ease-out;
+}
+
+@keyframes sfpSlideUp {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.sfp-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 16px;
+}
+
+.sfp-card-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sfp-card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sfp-badge {
+  background: rgba(100, 140, 255, 0.14);
+  color: rgba(140, 170, 255, 0.9);
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.sfp-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sfp-close-btn:hover {
+  background: rgba(255, 80, 80, 0.15);
+  color: rgba(255, 120, 120, 0.9);
+}
+
+/* ── Date Picker ── */
+.sfp-date-picker {
+  width: 100%;
+}
+
+.sfp-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 0 12px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sfp-input-row:focus-within {
+  border-color: rgba(100, 140, 255, 0.4);
+  box-shadow: 0 0 0 2px rgba(100, 140, 255, 0.1);
+}
+
+.sfp-date-input {
+  flex: 1;
+  padding: 10px 0;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.sfp-date-input [data-segment] {
+  color: rgba(255, 255, 255, 0.85);
+  padding: 2px 1px;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.sfp-date-input [data-placeholder] {
+  color: rgba(255, 255, 255, 0.25);
+}
+
+.sfp-date-input [data-segment]:focus {
+  background: rgba(100, 140, 255, 0.2);
+  outline: none;
+}
+
+.sfp-input-icon-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background 0.15s ease;
+  line-height: 1;
+}
+
+.sfp-input-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ── Popover ── */
+.sfp-popover {
+  --background-color: rgba(17, 16, 41, 0.97);
+  background: var(--background-color);
+  border: 1px solid rgba(100, 140, 255, 0.12);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* ── Calendar ── */
+.sfp-calendar {
+  color: white;
+  width: 100%;
+}
+
+.sfp-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 8px;
+}
+
+.sfp-cal-header button {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 1.2rem;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.sfp-cal-header button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.sfp-calendar [slot="title"] {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.sfp-calendar td {
+  padding: 2px;
+}
+
+.sfp-calendar .react-aria-CalendarGridHeader {
+  margin-bottom: 4px;
+}
+
+.sfp-calendar .react-aria-CalendarHeaderCell {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 4px;
+  text-align: center;
+}
+
+.sfp-calendar .react-aria-CalendarCell {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  outline: none;
+}
+
+.sfp-calendar .react-aria-CalendarCell:hover {
+  background: rgba(100, 140, 255, 0.15);
+  color: white;
+}
+
+.sfp-calendar .react-aria-CalendarCell[data-selected] {
+  background: rgba(100, 140, 255, 0.8);
+  color: white;
+  font-weight: 600;
+}
+
+.sfp-calendar .react-aria-CalendarCell[data-selected]:hover {
+  background: rgba(100, 140, 255, 0.9);
+}
+
+.sfp-calendar .react-aria-CalendarCell[data-outside-month] {
+  opacity: 0.2;
+}
+
+.sfp-calendar .react-aria-CalendarCell[data-disabled] {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.sfp-calendar .react-aria-CalendarCell[data-today] {
+  box-shadow: inset 0 0 0 1px rgba(100, 140, 255, 0.35);
+}
+
+/* ── Confirm Button ── */
+.sfp-confirm-btn {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.sfp-confirm-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

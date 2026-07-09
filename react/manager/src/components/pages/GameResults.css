@@ -1,236 +1,238 @@
-/* ==========================
-   GAME RESULTS – DARK GLASS THEME
-   ========================== */
+/* ==========================================================
+   GAME RESULTS — GLASS DARK SLATE THEME
+   ========================================================== */
 
-.game-results {
-  border-radius: 20px;
-  padding: 1.5rem;
-  color: #f0f4ff;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-/* Header */
-.game-results-header {
+.gr-container {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding-bottom: 0.75rem;
-  margin-bottom: 1.5rem;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 100%;
 }
 
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.header-icon {
-  color: rgba(255, 255, 255, 0.3);
-}
-
-.game-results-header h3 {
-  font-size: 1.2rem;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  margin: 0;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.game-count {
-  font-size: 0.75rem;
-  background: rgba(255, 255, 255, 0.06);
-  padding: 4px 12px;
-  border-radius: 20px;
-  color: rgba(255, 255, 255, 0.4);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-}
-
-/* Loading */
-.game-results-loading {
+/* ── States (Loading / Empty) ── */
+.gr-state {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 3rem 0;
-  color: rgba(255, 255, 255, 0.3);
+  gap: 16px;
+  padding: 4rem 2rem;
+  background: rgba(var(--white-rgb), 0.015);
+  border: 1px dashed rgba(var(--white-rgb), 0.08);
+  border-radius: 16px;
+  color: var(--text-faint);
 }
 
-.loading-spinner {
+.gr-state-icon {
+  opacity: 0.3;
+}
+
+.gr-state p {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.gr-state-sub {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  background: rgba(var(--white-rgb), 0.04);
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+
+/* Spinner */
+.gr-spinner {
   width: 32px;
   height: 32px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #60a5fa;
+  border: 3px solid rgba(var(--white-rgb), 0.06);
+  border-top-color: var(--neon-blue-solid);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-bottom: 0.75rem;
+  animation: grSpin 0.8s linear infinite;
 }
 
-@keyframes spin {
+@keyframes grSpin {
   to { transform: rotate(360deg); }
 }
 
-/* Empty */
-.game-results-empty {
+/* ── Header ── */
+.gr-header {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(var(--white-rgb), 0.06);
+}
+
+.gr-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gr-header-icon-wrap {
+  display: flex;
   align-items: center;
   justify-content: center;
-  padding: 3rem 0;
-  color: rgba(255, 255, 255, 0.15);
-  text-align: center;
-  gap: 0.5rem;
+  width: 32px;
+  height: 32px;
+  background: rgba(var(--neon-blue-rgb), 0.1);
+  border: 1px solid rgba(var(--neon-blue-rgb), 0.15);
+  border-radius: 8px;
+  color: rgba(var(--neon-blue-solid-rgb), 0.8);
 }
 
-.empty-icon {
-  opacity: 0.3;
-  margin-bottom: 0.5rem;
+.gr-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
 }
 
-.empty-sub {
-  font-size: 0.8rem;
-  opacity: 0.5;
+.gr-count-badge {
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--neon-blue-solid);
+  background: rgba(var(--neon-blue-rgb), 0.1);
+  border: 1px solid rgba(var(--neon-blue-rgb), 0.2);
+  padding: 4px 10px;
+  border-radius: 20px;
 }
 
-/* Grid */
-.game-grid {
+/* ── Grid ── */
+.gr-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
 }
 
-/* Individual card */
-.game-card {
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: all 0.3s ease;
-  overflow: hidden;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-.game-card:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.12);
-  transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-}
-
-.game-summary-square {
-  aspect-ratio: 1 / 1;
+/* ── Game Card ── */
+.gr-card {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  background: rgba(var(--white-rgb), 0.02);
+  border: 1px solid rgba(var(--white-rgb), 0.06);
+  border-radius: 14px;
   cursor: pointer;
-  padding: 1rem 0.9rem 0.8rem;
-  position: relative;
+  transition: all 0.25s ease;
+  box-shadow: inset 0 1px 0 rgba(var(--white-rgb), 0.04);
+  overflow: hidden;
 }
 
-/* Teams */
-.team-stack {
-  flex: 1;
+.gr-card:hover {
+  background: rgba(var(--neon-blue-rgb), 0.05);
+  border-color: rgba(var(--neon-blue-solid-rgb), 0.2);
+  transform: translateY(-3px);
+  box-shadow: 
+    inset 0 1px 0 rgba(var(--white-rgb), 0.06),
+    0 8px 24px -8px rgba(var(--black-rgb), 0.6), 
+    0 0 20px -5px rgba(var(--neon-blue-rgb), 0.15);
+}
+
+.gr-card-body {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 0.35rem;
-  margin-bottom: 0.5rem;
+  gap: 8px;
+  padding: 16px;
+  flex: 1;
 }
 
-.team-row {
+/* ── Team Row ── */
+.gr-team-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.9rem;
-  font-weight: 500;
-  padding: 0.15rem 0;
-  transition: color 0.2s;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
 }
 
-.team-abbrev {
-  color: rgba(255, 255, 255, 0.7);
-  max-width: 60%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 500;
-}
-
-.team-score {
-  font-weight: 700;
-  font-size: 1.1rem;
-  min-width: 2rem;
-  text-align: right;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-/* Winner styling */
-.team-row.winner .team-abbrev,
-.team-row.winner .team-score {
-  color: #4ade80;
-  text-shadow: 0 0 8px rgba(74, 222, 128, 0.15);
-}
-
-.vs-divider {
-  text-align: center;
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.2);
-  letter-spacing: 1px;
-  margin: 0.15rem 0;
-}
-
-/* Footer */
-.game-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.65rem;
-  color: rgba(255, 255, 255, 0.35);
-  margin-top: auto;
-}
-
-.game-date {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.game-status-badge {
-  display: flex;
-  align-items: center;
-  gap: 0.2rem;
-  background: rgba(255, 255, 255, 0.04);
-  padding: 2px 8px;
+/* Faint canvas for text readability */
+.gr-team-abbr {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.2px;
+  background: rgba(var(--white-rgb), 0.03);
+  padding: 4px 10px;
   border-radius: 6px;
-  color: rgba(255, 255, 255, 0.35);
 }
 
-.expand-indicator {
-  position: absolute;
-  bottom: 0.5rem;
-  right: 0.5rem;
-  color: rgba(255, 255, 255, 0.2);
-  transition: transform 0.2s;
+.gr-team-score {
+  font-size: 1rem;
+  font-weight: 900;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+  /* Faint canvas for score */
+  background: rgba(var(--white-rgb), 0.04);
+  padding: 4px 12px;
+  border-radius: 6px;
+  min-width: 40px;
+  text-align: center;
 }
 
-.game-card:hover .expand-indicator {
-  color: rgba(255, 255, 255, 0.4);
+/* Winner State */
+.gr-team-row--winner {
+  background: rgba(var(--neon-success-rgb, 34, 197, 94), 0.06);
+  border-color: rgba(var(--neon-success-rgb, 34, 197, 94), 0.15);
 }
 
-/* Responsive */
-@media (max-width: 800px) {
-  .game-grid {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  }
+.gr-team-row--winner .gr-team-abbr {
+  color: var(--text-primary);
 }
 
-@media (max-width: 500px) {
-  .game-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .game-results {
-    padding: 1rem;
+.gr-team-row--winner .gr-team-score {
+  color: var(--neon-success);
+  background: rgba(var(--neon-success-rgb, 34, 197, 94), 0.1);
+  border: 1px solid rgba(var(--neon-success-rgb, 34, 197, 94), 0.2);
+  box-shadow: 0 0 8px rgba(var(--neon-success-rgb, 34, 197, 94), 0.15);
+}
+
+/* VS Pill */
+.gr-vs-pill {
+  align-self: center;
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  color: var(--text-dim);
+  background: rgba(var(--white-rgb), 0.04);
+  border: 1px solid rgba(var(--white-rgb), 0.06);
+  padding: 3px 12px;
+  border-radius: 6px;
+}
+
+/* ── Card Footer ── */
+.gr-card-footer {
+  display: flex;
+  justify-content: center;
+  padding: 10px 16px;
+  border-top: 1px solid rgba(var(--white-rgb), 0.05);
+  background: rgba(var(--white-rgb), 0.015);
+}
+
+.gr-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--neon-blue-solid);
+  background: rgba(var(--neon-blue-rgb), 0.08);
+  border: 1px solid rgba(var(--neon-blue-rgb), 0.15);
+  padding: 4px 12px;
+  border-radius: 6px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  .gr-grid {
+    grid-template-columns: 1fr;
   }
 }

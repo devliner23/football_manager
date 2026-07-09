@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   List,
-  Calendar,
-  ChevronDown,
-  TrendingUp,
   Clock,
   Trophy,
+  Zap,
 } from 'lucide-react';
 import { leagueAPI, GameResult } from '../../api/leagueApi';
 import IndividualGameView from './tabs/tabComponents/IndividualGameView';
@@ -47,50 +45,46 @@ const GameResults: React.FC<GameResultsProps> = ({ savedGameId, onGameClick, ref
     setSelectedGame(null);
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   const isGameFinished = (game: GameResult): boolean => {
     return game.status === 'completed';
   };
 
   if (loading) {
     return (
-      <div className="game-results-loading">
-        <div className="loading-spinner" />
-        <p>Loading recent games…</p>
+      <div className="gr-container">
+        <div className="gr-state">
+          <div className="gr-spinner" />
+          <p>Loading recent games…</p>
+        </div>
       </div>
     );
   }
 
   if (games.length === 0) {
     return (
-      <div className="game-results-empty">
-        <Trophy size={32} strokeWidth={1.5} className="empty-icon" />
-        <p>No games played yet.</p>
-        <span className="empty-sub">Start simulating to see results!</span>
+      <div className="gr-container">
+        <div className="gr-state">
+          <Trophy size={32} strokeWidth={1.5} className="gr-state-icon" />
+          <p>No games played yet.</p>
+          <span className="gr-state-sub">Start simulating to see results!</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="game-results">
-      <div className="game-results-header">
-        <div className="header-left">
-          <List size={20} strokeWidth={2} className="header-icon" />
-          <h3>Around the League</h3>
+    <div className="gr-container">
+      <div className="gr-header">
+        <div className="gr-header-left">
+          <div className="gr-header-icon-wrap">
+            <Zap size={16} strokeWidth={2} />
+          </div>
+          <h3 className="gr-title">Around the League</h3>
         </div>
-        <span className="game-count">{games.length} games</span>
+        <span className="gr-count-badge">{games.length} Games</span>
       </div>
 
-      <div className="game-grid">
+      <div className="gr-grid">
         {games.map((game) => {
           const homeWin = game.home_score > game.away_score;
           const finished = isGameFinished(game);
@@ -98,43 +92,45 @@ const GameResults: React.FC<GameResultsProps> = ({ savedGameId, onGameClick, ref
           return (
             <div
               key={game.id}
-              className="game-card"
+              className="gr-card"
+              onClick={() => handleGameClick(game)}
+              role="button"
+              tabIndex={0}
             >
-              <div
-                className="game-summary-square"
-                onClick={() => handleGameClick(game)}
-              >
-                <div className="team-stack">
-                  <div className={`team-row ${!homeWin && finished ? 'winner' : ''}`}>
-                    <span className="team-abbrev">
-                      {game.away_team?.abbreviation || game.away_team?.name}
-                    </span>
-                    <span className="team-score">
-                      {finished ? game.away_score : '—'}
-                    </span>
-                  </div>
-
-                  <div className="vs-divider">VS</div>
-
-                  <div className={`team-row ${homeWin && finished ? 'winner' : ''}`}>
-                    <span className="team-abbrev">
-                      {game.home_team?.abbreviation || game.home_team?.name}
-                    </span>
-                    <span className="team-score">
-                      {finished ? game.home_score : '—'}
-                    </span>
-                  </div>
+              <div className="gr-card-body">
+                {/* Away Team */}
+                <div className={`gr-team-row ${!homeWin && finished ? 'gr-team-row--winner' : ''}`}>
+                  <span className="gr-team-abbr">
+                    {game.away_team?.abbreviation || game.away_team?.name || 'TBD'}
+                  </span>
+                  <span className="gr-team-score">
+                    {finished ? game.away_score : '—'}
+                  </span>
                 </div>
 
-                <div className="game-footer">
-                  {!finished && (
-                    <span className="game-status-badge">
-                      <Clock size={10} /> upcoming
-                    </span>
-                  )}
-                </div>
+                {/* VS Divider */}
+                <div className="gr-vs-pill">VS</div>
 
+                {/* Home Team */}
+                <div className={`gr-team-row ${homeWin && finished ? 'gr-team-row--winner' : ''}`}>
+                  <span className="gr-team-abbr">
+                    {game.home_team?.abbreviation || game.home_team?.name || 'TBD'}
+                  </span>
+                  <span className="gr-team-score">
+                    {finished ? game.home_score : '—'}
+                  </span>
+                </div>
               </div>
+
+              {/* Footer / Status */}
+              {!finished && (
+                <div className="gr-card-footer">
+                  <span className="gr-status-badge">
+                    <Clock size={10} strokeWidth={2} />
+                    Upcoming
+                  </span>
+                </div>
+              )}
             </div>
           );
         })}

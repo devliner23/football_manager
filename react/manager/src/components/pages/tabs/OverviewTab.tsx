@@ -24,8 +24,25 @@ import {
   FastForward,
   Activity, 
   Crosshair, 
-  Shield
+  Shield,
+  Play, 
+  X
 } from 'lucide-react';
+import { CalendarDate, DateValue } from '@internationalized/date';
+import {
+  DatePicker,
+  DateInput,
+  Popover,
+  DateSegment,
+  Calendar as AriaCalendar,
+  CalendarGrid,
+  CalendarGridBody,
+  CalendarGridHeader,
+  CalendarHeaderCell,
+  CalendarCell,
+  Heading,
+  Button as AriaButton,
+} from 'react-aria-components';
 import TradePanel from './tabComponents/TradePanel';
 import teamColors from '../../../data/teamColors.json';
 import "./styles/OverviewTab.css";
@@ -130,6 +147,8 @@ const getTeamGlassStyle = (city?: string, disambiguator?: string): React.CSSProp
   };
 };
 
+
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 interface OverviewTabProps {
@@ -162,6 +181,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   schedule
 }) => {
   const [showTradeModal, setShowTradeModal] = useState(false);
+  const [showSimForwardPicker, setShowSimForwardPicker] = useState(false);
+  const [simForwardDate, setSimForwardDate] = useState<string>('');
 
   // ── Quick Continue day-list state ──
   const qcAnchorDate = useMemo(
@@ -311,6 +332,91 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   const handleSimulateToNextGame = () => {
     if (!nextUserGame?.game_date || !onSimulateToDate) return;
     onSimulateToDate(nextUserGame.game_date.slice(0, 10));
+  };
+
+  const todayAsString = (): string => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  const addDays = (dateStr: string, days: number): string => {
+    const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    date.setDate(date.getDate() + days);
+    const ny = date.getFullYear();
+    const nm = String(date.getMonth() + 1).padStart(2, '0');
+    const nd = String(date.getDate()).padStart(2, '0');
+    return `${ny}-${nm}-${nd}`;
+  };
+
+  const simToCalendarDate = (dateStr: string): CalendarDate => {
+    if (!dateStr) {
+      const now = new Date();
+      return new CalendarDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    }
+    const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number);
+    if (isNaN(y) || isNaN(m) || isNaN(d)) {
+      const now = new Date();
+      return new CalendarDate(now.getFullYear(), now.getMonth() + 1, now.getDate());
+    }
+    return new CalendarDate(y, m, d);
+  };
+
+  const simFromCalendarDate = (date: DateValue | null): string => {
+    if (!date) return '';
+    const cd = date as CalendarDate;
+    return `${cd.year}-${String(cd.month).padStart(2, '0')}-${String(cd.day).padStart(2, '0')}`;
+  };
+
+  const handleSimForwardDateChange = (date: DateValue | null) => {
+    setSimForwardDate(simFromCalendarDate(date));
+  };
+
+  const handleConfirmSimForward = () => {
+    if (simForwardDate) {
+      onSimulateToDate(simForwardDate);
+      setShowSimForwardPicker(false);
+      setSimForwardDate('');
+    }
+  };
+
+  const handleCloseSimForwardPicker = () => {
+    setShowSimForwardPicker(false);
+    setSimForwardDate('');
+  };
+
+  // Format the selected date for the confirm button label
+  const simForwardLabel = useMemo(() => {
+    if (!simForwardDate) return '';
+    const [y, m, d] = simForwardDate.slice(0, 10).split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+    });
+  }, [simForwardDate]);
+
+  const endWeekDayLabel = useMemo(() => {
+    const base = game.current_game_date ? new Date(game.current_game_date) : new Date();
+    const dayOfWeek = base.getDay();
+    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+    const sunday = new Date(base);
+    sunday.setDate(sunday.getDate() + daysUntilSunday);
+    return sunday.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+  }, [game.current_game_date]);
+
+  const handleSimulateToWeekEnd = () => {
+    const base = game.current_game_date ? new Date(game.current_game_date) : new Date();
+    const dayOfWeek = base.getDay();
+    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+    const sunday = new Date(base);
+    sunday.setDate(sunday.getDate() + daysUntilSunday);
+    const y = sunday.getFullYear();
+    const m = String(sunday.getMonth() + 1).padStart(2, '0');
+    const d = String(sunday.getDate()).padStart(2, '0');
+    onSimulateToDate(`${y}-${m}-${d}`);
   };
 
   if (!userTeam) {
@@ -776,9 +882,106 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                   ? `Continue To ${new Date(qcSelectedDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
                   : 'Select a date'}
               </button>
+
+              {/* ── Simulate Week ── */}
+              <button
+                className="btn--trade btn--trade-wide qc-sim-btn"
+                onClick={handleSimulateToWeekEnd}
+                disabled={simLoading}
+              >
+                <span className="btn__content btn__content--default">
+                  <Play size={16} />
+                  Simulate Week
+                </span>
+                <span className="btn__content btn__content--hover">
+                  <FastForward size={16} />
+                  Simulate to {endWeekDayLabel}
+                </span>
+              </button>
+
+              {/* ── Simulate Forward ── */}
+              <div className="sim-forward-wrapper">
+                {/* <button
+                  className="btn--trade btn--trade-wide qc-sim-btn"
+                  onClick={() => setShowSimForwardPicker(true)}
+                  disabled={simLoading}
+                >
+                  <span className="btn__content btn__content--default">
+                    <FastForward size={16} />
+                    Simulate Forward
+                  </span>
+                  <span className="btn__content btn__content--hover">
+                    <Calendar size={16} />
+                    Choose a Date
+                  </span>
+                </button> */}
+
+                {showSimForwardPicker && (
+                  <div className="sfp-overlay" onClick={handleCloseSimForwardPicker}>
+                    <div className="sfp-card" onClick={(e) => e.stopPropagation()}>
+                      <div className="sfp-card-header">
+                        <div className="sfp-card-header-left">
+                          <Calendar size={14} strokeWidth={2} />
+                          <span>Simulate Forward</span>
+                        </div>
+                        <div className="sfp-card-header-right">
+                          <span className="sfp-badge">Pick Date</span>
+                          <button className="sfp-close-btn" onClick={handleCloseSimForwardPicker} aria-label="Close">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      </div>
+
+                      <DatePicker
+                        className="sfp-date-picker"
+                        value={simToCalendarDate(simForwardDate)}
+                        onChange={handleSimForwardDateChange}
+                        placeholderValue={simToCalendarDate(lastSimulatedDate || '')}
+                      >
+                        <div className="sfp-input-row">
+                          <DateInput className="sfp-date-input">
+                            {(segment) => <DateSegment segment={segment} />}
+                          </DateInput>
+                          <AriaButton className="sfp-input-icon-btn">📅</AriaButton>
+                        </div>
+                        <Popover className="sfp-popover" placement="bottom start">
+                          <AriaCalendar className="sfp-calendar">
+                            <header className="sfp-cal-header">
+                              <AriaButton slot="previous">‹</AriaButton>
+                              <Heading />
+                              <AriaButton slot="next">›</AriaButton>
+                            </header>
+                            <CalendarGrid>
+                              <CalendarGridHeader>
+                                {(day) => <CalendarHeaderCell>{day}</CalendarHeaderCell>}
+                              </CalendarGridHeader>
+                              <CalendarGridBody>
+                                {(date) => <CalendarCell date={date} />}
+                              </CalendarGridBody>
+                            </CalendarGrid>
+                          </AriaCalendar>
+                        </Popover>
+                      </DatePicker>
+
+                      <button
+                        className="glass-btn btn-primary-blue-glow large-btn sfp-confirm-btn"
+                        onClick={handleConfirmSimForward}
+                        disabled={!simForwardDate}
+                      >
+                        <FastForward size={16} />
+                        {simForwardDate
+                          ? `Continue To ${simForwardLabel}`
+                          : 'Select a date'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
+
+        
 
         {/* ==================== LEADERBOARDS ROW ==================== */}
         <div className="overview-lower-flex-row">
