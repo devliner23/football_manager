@@ -1,5 +1,6 @@
 import React from 'react';
 import { SimSummary } from '../../../../api/leagueApi';
+import { X, Star, Trophy, TrendingUp, CalendarDays } from 'lucide-react';
 import './styles/SimSummaryModal.css';
 
 interface SimSummaryModalProps {
@@ -22,53 +23,64 @@ const SimSummaryModal: React.FC<SimSummaryModalProps> = ({
   const { userTeamImpact, standingsSnapshot, topPerformers, playerProgression } = summary;
 
   return (
-    <div className="sim-summary-backdrop">
-      <div className="sim-summary-container">
+    <div className="sim-summary-backdrop" onClick={onClose}>
+      <div className="sim-summary-container" onClick={(e) => e.stopPropagation()}>
 
         <div className="sim-summary-header">
-          <div>
-            <h2 className="sim-summary-title">Simulation Complete</h2>
-            <p className="sim-summary-subtitle">
-              {summary.summary.datesCovered.from === summary.summary.datesCovered.to
-                ? `Date: ${summary.summary.datesCovered.from}`
-                : `${summary.summary.datesCovered.from} → ${summary.summary.datesCovered.to}`}
-            </p>
+          <div className="sim-header-left">
+            <CalendarDays size={20} strokeWidth={2} className="sim-header-icon" />
+            <div>
+              <h2 className="sim-summary-title">Simulation Complete</h2>
+              <p className="sim-summary-subtitle">
+                {summary.summary.datesCovered.from === summary.summary.datesCovered.to
+                  ? `Date: ${summary.summary.datesCovered.from}`
+                  : `${summary.summary.datesCovered.from} → ${summary.summary.datesCovered.to}`}
+              </p>
+            </div>
           </div>
-          <button className="sim-summary-close" onClick={onClose}>&times;</button>
+          <button className="sim-summary-close" onClick={onClose}>
+            <X size={18} strokeWidth={2} />
+          </button>
         </div>
 
         <div className="sim-summary-body">
 
+          {/* Quick Stats - Distinct Glass Boxes */}
           <div className="sim-quick-stats">
             <div className="sim-stat-box">
               <div className="sim-stat-value">{gamesSimulated}</div>
               <div className="sim-stat-label">Games Simmed</div>
             </div>
-            <div className="sim-stat-box">
-              <div className="sim-stat-value accent-blue">{userTeamImpact.thisSim.record}</div>
+            <div className="sim-stat-box sim-stat-box--blue">
+              <div className="sim-stat-value">{userTeamImpact.thisSim.record}</div>
               <div className="sim-stat-label">Your Record (This Sim)</div>
             </div>
-            <div className="sim-stat-box">
-              <div className="sim-stat-value accent-amber">{gamesRemaining}</div>
+            <div className="sim-stat-box sim-stat-box--amber">
+              <div className="sim-stat-value">{gamesRemaining}</div>
               <div className="sim-stat-label">Games Remaining</div>
             </div>
           </div>
 
+          {/* Season Totals - Enclosed Glass Panel */}
           {userTeamImpact.seasonTotal && (
             <div className="sim-panel">
               <h3 className="sim-panel-title">Season Totals</h3>
               <div className="sim-season-row">
                 <span className="sim-season-record">{userTeamImpact.seasonTotal.record}</span>
                 <div className="sim-season-meta">
-                  <div>PF: <span>{userTeamImpact.seasonTotal.pointsFor}</span></div>
-                  <div>PA: <span>{userTeamImpact.seasonTotal.pointsAgainst}</span></div>
+                  <div className="sim-season-chip">PF: <span>{userTeamImpact.seasonTotal.pointsFor}</span></div>
+                  <div className="sim-season-chip">PA: <span>{userTeamImpact.seasonTotal.pointsAgainst}</span></div>
                 </div>
               </div>
             </div>
           )}
 
-          <div>
-            <h3 className="sim-panel-title">🌟 Top Performers</h3>
+          {/* Top Performers - Faint Glass Rows */}
+          <div className="sim-section">
+            <h3 className="sim-panel-title">
+              <Star size={14} strokeWidth={2} />
+              Top Performers
+            </h3>
             <div className="sim-list">
               {topPerformers.slice(0, 5).map((player, idx) => (
                 <div key={player.playerId} className="sim-list-row">
@@ -98,15 +110,19 @@ const SimSummaryModal: React.FC<SimSummaryModalProps> = ({
             </div>
           </div>
 
-          <div>
-            <h3 className="sim-panel-title">🏆 Top 5 Standings</h3>
+          {/* Standings Table - Glass Styling */}
+          <div className="sim-section">
+            <h3 className="sim-panel-title">
+              <Trophy size={14} strokeWidth={2} />
+              Top 5 Standings
+            </h3>
             <table className="sim-standings-table">
               <thead>
                 <tr>
                   <th>#</th>
                   <th>Team</th>
-                  <th style={{ textAlign: 'center' }}>W</th>
-                  <th style={{ textAlign: 'center' }}>L</th>
+                  <th>W</th>
+                  <th>L</th>
                 </tr>
               </thead>
               <tbody>
@@ -122,19 +138,23 @@ const SimSummaryModal: React.FC<SimSummaryModalProps> = ({
             </table>
           </div>
 
+          {/* Player Progression - Faint Glass Rows with Delta Pills */}
           {playerProgression.length > 0 && (
-            <div>
-              <h3 className="sim-panel-title">📈 Your Team Progression</h3>
+            <div className="sim-section">
+              <h3 className="sim-panel-title">
+                <TrendingUp size={14} strokeWidth={2} />
+                Your Team Progression
+              </h3>
               <div className="sim-list">
                 {playerProgression.map((prog) => (
                   <div key={prog.playerId} className="sim-list-row">
                     <span className="sim-list-name">{prog.playerName}</span>
                     <div className="sim-progression-delta">
-                      <span className="sim-progression-before">{prog.overallBefore}</span>
-                      <span className={`sim-progression-arrow ${prog.delta > 0 ? 'up' : 'down'}`}>
+                      <span className="sim-prog-pill sim-prog-before">{prog.overallBefore}</span>
+                      <span className={`sim-prog-arrow ${prog.delta > 0 ? 'up' : 'down'}`}>
                         {prog.delta > 0 ? '▲' : '▼'} {Math.abs(prog.delta)}
                       </span>
-                      <span className="sim-progression-after">{prog.overallAfter}</span>
+                      <span className="sim-prog-pill sim-prog-after">{prog.overallAfter}</span>
                     </div>
                   </div>
                 ))}

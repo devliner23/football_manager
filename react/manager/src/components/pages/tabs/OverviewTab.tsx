@@ -716,12 +716,12 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
               <div className="empty-state">Season complete — no games remaining.</div>
             )}
           </div>
-
-          <div className="sim-spotlight-placeholder quick-continue-card">
+          <div className="quick-continue-wrapper">
             <div className="qc-card">
               <div className="qc-list-header">
                 <Calendar size={14} strokeWidth={2} />
                 <span>Quick Continue</span>
+                <span className="qc-header-badge">Jump</span>
               </div>
 
               <div className="qc-day-list" ref={qcListRef} onScroll={handleQcScroll}>
@@ -740,7 +740,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                     >
                       <div className="qc-day-row-left">
                         {isToday ? (
-                          <div>
+                          <div className="qc-day-inner">
                             <span className="qc-day-weekday-active">
                               {d.toLocaleDateString(undefined, { weekday: 'short' })}
                             </span>
@@ -749,26 +749,22 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                               {d.toLocaleDateString(undefined, { month: 'short' })}
                             </span>
                           </div>
-                      ) : (
-                        <div>
-                          <span className="qc-day-weekday">
-                            {d.toLocaleDateString(undefined, { weekday: 'short' })}
-                          </span>
-                          <span className="qc-day-num">{d.getDate()}</span>
-                          <span className="qc-day-month">
-                            {d.toLocaleDateString(undefined, { month: 'short' })}
-                          </span>
-                        </div>
-                  )}
-
+                        ) : (
+                          <div className="qc-day-inner">
+                            <span className="qc-day-weekday">
+                              {d.toLocaleDateString(undefined, { weekday: 'short' })}
+                            </span>
+                            <span className="qc-day-num">{d.getDate()}</span>
+                            <span className="qc-day-month">
+                              {d.toLocaleDateString(undefined, { month: 'short' })}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      
                     </div>
                   );
                 })}
               </div>
-
-              {}
 
               <button
                 className="glass-btn btn-primary-blue-glow large-btn quick-continue-btn"
@@ -782,7 +778,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
               </button>
             </div>
           </div>
-
         </div>
 
         {/* ==================== LEADERBOARDS ROW ==================== */}

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { GameResult } from '../../../../api/leagueApi';
+import { X, CalendarDays } from 'lucide-react';
 import IndividualGameView from './IndividualGameView';
+import './styles/DayGamesModal.css'
 
 interface TeamLite {
   id: string;
@@ -19,7 +21,6 @@ interface DayGamesModalProps {
 const DayGamesModal: React.FC<DayGamesModalProps> = ({ date, games, teams, onClose }) => {
   const [selectedGame, setSelectedGame] = useState<GameResult | null>(null);
 
-  // Reset the drill-down whenever a new day is opened
   useEffect(() => {
     setSelectedGame(null);
   }, [date]);
@@ -48,19 +49,29 @@ const DayGamesModal: React.FC<DayGamesModalProps> = ({ date, games, teams, onClo
         ) : (
           <>
             <div className="modal-header">
-              <h3 className="modal-title">
-                {date.toLocaleDateString(undefined, {
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              </h3>
-              <button className="modal-close" onClick={handleClose}>✕</button>
+              <div className="modal-header-left">
+                <CalendarDays size={18} strokeWidth={2} className="modal-date-icon" />
+                <h3 className="modal-title">
+                  {date.toLocaleDateString(undefined, {
+                    weekday: 'long',
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </h3>
+                <span className="modal-game-count">{games.length} Games</span>
+              </div>
+              <button className="modal-close-btn" onClick={handleClose}>
+                <X size={18} strokeWidth={2} />
+              </button>
             </div>
+            
             <div className="modal-games-list">
               {games.length === 0 ? (
-                <p className="no-games">No games scheduled on this date.</p>
+                <div className="modal-empty-state">
+                  <CalendarDays size={28} strokeWidth={1.5} />
+                  <p>No games scheduled on this date.</p>
+                </div>
               ) : (
                 games.map((game) => {
                   const home = teamMap.get(game.home_team_id);
@@ -68,28 +79,31 @@ const DayGamesModal: React.FC<DayGamesModalProps> = ({ date, games, teams, onClo
                   return (
                     <div
                       key={game.id}
-                      className="modal-game-row clickable"
+                      className="modal-game-card"
                       onClick={() => setSelectedGame(game)}
                       role="button"
                       tabIndex={0}
                     >
                       <div className="modal-game-teams">
-                        <div className="modal-team home">
-                          <span className="team-abbr-full">{home?.abbreviation || 'TBD'}</span>
-                          <span className="team-name">{home?.name || ''}</span>
+                        <div className="modal-team home-team">
+                          <span className="team-abbr">{home?.abbreviation || 'TBD'}</span>
+                          <span className="team-full-name">{home?.name || ''}</span>
                         </div>
-                        <div className="modal-vs">VS</div>
-                        <div className="modal-team away">
-                          <span className="team-abbr-full">{away?.abbreviation || 'TBD'}</span>
-                          <span className="team-name">{away?.name || ''}</span>
+                        
+                        <div className="modal-vs-pill">VS</div>
+                        
+                        <div className="modal-team away-team">
+                          <span className="team-abbr">{away?.abbreviation || 'TBD'}</span>
+                          <span className="team-full-name">{away?.name || ''}</span>
                         </div>
                       </div>
-                      <div className="modal-game-info">
-                        <div className="modal-score-big">
+                      
+                      <div className="modal-game-score-wrap">
+                        <span className="modal-score">
                           {game.status === 'completed' && game.home_score != null
                             ? `${game.home_score} - ${game.away_score}`
                             : '—'}
-                        </div>
+                        </span>
                       </div>
                     </div>
                   );

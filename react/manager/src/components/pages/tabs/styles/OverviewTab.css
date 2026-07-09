@@ -958,6 +958,8 @@
   opacity: 0.8;
 }
 
+
+
 /* ========================== LEADERBOARDS ========================== */
 
 .leaderboard-stack {
@@ -1898,137 +1900,240 @@
 
 
 
-.quick-continue-card {
-  display: block;
-  padding: 1rem;
-  min-height: auto;
-  align-items: stretch;
-  justify-content: flex-start;
+/* ==========================================================
+   QUICK CONTINUE — COMPACT HORIZONTAL GLASS CHIPS
+   ========================================================== */
+
+.quick-continue-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .qc-card {
   display: flex;
   flex-direction: column;
-  gap: 10px;
   height: 100%;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(
+    160deg,
+    rgba(var(--glass-bg-rgb), 0.45),
+    rgba(var(--bg-main-rgb), 0.4)
+  );
+  backdrop-filter: blur(24px) saturate(150%);
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgba(var(--white-rgb), 0.08);
+  border-radius: 16px;
+  box-shadow:
+    0 20px 40px -10px rgba(var(--black-rgb), 0.7),
+    inset 0 1px 0 rgba(var(--white-rgb), 0.1),
+    inset 0 -1px 0 rgba(var(--black-rgb), 0.2);
+  overflow: hidden;
 }
 
+/* ── Header ── */
 .qc-list-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.72rem;
-  font-weight: 800;
+  gap: 8px;
+  margin-bottom: 0.85rem;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(var(--white-rgb), 0.06);
+  font-size: 0.7rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
 }
 
 .qc-list-header svg {
+  color: rgba(var(--neon-blue-solid-rgb), 0.7);
+}
+
+.qc-header-badge {
+  margin-left: auto;
+  font-size: 0.55rem;
+  font-weight: 800;
   color: var(--neon-blue-solid);
-}
-
-.qc-day-list {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  max-height: 224px; /* ≈ 7 rows */
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.qc-day-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: rgba(var(--white-rgb), 0.02);
-  border: 1px solid rgba(var(--white-rgb), 0.05);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-}
-
-.qc-day-row:hover {
-  background: rgba(var(--white-rgb), 0.05);
-  border-color: rgba(var(--neon-blue-solid-rgb), 0.25);
-}
-
-.qc-day-row.selected {
-  background: rgba(var(--neon-blue-rgb), 0.14);
-  border-color: var(--neon-blue-glow);
-}
-
-.qc-day-row.is-today .qc-day-num {
-  color: var(--neon-blue-light);
-}
-
-.qc-day-row-left {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-
-.qc-day-weekday {
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--text-dim);
-  text-transform: uppercase;
-  width: 30px;
-}
-
-.qc-day-num {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--text-primary);
-}
-
-.qc-day-month {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-}
-
-.qc-day-weekday-active {
-  font-size: 0.68rem;
-  font-weight: 700;
-  color: var(--team-primary);
-  text-transform: uppercase;
-  width: 30px;
-}
-
-.qc-day-num-active {
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--team-primary);
-}
-
-.qc-day-month-active {
-  font-size: 0.7rem;
-  color: var(--team-primary);
-}
-
-.qc-today-pill {
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--neon-blue-light);
-  background: rgba(var(--neon-blue-rgb), 0.18);
-  border: 1px solid var(--neon-blue-glow);
-  padding: 2px 7px;
+  background: rgba(var(--neon-blue-rgb), 0.1);
+  border: 1px solid rgba(var(--neon-blue-rgb), 0.2);
+  padding: 2px 8px;
   border-radius: 20px;
-  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Horizontal Scrollable Chip List ── */
+.qc-day-list {
+  flex: 1;
+  display: flex !important;
+  flex-direction: row !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  gap: 8px;
+  padding-bottom: 10px; /* Space for the thin scrollbar */
+  margin-bottom: 1rem;
+  /* Hide vertical scrollbar just in case */
+  scrollbar-width: none; 
 }
 
 .qc-day-list::-webkit-scrollbar {
-  width: 5px;
-}
-.qc-day-list::-webkit-scrollbar-thumb {
-  background: rgba(var(--white-rgb), 0.15);
-  border-radius: 10px;
+  height: 3px;
+  width: 3px;
 }
 
+.qc-day-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.qc-day-list::-webkit-scrollbar-thumb {
+  background: rgba(var(--white-rgb), 0.15);
+  border-radius: 3px;
+}
+
+.qc-day-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--white-rgb), 0.3);
+}
+
+/* ── Individual Day Chip ── */
+.qc-day-row {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 68px; /* Fixed width for consistent chips */
+  height: 72px; /* Fixed height */
+  flex-shrink: 0;
+  padding: 8px 4px !important;
+  background: rgba(var(--white-rgb), 0.025);
+  border: 1px solid rgba(var(--white-rgb), 0.06);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: inset 0 1px 0 rgba(var(--white-rgb), 0.05);
+}
+
+.qc-day-row:hover {
+  background: rgba(var(--white-rgb), 0.06);
+  border-color: rgba(var(--white-rgb), 0.12);
+  transform: scale(1.05); /* Scale instead of translateX for horizontal scroll */
+}
+
+/* Today State */
+.qc-day-row.is-today {
+  border-color: rgba(var(--neon-blue-rgb), 0.2);
+  background: rgba(var(--neon-blue-rgb), 0.08);
+}
+
+/* Selected State */
+.qc-day-row.selected {
+  background: rgba(var(--neon-blue-rgb), 0.2);
+  border-color: var(--neon-blue-solid);
+  box-shadow: 
+    0 0 20px rgba(var(--neon-blue-rgb), 0.2), 
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transform: scale(1.05);
+}
+
+.qc-day-row-left {
+  width: 100%;
+}
+
+/* Force stack elements vertically inside the chip */
+.qc-day-inner {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 1px !important;
+}
+
+/* Standard Date Text */
+.qc-day-weekday {
+  font-size: 0.58rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+  width: auto !important;
+}
+
+.qc-day-num {
+  font-size: 1.15rem !important;
+  font-weight: 900 !important;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.qc-day-month {
+  font-size: 0.58rem !important;
+  font-weight: 600 !important;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+
+/* "Today" Date Text */
+.qc-day-weekday-active {
+  font-size: 0.58rem !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em;
+  color: var(--team-primary);
+  width: auto !important;
+}
+
+.qc-day-num-active {
+  font-size: 1.2rem !important;
+  font-weight: 900 !important;
+  color: var(--team-primary);
+  line-height: 1.1;
+  text-shadow: 0 0 10px var(--neon-blue-glow);
+}
+
+.qc-day-month-active {
+  font-size: 0.58rem !important;
+  font-weight: 700 !important;
+  color: var(--team-primary);
+  text-transform: uppercase;
+}
+
+/* Override text colors when strictly selected (highest priority) */
+.qc-day-row.selected .qc-day-weekday-active,
+.qc-day-row.selected .qc-day-weekday {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.qc-day-row.selected .qc-day-num-active,
+.qc-day-row.selected .qc-day-num {
+  color: #ffffff !important;
+  text-shadow: none !important;
+}
+
+.qc-day-row.selected .qc-day-month-active,
+.qc-day-row.selected .qc-day-month {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* ── Action Button ── */
 .quick-continue-btn {
-  margin-top: 2px;
+  margin-top: auto; /* Pushes button to the bottom */
+  width: 100%;
+  border-radius: 12px !important;
+  font-size: 0.85rem !important;
+  padding: 12px !important;
+  box-shadow: 0 0 20px rgba(var(--neon-blue-rgb), 0.15) !important;
+  transition: all 0.25s ease !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quick-continue-btn:not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 30px rgba(var(--neon-blue-rgb), 0.3) !important;
+}
+
+.quick-continue-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none !important;
 }

@@ -10,7 +10,6 @@
 /* ── Roster panels (left & right) ── */
 .roster-panel {
   flex: 1;
-  background: #1e1e2f;
   border: 1px solid #2c2c44;
   border-radius: 8px;
   padding: 1.25rem;

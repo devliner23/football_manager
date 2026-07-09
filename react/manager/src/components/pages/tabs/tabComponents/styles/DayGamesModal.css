@@ -1,0 +1,299 @@
+/* ==========================================================
+   DAY GAMES MODAL — EXTREME GLASS MORPHISM
+   ========================================================== */
+
+/* ── Backdrop: Heavily frosted dark overlay ── */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(var(--black-rgb), 0.65);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ── Modal Container: The core glass object ── */
+.day-modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  /* Extreme glass properties */
+  background: rgba(0,0,0,0.15);
+  backdrop-filter: blur(40px) saturate(180%); 
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(var(--white-rgb), 0.12);
+  border-radius: 20px;
+  /* Multi-layered shadows for deep glass depth */
+  box-shadow:
+    0 30px 60px -15px rgba(var(--black-rgb), 0.9),
+    0 0 0 1px rgba(var(--white-rgb), 0.05) inset,   /* Inner sharp edge */
+    0 1px 0 rgba(var(--white-rgb), 0.15) inset,      /* Top highlight */
+    0 -1px 0 rgba(var(--black-rgb), 0.3) inset,      /* Bottom shadow */
+    0 0 100px -20px rgba(var(--neon-blue-rgb), 0.15); /* Outer neon bleed */
+  color: var(--text-primary);
+  overflow: hidden;
+  animation: modalSlideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes modalSlideUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(20px) scale(0.98); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0) scale(1); 
+  }
+}
+
+/* ── Header ── */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid rgba(var(--white-rgb), 0.08);
+  background: rgba(var(--white-rgb), 0.02); /* Subtle layering */
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.modal-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.modal-date-icon {
+  color: rgba(var(--neon-blue-solid-rgb), 0.8);
+  flex-shrink: 0;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.modal-game-count {
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--neon-blue-solid);
+  background: rgba(var(--neon-blue-rgb), 0.1);
+  border: 1px solid rgba(var(--neon-blue-rgb), 0.2);
+  padding: 3px 10px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+/* ── Close Button ── */
+.modal-close-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--white-rgb), 0.05);
+  border: 1px solid rgba(var(--white-rgb), 0.1);
+  border-radius: 10px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.25s ease;
+  flex-shrink: 0;
+}
+
+.modal-close-btn:hover {
+  background: rgba(var(--neon-danger-rgb, 239, 68, 68), 0.15);
+  border-color: rgba(var(--neon-danger-rgb, 239, 68, 68), 0.3);
+  color: var(--neon-danger);
+  box-shadow: 0 0 15px rgba(var(--neon-danger-rgb, 239, 68, 68), 0.2);
+  transform: rotate(90deg);
+}
+
+/* ── Games List ── */
+.modal-games-list {
+  padding: 1rem 1.25rem 1.25rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Custom Scrollbar inside glass */
+.modal-games-list::-webkit-scrollbar {
+  width: 4px;
+}
+.modal-games-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.modal-games-list::-webkit-scrollbar-thumb {
+  background: rgba(var(--white-rgb), 0.1);
+  border-radius: 4px;
+}
+.modal-games-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--white-rgb), 0.2);
+}
+
+/* ── Game Card (Nested Glass) ── */
+.modal-game-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: rgba(var(--white-rgb), 0.03);
+  border: 1px solid rgba(var(--white-rgb), 0.06);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  /* Inner glass refraction highlight */
+  box-shadow: inset 0 1px 0 rgba(var(--white-rgb), 0.06);
+}
+
+.modal-game-card:hover {
+  background: rgba(var(--neon-blue-rgb), 0.06);
+  border-color: rgba(var(--neon-blue-solid-rgb), 0.2);
+  transform: translateY(-2px);
+  box-shadow: 
+    inset 0 1px 0 rgba(var(--white-rgb), 0.08),
+    0 8px 24px -8px rgba(var(--black-rgb), 0.6), 
+    0 0 20px -5px rgba(var(--neon-blue-rgb), 0.15);
+}
+
+.modal-game-teams {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.modal-team {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.away-team {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.team-abbr {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.3px;
+}
+
+.team-full-name {
+  font-size: 0.65rem;
+  font-weight: 500;
+  color: var(--text-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+/* VS Pill */
+.modal-vs-pill {
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  background: rgba(var(--white-rgb), 0.05);
+  border: 1px solid rgba(var(--white-rgb), 0.08);
+  padding: 4px 10px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+/* Score Area */
+.modal-game-score-wrap {
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+
+.modal-score {
+  font-size: 1.1rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+  /* Subtle text glow for depth */
+  text-shadow: 0 0 12px rgba(var(--white-rgb), 0.1);
+}
+
+/* ── Empty State ── */
+.modal-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 3rem 1rem;
+  color: var(--text-faint);
+}
+
+.modal-empty-state svg {
+  opacity: 0.3;
+}
+
+.modal-empty-state p {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .modal-backdrop {
+    padding: 1rem;
+    align-items: flex-end; /* Slide up from bottom on mobile */
+  }
+
+  .day-modal {
+    max-height: 90vh;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    animation: mobileSlideUp 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  @keyframes mobileSlideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+
+  .modal-title {
+    font-size: 0.85rem;
+  }
+
+  .modal-game-card {
+    padding: 12px;
+  }
+
+  .team-full-name {
+    display: none; /* Hide full names on small screens to save space */
+  }
+}

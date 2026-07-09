@@ -1,6 +1,7 @@
 import React from 'react';
 import { GameResult } from '../../../../api/leagueApi';
-import './styles/IndividualGameView.css'; // new stylesheet (or add to Dashboard.css)
+import { X } from 'lucide-react';
+import './styles/IndividualGameView.css';
 
 interface IndividualGameViewProps {
   game: GameResult;
@@ -28,52 +29,59 @@ const IndividualGameView: React.FC<IndividualGameViewProps> = ({
   return (
     <div className="individual-game-overlay" onClick={onClose}>
       <div className="individual-game-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h2 className="modal-title">Game Details</h2>
-          <button className="modal-close" onClick={onClose}>
-            ✕
+        <div className="igm-header">
+          <h2 className="igm-title">Game Details</h2>
+          <button className="igm-close-btn" onClick={onClose}>
+            <X size={18} strokeWidth={2} />
           </button>
         </div>
 
-        <div className="game-detail-content">
+        <div className="igm-content">
           {/* Matchup */}
-          <div className="matchup-container">
-            <div className="team home-team">
-              <span className="team-abbr">{homeTeam.abbreviation}</span>
-              <span className="team-city">{homeTeam.name}</span>
+          <div className="igm-matchup">
+            <div className="igm-team">
+              <span className="igm-team-abbr">{homeTeam.abbreviation}</span>
+              <span className="igm-team-name">{homeTeam.name}</span>
+              {isFinal && <span className="igm-team-label">HOME</span>}
             </div>
-            <div className="vs-badge">VS</div>
-            <div className="team away-team">
-              <span className="team-abbr">{awayTeam.abbreviation}</span>
-              <span className="team-city">{awayTeam.name}</span>
+            
+            <div className="igm-vs-pill">VS</div>
+            
+            <div className="igm-team igm-team--away">
+              <span className="igm-team-abbr">{awayTeam.abbreviation}</span>
+              <span className="igm-team-name">{awayTeam.name}</span>
+              {isFinal && <span className="igm-team-label">AWAY</span>}
             </div>
           </div>
 
           {/* Score / Status */}
-          <div className="score-status">
+          <div className="igm-score-status">
             {isFinal ? (
-              <div className="final-score">
-                <span className="score-number">{game.home_score}</span>
-                <span className="score-divider">-</span>
-                <span className="score-number">{game.away_score}</span>
+              <div className="igm-final-score">
+                <span className="igm-score-num">{game.home_score}</span>
+                <span className="igm-score-dash">–</span>
+                <span className="igm-score-num">{game.away_score}</span>
               </div>
             ) : (
-              <span className="status-badge status-scheduled">SCHEDULED</span>
+              <div className="igm-scheduled-wrap">
+                <span className="igm-status-badge igm-status-scheduled">SCHEDULED</span>
+              </div>
             )}
           </div>
 
           {/* Meta info */}
-          <div className="game-meta">
-            {game.week && <span className="meta-item">Week {game.week}</span>}
-            {date && <span className="meta-item">{date}</span>}
-            {game.status === 'completed' && (
-              <span className="status-badge status-final">FINAL</span>
+          <div className="igm-meta-row">
+            {game.week && <span className="igm-meta-chip">Week {game.week}</span>}
+            {date && <span className="igm-meta-chip">{date}</span>}
+            {isFinal && (
+              <span className="igm-status-badge igm-status-final">FINAL</span>
             )}
           </div>
 
           {/* Placeholder for future player data */}
-          <div className="player-placeholder">
-            <p>Player stats coming soon …</p>
+          <div className="igm-placeholder">
+            <p>Player box score stats coming soon …</p>
+            <span className="igm-placeholder-tag">Coming Soon</span>
           </div>
         </div>
       </div>

@@ -28,7 +28,6 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ schedule, currentDate, onDa
 
   const weeks: (Date | null)[][] = [];
   let week: (Date | null)[] = [];
-  // Pad start
   for (let i = 0; i < monthStart.getDay(); i++) week.push(null);
   for (let d = new Date(monthStart); d <= monthEnd; d.setDate(d.getDate() + 1)) {
     if (week.length === 7) {
@@ -47,37 +46,53 @@ const MiniCalendar: React.FC<MiniCalendarProps> = ({ schedule, currentDate, onDa
   };
 
   const isToday = (date: Date | null) =>
+    date && date.toDateString() === new Date().toDateString();
+
+  const isSelected = (date: Date | null) =>
     date && date.toDateString() === currentDate.toDateString();
 
   return (
     <div className="mini-calendar">
-      <h4 className="mini-cal-title">{monthName}</h4>
-      <div className="mini-weekday-header">
-        {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => (
+      <div className="mini-cal-header">
+        <h4 className="mini-cal-title">{monthName}</h4>
+        <span className="mini-cal-badge">Schedule</span>
+      </div>
+      <div className="mini-weekday-row">
+        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
           <div key={d} className="mini-weekday">{d}</div>
         ))}
       </div>
-      {weeks.map((week, wi) => (
-        <div key={wi} className="mini-week">
-          {week.map((day, di) => {
-            const count = getGamesCount(day);
-            return (
-              <div
-                key={di}
-                className={`mini-day ${day ? '' : 'empty'} ${count > 0 ? 'has-games' : ''} ${isToday(day) ? 'today' : ''}`}
-                onClick={day && count > 0 ? () => onDateSelect(day) : undefined}
-              >
-                {day && (
-                  <>
-                    <span className="mini-day-num">{day.getDate()}</span>
-                    {count > 0 && <span className="mini-dot">{count}</span>}
-                  </>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      ))}
+      <div className="mini-cal-grid">
+        {weeks.map((week, wi) => (
+          <div key={wi} className="mini-week">
+            {week.map((day, di) => {
+              const count = getGamesCount(day);
+              const today = isToday(day);
+              const selected = isSelected(day);
+              return (
+                <div
+                  key={di}
+                  className={`mini-day ${!day ? 'mini-day--empty' : ''} ${count > 0 ? 'mini-day--has-games' : ''} ${today ? 'mini-day--today' : ''} ${selected ? 'mini-day--selected' : ''}`}
+                  onClick={day && count > 0 ? () => onDateSelect(day) : undefined}
+                >
+                  {day && (
+                    <>
+                      <span className="mini-day__num">{day.getDate()}</span>
+                      {count > 0 && (
+                        <span className="mini-day__dots">
+                          {Array.from({ length: Math.min(count, 3) }).map((_, i) => (
+                            <span key={i} className="mini-dot" />
+                          ))}
+                        </span>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
