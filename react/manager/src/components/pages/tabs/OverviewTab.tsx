@@ -83,6 +83,8 @@ const hashString = (s: string): number => {
   return Math.abs(h);
 };
 
+
+
 // teamColors.json is keyed by real NBA "City Name" (e.g. "Boston Celtics"),
 // but the teams in this league have fictional names tied only to a city
 // (e.g. "Boston Sentinels"). So we match on city, not on the full team name.
@@ -148,8 +150,27 @@ const getTeamGlassStyle = (city?: string, disambiguator?: string): React.CSSProp
 };
 
 
-
 // ── Component ────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
+// OverviewTab — date-driven rewrite
+//
+// This replaces everything from `interface OverviewTabProps` to the default
+// export. Keep your existing imports and module-level helpers
+// (getTeamGlassStyle, getTeamColorsByCity, hashString, etc.) above this.
+//
+// If `toLocalDate` is not already defined at module level in this file,
+// keep the definition below; otherwise delete the duplicate.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Parse a date string (YYYY-MM-DD or full ISO timestamp) as LOCAL midnight.
+ *  Never feeds a raw timestamp to `new Date()` for calendar math, so there is
+ *  no UTC day-shift regardless of the user's timezone. */
+const toLocalDate = (dateStr: string): Date =>
+  new Date(dateStr.slice(0, 10) + 'T00:00:00');
+
+/** Calendar date key straight from the stored string — no Date round-trip. */
+const dateKeyOf = (dateStr: string): string => dateStr.slice(0, 10);
 
 interface OverviewTabProps {
   game: SavedGame;
@@ -181,41 +202,72 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   allTeams,
   onSimulateToDate,
   schedule,
-  currentDate, 
-  currentTeam
+  currentDate,
+  currentTeam,
 }) => {
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [showSimForwardPicker, setShowSimForwardPicker] = useState(false);
   const [simForwardDate, setSimForwardDate] = useState<string>('');
+  const [dayModalDate, setDayModalDate] = useState<Date | null>(null);
   const [dayModalDateKey, setDayModalDateKey] = useState<string | null>(null);
 
+  // Pull context FIRST so simDate can fall back to it.
+  const {
+    nextUserGame,
+    leagueGamesBeforeCount = 0,
+    season,
+    lastSimulatedDate,
+    playerCount,
+    ppg,
+    oppg,
+    loading: simLoading,
+    onContinue,
+    onViewStandings,
+  } = useGameContext() || {};
+
+  // ── SINGLE SOURCE OF TRUTH for "today" in sim time ─────────────────────────
+  // currentDate (fresh from refreshAllData) > context > stale game prop.
+  // Always normalized to YYYY-MM-DD.
+  const simDate = useMemo(
+    () =>
+      (currentDate ?? lastSimulatedDate ?? game.current_game_date)?.slice(0, 10) ??
+      null,
+    [currentDate, lastSimulatedDate, game.current_game_date]
+  );
 
   // ── Quick Continue day-list state ──
   const qcAnchorDate = useMemo(
-    () => (currentDate ? new Date(currentDate + 'T00:00:00') : new Date()),
-    [currentDate]
+    () => (simDate ? toLocalDate(simDate) : new Date()),
+    [simDate]
   );
   const [qcVisibleCount, setQcVisibleCount] = useState(7);
-  const [qcSelectedDate, setQcSelectedDate] = useState<string | null>(
-    currentDate ? currentDate.slice(0, 10) : null
-  );
+  const [qcSelectedDate, setQcSelectedDate] = useState<string | null>(simDate);
 
-  // Sync the selected quick-continue date when the simulation updates currentDate
+  // Re-anchor the quick-continue list whenever a simulation advances the date.
   useEffect(() => {
-    if (currentDate) {
-      console.log("OVerview: ", currentDate)
-      setQcSelectedDate(currentDate.slice(0, 10));
+    if (simDate) {
+      setQcSelectedDate(simDate);
+      setQcVisibleCount(7);
     }
-  }, [currentDate]);
+  }, [simDate]);
 
+  // ── Team summary AS OF the current sim date ────────────────────────────────
+  // Mirrors ScheduleTab: only games on or before simDate count toward the
+  // record; also exposes recent form and the last completed game.
   const teamSummary = useMemo(() => {
-    if (!currentTeam || !schedule) {
-      return {
-        wins: 0, losses: 0, winPct: 0,
-        ppg: 0, oppg: 0, diff: 0,
-        gamesPlayed: 0, gamesRemaining: 0,
-      };
-    }
+    const empty = {
+      wins: 0,
+      losses: 0,
+      winPct: 0,
+      ppg: 0,
+      oppg: 0,
+      diff: 0,
+      gamesPlayed: 0,
+      gamesRemaining: 0,
+      last5: [] as ('W' | 'L')[],
+      lastGame: null as GameResult | null,
+    };
+    if (!currentTeam || !schedule) return empty;
 
     const allGames: GameResult[] = [];
     Object.values(schedule).forEach((weekGames) => {
@@ -226,17 +278,34 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       });
     });
 
-    const played = allGames.filter((g) => g.status === 'completed' && g.home_score != null);
+    // ISO strings compare correctly as plain strings — no Date, no TZ shift.
+    const upToSimDate = (g: GameResult) =>
+      !simDate || dateKeyOf(g.game_date ?? '') <= simDate;
+
+    const played = allGames
+      .filter((g) => g.status === 'completed' && g.home_score != null && upToSimDate(g))
+      .sort((a, b) => (a.game_date ?? '').localeCompare(b.game_date ?? ''));
     const upcoming = allGames.filter((g) => g.status !== 'completed');
 
-    let wins = 0, losses = 0, pointsFor = 0, pointsAgainst = 0;
-    played.forEach((game) => {
-      const isHome = game.home_team_id === currentTeam;
-      const teamScore = isHome ? game.home_score : game.away_score;
-      const oppScore = isHome ? game.away_score : game.home_score;
-      pointsFor += teamScore ?? 0;
-      pointsAgainst += oppScore ?? 0;
-      if ((teamScore ?? 0) > (oppScore ?? 0)) wins++; else losses++;
+    let wins = 0;
+    let losses = 0;
+    let pointsFor = 0;
+    let pointsAgainst = 0;
+    const results: ('W' | 'L')[] = [];
+
+    played.forEach((g) => {
+      const isHome = g.home_team_id === currentTeam;
+      const teamScore = (isHome ? g.home_score : g.away_score) ?? 0;
+      const oppScore = (isHome ? g.away_score : g.home_score) ?? 0;
+      pointsFor += teamScore;
+      pointsAgainst += oppScore;
+      if (teamScore > oppScore) {
+        wins++;
+        results.push('W');
+      } else {
+        losses++;
+        results.push('L');
+      }
     });
 
     const gamesPlayed = played.length;
@@ -249,8 +318,10 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       diff: gamesPlayed > 0 ? (pointsFor - pointsAgainst) / gamesPlayed : 0,
       gamesPlayed,
       gamesRemaining: upcoming.length,
+      last5: results.slice(-5),
+      lastGame: played[played.length - 1] ?? null,
     };
-  }, [schedule, currentTeam]);
+  }, [schedule, currentTeam, simDate]);
 
   const qcListRef = useRef<HTMLDivElement | null>(null);
 
@@ -290,8 +361,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     if (qcSelectedDate) onSimulateToDate(qcSelectedDate);
   };
 
-  const [dayModalDate, setDayModalDate] = useState<Date | null>(null);
-
+  // ── Games keyed by LOCAL calendar date (string slice, never toISOString) ───
+  // The old UTC keying shifted evening/midnight-UTC games onto the wrong day,
+  // which is why the day rows and modal didn't line up with the sim date.
   const gamesByDate = useMemo(() => {
     const map = new Map<string, GameResult[]>();
     if (!schedule) return map;
@@ -299,29 +371,13 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
       weekGames.forEach((g) => {
         const src = g.game_date || g.played_at;
         if (!src) return;
-        const key = new Date(src).toISOString().split('T')[0];
+        const key = dateKeyOf(src);
         if (!map.has(key)) map.set(key, []);
         map.get(key)!.push(g);
       });
     });
     return map;
   }, [schedule]);
-
-
-  // Pull everything SelectedGame actually provides via GameProvider,
-  // not just nextUserGame/leagueGamesBeforeCount.
-  const {
-    nextUserGame,
-    leagueGamesBeforeCount = 0,
-    season,
-    lastSimulatedDate,
-    playerCount,
-    ppg,
-    oppg,
-    loading: simLoading,
-    onContinue,
-    onViewStandings,
-  } = useGameContext() || {};
 
   const teamMap = useMemo(() => {
     const m = new Map<string, Team>();
@@ -338,6 +394,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     { key: 'rebounds', label: 'Rebounds', abbrev: 'RPG' },
     { key: 'assists', label: 'Assists', abbrev: 'APG' },
   ];
+
+  const getPlayerName = (player: Player) => `${player.first_name} ${player.last_name}`;
 
   const leagueBoard = (stat: 'points' | 'rebounds' | 'assists') =>
     [...players]
@@ -359,8 +417,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
         value: p[stat] ?? 0,
       }));
 
-  const getPlayerName = (player: Player) => `${player.first_name} ${player.last_name}`;
-
   const teamAverages = () => {
     if (userTeamPlayers.length === 0) return { pts: '0.0', reb: '0.0', ast: '0.0' };
     const total = userTeamPlayers.reduce(
@@ -379,41 +435,18 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     };
   };
 
+  // ── Countdown to next user game, in SIM time, symmetric on both sides ──────
   const daysUntil = useMemo(() => {
     if (!nextUserGame?.game_date) return null;
-    // Use the simulated in-game date (currentDate/lastSimulatedDate), not the
-    // real-world device date — the season's calendar is independent of
-    // today's actual date, which is what was causing the "Today / Tomorrow /
-    // In X days" pill (and anything downstream of it) to be wrong.
-    const simToday = currentDate ?? lastSimulatedDate ?? game.current_game_date;
-    const today = simToday ? new Date(simToday + 'T00:00:00') : new Date();
+    const today = simDate ? toLocalDate(simDate) : new Date();
     today.setHours(0, 0, 0, 0);
-    const gameDay = new Date(nextUserGame.game_date);
-    gameDay.setHours(0, 0, 0, 0);
+    const gameDay = toLocalDate(nextUserGame.game_date);
     return Math.round((gameDay.getTime() - today.getTime()) / 86400000);
-  }, [nextUserGame, currentDate, lastSimulatedDate, game.current_game_date]);
+  }, [nextUserGame, simDate]);
 
   const handleSimulateToNextGame = () => {
     if (!nextUserGame?.game_date || !onSimulateToDate) return;
-    onSimulateToDate(nextUserGame.game_date.slice(0, 10));
-  };
-
-  const todayAsString = (): string => {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    return `${y}-${m}-${d}`;
-  };
-
-  const addDays = (dateStr: string, days: number): string => {
-    const [y, m, d] = dateStr.slice(0, 10).split('-').map(Number);
-    const date = new Date(y, m - 1, d);
-    date.setDate(date.getDate() + days);
-    const ny = date.getFullYear();
-    const nm = String(date.getMonth() + 1).padStart(2, '0');
-    const nd = String(date.getDate()).padStart(2, '0');
-    return `${ny}-${nm}-${nd}`;
+    onSimulateToDate(dateKeyOf(nextUserGame.game_date));
   };
 
   const simToCalendarDate = (dateStr: string): CalendarDate => {
@@ -452,34 +485,36 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
     setSimForwardDate('');
   };
 
-  // Format the selected date for the confirm button label
   const simForwardLabel = useMemo(() => {
     if (!simForwardDate) return '';
-    const [y, m, d] = simForwardDate.slice(0, 10).split('-').map(Number);
-    return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    return toLocalDate(simForwardDate).toLocaleDateString(undefined, {
       month: 'short',
       day: 'numeric',
     });
   }, [simForwardDate]);
 
-  const endWeekDayLabel = useMemo(() => {
-    const base = currentDate ? new Date(currentDate + 'T00:00:00') : new Date();
+  // ── "Simulate Week" targets the Sunday after the SIM date ───────────────────
+  const weekEndSunday = useMemo(() => {
+    const base = simDate ? toLocalDate(simDate) : new Date();
     const dayOfWeek = base.getDay();
-    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+    const daysUntilSunday = dayOfWeek === 0 ? 7 : 7 - dayOfWeek; // always advance
     const sunday = new Date(base);
     sunday.setDate(sunday.getDate() + daysUntilSunday);
-    return sunday.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-  }, [currentDate]);
-  
+    return sunday;
+  }, [simDate]);
+
+  const endWeekDayLabel = useMemo(
+    () =>
+      weekEndSunday.toLocaleDateString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      }),
+    [weekEndSunday]
+  );
+
   const handleSimulateToWeekEnd = () => {
-    const base = currentDate ? new Date(currentDate + 'T00:00:00') : new Date();
-    const dayOfWeek = base.getDay();    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
-    const sunday = new Date(base);
-    sunday.setDate(sunday.getDate() + daysUntilSunday);
-    const y = sunday.getFullYear();
-    const m = String(sunday.getMonth() + 1).padStart(2, '0');
-    const d = String(sunday.getDate()).padStart(2, '0');
-    onSimulateToDate(`${y}-${m}-${d}`);
+    onSimulateToDate(qcFormatDate(weekEndSunday));
   };
 
   if (!userTeam) {
@@ -498,7 +533,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   const winPctDisplay = (teamSummary.winPct * 100).toFixed(1);
 
   const displaySeason = season ?? game.current_season ?? 1;
-  const displayLastSimmed = lastSimulatedDate ?? game.current_game_date ?? null;
 
   return (
     <div className="overview-container">
@@ -530,8 +564,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
               <div className="league-chip">
                 <span className="league-chip__label">Date</span>
                 <span className="league-chip__value">
-                  {currentDate
-                    ? new Date(currentDate + 'T00:00:00').toLocaleDateString(undefined, {
+                  {simDate
+                    ? toLocalDate(simDate).toLocaleDateString(undefined, {
                         month: 'short',
                         day: 'numeric',
                       })
@@ -549,7 +583,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
               <div className="league-chip">
                 <span className="league-chip__label">Roster</span>
                 <span className="league-chip__value">
-                  {userTeamPlayers.length}<span className="league-chip__max"> / 15</span>
+                  {userTeamPlayers.length}
+                  <span className="league-chip__max"> / 15</span>
                 </span>
               </div>
             </div>
@@ -560,11 +595,11 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                 <span className="winrate__pct">{winPctDisplay}%</span>
               </div>
               <div className="winrate__track">
-                <div className="winrate__fill" style={{ width: `${Math.min(100, teamSummary.winPct * 100)}%` }} />
-                <span
-                  className="winrate__marker"
-                  style={{ left: '50%' }}
+                <div
+                  className="winrate__fill"
+                  style={{ width: `${Math.min(100, teamSummary.winPct * 100)}%` }}
                 />
+                <span className="winrate__marker" style={{ left: '50%' }} />
               </div>
               <span className="winrate__note">League average: 50.0%</span>
             </div>
@@ -579,16 +614,44 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                   Quick Actions
                 </span>
                 <span className="btn__content btn__content--hover">
-                  <span className="trade-sub-action" title="Propose Assets" onClick={(e) => { e.stopPropagation(); setShowTradeModal(true); }}>
+                  <span
+                    className="trade-sub-action"
+                    title="Propose Assets"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowTradeModal(true);
+                    }}
+                  >
                     <Zap size={22} />
                   </span>
-                  <span className="trade-sub-action" title="Negotiations" onClick={(e) => { e.stopPropagation(); setShowTradeModal(true); }}>
+                  <span
+                    className="trade-sub-action"
+                    title="Negotiations"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowTradeModal(true);
+                    }}
+                  >
                     <Users size={22} />
                   </span>
-                  <span className="trade-sub-action" title="Calendar" onClick={(e) => { e.stopPropagation(); setShowTradeModal(true); }}>
+                  <span
+                    className="trade-sub-action"
+                    title="Calendar"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowTradeModal(true);
+                    }}
+                  >
                     <Calendar size={22} />
                   </span>
-                  <span className="trade-sub-action" title="Standings" onClick={(e) => { e.stopPropagation(); setShowTradeModal(true); }}>
+                  <span
+                    className="trade-sub-action"
+                    title="Standings"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowTradeModal(true);
+                    }}
+                  >
                     <TrendingUp size={22} />
                   </span>
                 </span>
@@ -599,7 +662,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           <div className="overview-kpi-panel">
             <div className="kpi-panel__header">
               <div className="kpi-panel__title-group">
-
                 <span className="kpi-panel__subtitle">Per-Game Season Averages</span>
               </div>
               <div className="kpi-panel__badge">
@@ -646,7 +708,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                     <span className="kpi-stat__rank rank--neutral">#12</span>
                   </div>
                   <span className="kpi-stat__value">.472</span>
-                    <div className="kpi-stat__bar">
+                  <div className="kpi-stat__bar">
                     <div className="kpi-stat__bar-fill bar--neutral" style={{ width: '56%' }} />
                   </div>
                   <span className="kpi-stat__compare trend-neutral">
@@ -659,7 +721,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                     <span className="kpi-stat__rank rank--bad">#22</span>
                   </div>
                   <span className="kpi-stat__value">.348</span>
-                    <div className="kpi-stat__bar">
+                  <div className="kpi-stat__bar">
                     <div className="kpi-stat__bar-fill bar--danger" style={{ width: '35%' }} />
                   </div>
                   <span className="kpi-stat__compare trend-down">
@@ -774,14 +836,14 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
             </div>
           </div>
         </div>
-      
+
         {/* ==================== SIMULATION SPOTLIGHT + QUICK CONTINUE ==================== */}
         <div className="overview-highlight-row">
-
           <div className="sim-spotlight-card">
             <div className="sim-spotlight-header">
               <h3 className="card-title">
-                <Calendar size={16} className="title-icon-inline" />&nbsp; Next Matchup
+                <Calendar size={16} className="title-icon-inline" />
+                &nbsp; Next Matchup
               </h3>
               {nextUserGame && daysUntil !== null && (
                 <span className="sim-countdown-pill">
@@ -797,20 +859,32 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                 const self = isHome ? nextUserGame.home_team : nextUserGame.away_team;
                 const oppRecord = null;
                 const sameConference = null;
+                const nextGameLabel = nextUserGame.game_date
+                  ? toLocalDate(nextUserGame.game_date).toLocaleDateString(undefined, {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                    })
+                  : 'Date TBD';
 
                 return (
                   <div className="sim-broadcast">
                     <div className="sim-broadcast__scoreboard">
-                      {/* ✅ USER TEAM AVATAR — colored by city */}
+                      {/* USER TEAM AVATAR — colored by city */}
                       <div className="sim-team-panel sim-team-panel--self">
-                        <div 
+                        <div
                           className="sim-team-avatar sim-team-avatar--self"
-                          style={getTeamGlassStyle(self?.city || userTeam.city, self?.name || userTeam.name)}
+                          style={getTeamGlassStyle(
+                            self?.city || userTeam.city,
+                            self?.name || userTeam.name
+                          )}
                         >
                           {self?.abbreviation || userTeam.abbreviation}
                         </div>
                         <span className="sim-team-name">{self?.name || userTeam.name}</span>
-                        <span className="sim-team-record">{wins}-{losses}</span>
+                        <span className="sim-team-record">
+                          {wins}-{losses}
+                        </span>
                       </div>
 
                       <div className="sim-center-col">
@@ -820,13 +894,15 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                         </span>
                         <span className="sim-vs-text">VS</span>
                         <span className="matchup-vs-sub">
-                          {leagueGamesBeforeCount > 0 ? `${leagueGamesBeforeCount} league games first` : 'Next up'}
+                          {leagueGamesBeforeCount > 0
+                            ? `${leagueGamesBeforeCount} league games first`
+                            : 'Next up'}
                         </span>
                       </div>
 
-                      {/* ✅ OPPONENT TEAM AVATAR — colored by city */}
+                      {/* OPPONENT TEAM AVATAR — colored by city */}
                       <div className="sim-team-panel sim-team-panel--opp">
-                        <div 
+                        <div
                           className="sim-team-avatar sim-team-avatar--opp"
                           style={getTeamGlassStyle(opponent?.city, opponent?.name)}
                         >
@@ -840,17 +916,15 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                     <div className="sim-broadcast__ticker">
                       <span className="matchup-meta-item">
                         <Clock size={13} />
-                        {nextUserGame.game_date
-                          ? new Date(nextUserGame.game_date).toLocaleDateString(undefined, {
-                              weekday: 'short',
-                              month: 'short',
-                              day: 'numeric',
-                            })
-                          : 'Date TBD'}
+                        {nextGameLabel}
                       </span>
                       <span className="matchup-meta-item">
                         <Trophy size={13} />
-                        {opponent ? (sameConference ? 'Conference Matchup' : 'Interconference') : 'Matchup TBD'}
+                        {opponent
+                          ? sameConference
+                            ? 'Conference Matchup'
+                            : 'Interconference'
+                          : 'Matchup TBD'}
                       </span>
                       <span className="matchup-meta-item">
                         <Flame size={13} />
@@ -859,24 +933,16 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                     </div>
 
                     <div className="banner__actions">
-                      <button
-                        className="btn btn--trade"
-                        onClick={handleSimulateToNextGame}
-                      >
+                      <button className="btn btn--trade" onClick={handleSimulateToNextGame}>
                         <span className="btn__content btn__content--default">
                           <FastForward size={16} />
                           Simulate Next User Game
                         </span>
                         <span className="btn__content btn__content--hover">
-                          <span>Simulating to: {new Date(nextUserGame.game_date).toLocaleDateString(undefined, {
-                                      weekday: 'short',
-                                      month: 'short',
-                                      day: 'numeric',
-                                    })}</span>
+                          <span>Simulating to: {nextGameLabel}</span>
                         </span>
                       </button>
                     </div>
-
                   </div>
                 );
               })()
@@ -902,7 +968,11 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                     <div
                       key={dateKey}
                       className={`qc-day-row ${isSelected ? 'selected' : ''} ${isToday ? 'is-today' : ''}`}
-                      onClick={() => {setQcSelectedDate(dateKey); setDayModalDate(d); setDayModalDateKey(dateKey)}}
+                      onClick={() => {
+                        setQcSelectedDate(dateKey);
+                        setDayModalDate(d);
+                        setDayModalDateKey(dateKey);
+                      }}
                       role="button"
                       tabIndex={0}
                     >
@@ -929,6 +999,12 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                           </div>
                         )}
                       </div>
+                      {/* Game-count dot so days with games are visible at a glance */}
+                      {(gamesByDate.get(dateKey)?.length ?? 0) > 0 && (
+                        <span className="qc-day-game-count">
+                          {gamesByDate.get(dateKey)!.length}
+                        </span>
+                      )}
                     </div>
                   );
                 })}
@@ -941,16 +1017,15 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
               >
                 <FastForward size={16} />
                 {qcSelectedDate
-                  ? `Continue To ${new Date(qcSelectedDate + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`
+                  ? `Continue To ${toLocalDate(qcSelectedDate).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                    })}`
                   : 'Select a date'}
               </button>
 
               {/* ── Simulate Week ── */}
-              <button
-                className="btn--trade"
-                onClick={handleSimulateToWeekEnd}
-                disabled={simLoading}
-              >
+              <button className="btn--trade" onClick={handleSimulateToWeekEnd} disabled={simLoading}>
                 <span className="btn__content btn__content--default">
                   <Play size={16} />
                   Simulate Week
@@ -963,21 +1038,6 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
 
               {/* ── Simulate Forward ── */}
               <div className="sim-forward-wrapper">
-                {/* <button
-                  className="btn--trade btn--trade-wide qc-sim-btn"
-                  onClick={() => setShowSimForwardPicker(true)}
-                  disabled={simLoading}
-                >
-                  <span className="btn__content btn__content--default">
-                    <FastForward size={16} />
-                    Simulate Forward
-                  </span>
-                  <span className="btn__content btn__content--hover">
-                    <Calendar size={16} />
-                    Choose a Date
-                  </span>
-                </button> */}
-
                 {showSimForwardPicker && (
                   <div className="sfp-overlay" onClick={handleCloseSimForwardPicker}>
                     <div className="sfp-card" onClick={(e) => e.stopPropagation()}>
@@ -988,7 +1048,11 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                         </div>
                         <div className="sfp-card-header-right">
                           <span className="sfp-badge">Pick Date</span>
-                          <button className="sfp-close-btn" onClick={handleCloseSimForwardPicker} aria-label="Close">
+                          <button
+                            className="sfp-close-btn"
+                            onClick={handleCloseSimForwardPicker}
+                            aria-label="Close"
+                          >
                             <X size={14} />
                           </button>
                         </div>
@@ -998,7 +1062,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                         className="sfp-date-picker"
                         value={simToCalendarDate(simForwardDate)}
                         onChange={handleSimForwardDateChange}
-                        placeholderValue={simToCalendarDate(lastSimulatedDate || '')}
+                        placeholderValue={simToCalendarDate(simDate || '')}
                       >
                         <div className="sfp-input-row">
                           <DateInput className="sfp-date-input">
@@ -1031,9 +1095,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                         disabled={!simForwardDate}
                       >
                         <FastForward size={16} />
-                        {simForwardDate
-                          ? `Continue To ${simForwardLabel}`
-                          : 'Select a date'}
+                        {simForwardDate ? `Continue To ${simForwardLabel}` : 'Select a date'}
                       </button>
                     </div>
                   </div>
@@ -1043,11 +1105,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
           </div>
         </div>
 
-        
-
         {/* ==================== LEADERBOARDS ROW ==================== */}
         <div className="overview-lower-flex-row">
-
           {/* 1. LEAGUE LEADERS */}
           <div className="leaders-card lower-row-panel">
             <h3 className="card-title">
@@ -1133,21 +1192,19 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
               })}
             </div>
           </div>
-
         </div>
+
         {/* ==================== BOTTOM PANEL SIMULATOR ==================== */}
         <div className="overview-bottom-panel">
           <div className="results-wrapper-card">
             <GameResults
-              key={refreshKey}
+              key={`${refreshKey}-${simDate ?? ''}`}
               savedGameId={savedGameId}
               onGameClick={onGameClick}
             />
           </div>
         </div>
-
       </div>
-
 
       <DayGamesModal
         date={dayModalDate}

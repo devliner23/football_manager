@@ -630,7 +630,7 @@ class leagueService {
     const state = await this._getGameState();
     const summary = await this._buildSimSummary(weekGames, results, state?.managed_club_id, seasonId);
 
-    const maxSimDate = weekGames.map(g => g.game_date).sort().pop();
+    const maxSimDate = gamesToSim.map(g => g.game_date).sort().pop().slice(0, 10);
     this._currentGameDateCache = maxSimDate;
     this._gameStateCache = { ...state, last_simulated_week: weekNumber, last_simulated_at: new Date().toISOString() };
     await supabaseAdmin
@@ -721,10 +721,12 @@ class leagueService {
     const results = await this._bulkSimulateGames(gamesToSim, seasonId, 'batch');
     const summary = await this._buildSimSummary(gamesToSim, results, managedClubId, seasonId);
 
-    const maxSimDate = gamesToSim.length > 0
+    const maxSimDate = (allSimulated
       ? gamesToSim.map(g => g.game_date).sort().pop()
-      : nextUserGame.game_date;
+      : nextUserGame.game_date
+    ).slice(0, 10);   // ← normalize to YYYY-MM-DD before storing/returning
     this._currentGameDateCache = maxSimDate;
+
     this._gameStateCache = { ...state, last_simulated_at: new Date().toISOString(), last_sim_to_date: nextUserGame.game_date };
     await supabaseAdmin
       .from('saved_games')
@@ -790,7 +792,8 @@ class leagueService {
     }
 
     const results = await this._bulkSimulateGames(games, seasonId, 'batch');
-    const lastGameDate = games[games.length - 1].game_date;
+    const lastGameDate = games[games.length - 1].game_date.slice(0, 10);
+
     // Use the later of (last simulated game date, targetDate) when the chunk is complete
     const allSimulated = (count || 0) <= games.length;
     const maxSimDate = allSimulated

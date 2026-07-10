@@ -45,6 +45,9 @@ async function updateCurrentGameDate(savedGameId, seasonId, explicitDate = null)
     .eq('id', savedGameId);
 
   if (updateError) throw updateError;
+
+  dateToSet = String(dateToSet).slice(0, 10);
+  
   return dateToSet;
 }
 
