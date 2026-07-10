@@ -763,26 +763,59 @@ class leagueService {
     ]);
     if (gamesErr) throw new Error(`Failed to fetch games: ${gamesErr.message}`);
     if (countErr) throw new Error(`Failed to count games: ${countErr.message}`);
-    if (!games?.length) return { gamesSimulated: 0, gamesRemaining: 0, complete: true, results: [], summary: null };
+
+    // Normalize targetDate to YYYY-MM-DD for storage/display consistency
+    const normalizedTarget = targetDate.slice(0, 10);
+
+    // No games to simulate — still advance current_game_date to targetDate
+    if (!games?.length) {
+      const state = await this._getGameState();
+      this._currentGameDateCache = normalizedTarget;
+      this._gameStateCache = { ...state, last_simulated_to: normalizedTarget, last_simulated_at: new Date().toISOString() };
+      const { error: updErr } = await supabaseAdmin
+        .from('saved_games')
+        .update({ current_game_date: normalizedTarget, game_state: this._gameStateCache })
+        .eq('id', this.savedGameId);
+      if (updErr) throw new Error(`Failed to update saved_games: ${updErr.message}`);
+
+      return {
+        seasonComplete: false,
+        gamesSimulated: 0,
+        gamesRemaining: 0,
+        complete: true,
+        results: [],
+        summary: null,
+        current_game_date: normalizedTarget,   // ← snake_case, consistent
+      };
+    }
 
     const results = await this._bulkSimulateGames(games, seasonId, 'batch');
-    const maxSimDate = games[games.length - 1].game_date;
+    const lastGameDate = games[games.length - 1].game_date;
+    // Use the later of (last simulated game date, targetDate) when the chunk is complete
+    const allSimulated = (count || 0) <= games.length;
+    const maxSimDate = allSimulated
+      ? normalizedTarget
+      : (lastGameDate > normalizedTarget ? lastGameDate : normalizedTarget);
+
     const state = await this._getGameState();
     const summary = await this._buildSimSummary(games, results, state?.managed_club_id, seasonId);
 
     this._gameStateCache = { ...state, last_simulated_to: maxSimDate, last_simulated_at: new Date().toISOString() };
     this._currentGameDateCache = maxSimDate;
-    await supabaseAdmin
+    const { error: updErr } = await supabaseAdmin
       .from('saved_games')
       .update({ current_game_date: maxSimDate, game_state: this._gameStateCache })
       .eq('id', this.savedGameId);
+    if (updErr) throw new Error(`Failed to update saved_games: ${updErr.message}`);
 
     return {
+      seasonComplete: false,                  // ← consistent key name
       gamesSimulated: games.length,
       gamesRemaining: Math.max(0, (count || 0) - games.length),
-      complete: (count || 0) <= games.length,
+      complete: allSimulated,
       results,
       summary,
+      current_game_date: maxSimDate,          // ← snake_case, consistent
     };
   }
 

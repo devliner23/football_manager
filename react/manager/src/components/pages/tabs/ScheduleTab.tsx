@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { GameResult } from '../../../api/leagueApi';
 import IndividualGameView from './tabComponents/IndividualGameViewFinal';
@@ -33,11 +33,7 @@ type Tab = 'team-schedule' | 'league-schedule' | 'calendar';
 
 const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate, currentTeam }) => {
   const [activeTab, setActiveTab] = useState<Tab>('team-schedule');
-
-  // ── Modal for calendar tab ──
   const [calendarModalDate, setCalendarModalDate] = useState<Date | null>(null);
-
-  // ── League Schedule sub‑state ──
   const [gamesTabSelectedDate, setGamesTabSelectedDate] = useState<Date>(() => {
     if (currentDate) {
       const d = new Date(currentDate);
@@ -47,20 +43,20 @@ const ScheduleTab: React.FC<ScheduleTabProps> = ({ schedule, teams, currentDate,
   });
   const [gamesTabViewMode, setGamesTabViewMode] = useState<'daily' | 'weekly'>('daily');
   const [leagueSelectedGame, setLeagueSelectedGame] = useState<GameResult | null>(null);
-
-  // Manual date entry for League Schedule
   const [manualDateText, setManualDateText] = useState<string>(() =>
     gamesTabSelectedDate.toISOString().split('T')[0]
   );
-
-  // ── Team Schedule sub‑state ──
   const [teamSelectedGame, setTeamSelectedGame] = useState<GameResult | null>(null);
-
-  // ── Calendar month navigation ──
   const [calendarMonth, setCalendarMonth] = useState<Date>(() => {
     if (currentDate) return new Date(currentDate);
     return new Date();
   });
+
+  useEffect(() => {
+    if (currentDate) {
+      console.log("Schedule: ", currentDate)
+    }
+  })
 
   // ── Team map ──
   const teamMap = useMemo(() => {

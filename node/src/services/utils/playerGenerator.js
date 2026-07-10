@@ -1,6 +1,7 @@
 const { supabaseAdmin } = require('../../config/supabase');
 const TeamArchetypeService = require('./teamArchetypeService');
 const playerData = require('../../data/playerData.json');
+const { generateTraitCardsForPlayer } = require("./traitCards")
 
 const CANONICAL_TRAIT_MAP = {
   three_point_scoring: 'three_point_scoring',
@@ -330,6 +331,7 @@ class PlayerGenerator {
     const age             = this.generateAge(isStar, rosterIndex);
     const height          = this.generateHeight(position);
     const weight          = this.generateWeight();
+    const traitCards       = generateTraitCardsForPlayer({ overall: rating, potential, age });
     const first_name      = this.pickRandom(this.firstNames);
     const last_name       = this.pickRandom(this.lastNames);
     const full_name       = `${first_name} ${last_name}`;
@@ -375,6 +377,8 @@ class PlayerGenerator {
       // Traits: structured (JSON object) + tags (JSON array)
       traits: JSON.stringify(traits),
       trait_tags: JSON.stringify(traitTags),
+      trait_cards: JSON.stringify(traitCards),
+
 
       college,
       college_class: collegeClass,

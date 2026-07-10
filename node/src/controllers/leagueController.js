@@ -556,13 +556,8 @@ const leagueController = {
       const leagueService = new LeagueService(savedGameId);
       const result        = await leagueService.simulateToDate(targetDate);
 
-      const seasonId = game.game_state?.season_id;
-      if (seasonId) {
-        const actualDate  = result.actualDate || targetDate;
-        const currentDate = await updateCurrentGameDate(savedGameId, seasonId, actualDate);
-        result.currentGameDate = currentDate;
-      }
-
+      // leagueService already persisted saved_games.current_game_date to the
+      // real max simulated date — do NOT recompute or overwrite it here.
       res.json({ success: true, data: result });
     } catch (error) {
       console.error('simulateToDate error:', error);

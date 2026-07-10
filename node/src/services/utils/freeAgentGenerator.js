@@ -9,7 +9,9 @@
 
 'use strict';
 
-// ── Name pools ────────────────────────────────────────────────────────────────
+const { generateTraitCardsForPlayer } = require("./traitCards")
+
+
 
 const FIRST_NAMES = [
   'Aaron','Andre','Anthony','Bam','Blake','Bradley','Brian','Carlos',
@@ -177,6 +179,8 @@ function generateFreeAgentPlayer(savedGameId, position = null) {
   const ageBase   = Math.random() < 0.15 ? randNormal(21, 1.5) : randNormal(27, 3.5);
   const age       = clamp(Math.round(ageBase), 19, 38);
   const potential = clamp(overall + clamp(randNormal(2, 6), -8, 18));
+  const traitCards = generateTraitCardsForPlayer({ overall, potential, age });
+
 
   return {
     saved_game_id:    savedGameId,

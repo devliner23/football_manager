@@ -52,11 +52,11 @@ const IndividualGameView: React.FC<IndividualGameViewProps> = ({
           
           {/* ── LEFT FLANK: HOME BOX SCORE ── */}
           <aside className="igm-side-panel igm-side-panel--home">
-            <div className="igm-sp-header">
+            {/* <div className="igm-sp-header">
               <span className="igm-sp-abbr">{homeTeam.abbreviation}</span>
               <span className="igm-sp-name">{homeTeam.name}</span>
               {isFinal && <span className="igm-sp-score">{game.home_score}</span>}
-            </div>
+            </div> */}
             <div className="igm-sp-grid-wrapper">
               <div className="igm-bs-grid">
                 <div className="igm-bs-row igm-bs-row--head">
@@ -124,11 +124,11 @@ const IndividualGameView: React.FC<IndividualGameViewProps> = ({
 
           {/* ── RIGHT FLANK: AWAY BOX SCORE ── */}
           <aside className="igm-side-panel igm-side-panel--away">
-            <div className="igm-sp-header">
+            {/* <div className="igm-sp-header">
               <span className="igm-sp-abbr">{awayTeam.abbreviation}</span>
               <span className="igm-sp-name">{awayTeam.name}</span>
               {isFinal && <span className="igm-sp-score">{game.away_score}</span>}
-            </div>
+            </div> */}
             <div className="igm-sp-grid-wrapper">
               <div className="igm-bs-grid">
                 <div className="igm-bs-row igm-bs-row--head">

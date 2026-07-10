@@ -187,6 +187,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [showSimForwardPicker, setShowSimForwardPicker] = useState(false);
   const [simForwardDate, setSimForwardDate] = useState<string>('');
+  const [dayModalDateKey, setDayModalDateKey] = useState<string | null>(null);
+
 
   // ── Quick Continue day-list state ──
   const qcAnchorDate = useMemo(
@@ -201,9 +203,54 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   // Sync the selected quick-continue date when the simulation updates currentDate
   useEffect(() => {
     if (currentDate) {
+      console.log("OVerview: ", currentDate)
       setQcSelectedDate(currentDate.slice(0, 10));
     }
   }, [currentDate]);
+
+  const teamSummary = useMemo(() => {
+    if (!currentTeam || !schedule) {
+      return {
+        wins: 0, losses: 0, winPct: 0,
+        ppg: 0, oppg: 0, diff: 0,
+        gamesPlayed: 0, gamesRemaining: 0,
+      };
+    }
+
+    const allGames: GameResult[] = [];
+    Object.values(schedule).forEach((weekGames) => {
+      weekGames.forEach((g) => {
+        if (g.home_team_id === currentTeam || g.away_team_id === currentTeam) {
+          allGames.push(g);
+        }
+      });
+    });
+
+    const played = allGames.filter((g) => g.status === 'completed' && g.home_score != null);
+    const upcoming = allGames.filter((g) => g.status !== 'completed');
+
+    let wins = 0, losses = 0, pointsFor = 0, pointsAgainst = 0;
+    played.forEach((game) => {
+      const isHome = game.home_team_id === currentTeam;
+      const teamScore = isHome ? game.home_score : game.away_score;
+      const oppScore = isHome ? game.away_score : game.home_score;
+      pointsFor += teamScore ?? 0;
+      pointsAgainst += oppScore ?? 0;
+      if ((teamScore ?? 0) > (oppScore ?? 0)) wins++; else losses++;
+    });
+
+    const gamesPlayed = played.length;
+    return {
+      wins,
+      losses,
+      winPct: gamesPlayed > 0 ? wins / gamesPlayed : 0,
+      ppg: gamesPlayed > 0 ? pointsFor / gamesPlayed : 0,
+      oppg: gamesPlayed > 0 ? pointsAgainst / gamesPlayed : 0,
+      diff: gamesPlayed > 0 ? (pointsFor - pointsAgainst) / gamesPlayed : 0,
+      gamesPlayed,
+      gamesRemaining: upcoming.length,
+    };
+  }, [schedule, currentTeam]);
 
   const qcListRef = useRef<HTMLDivElement | null>(null);
 
@@ -334,12 +381,17 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
 
   const daysUntil = useMemo(() => {
     if (!nextUserGame?.game_date) return null;
-    const today = new Date();
+    // Use the simulated in-game date (currentDate/lastSimulatedDate), not the
+    // real-world device date — the season's calendar is independent of
+    // today's actual date, which is what was causing the "Today / Tomorrow /
+    // In X days" pill (and anything downstream of it) to be wrong.
+    const simToday = currentDate ?? lastSimulatedDate ?? game.current_game_date;
+    const today = simToday ? new Date(simToday + 'T00:00:00') : new Date();
     today.setHours(0, 0, 0, 0);
     const gameDay = new Date(nextUserGame.game_date);
     gameDay.setHours(0, 0, 0, 0);
     return Math.round((gameDay.getTime() - today.getTime()) / 86400000);
-  }, [nextUserGame]);
+  }, [nextUserGame, currentDate, lastSimulatedDate, game.current_game_date]);
 
   const handleSimulateToNextGame = () => {
     if (!nextUserGame?.game_date || !onSimulateToDate) return;
@@ -441,7 +493,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   }
 
   const averages = teamAverages();
-  const [wins = '0', losses = '0'] = record.split('-');
+  const wins = teamSummary.wins;
+  const losses = teamSummary.losses;
+  const winPctDisplay = (teamSummary.winPct * 100).toFixed(1);
 
   const displaySeason = season ?? game.current_season ?? 1;
   const displayLastSimmed = lastSimulatedDate ?? game.current_game_date ?? null;
@@ -503,13 +557,10 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
             <div className="banner__winrate">
               <div className="winrate__header">
                 <span className="winrate__label">Season Win Rate</span>
-                <span className="winrate__pct">{winPct}%</span>
+                <span className="winrate__pct">{winPctDisplay}%</span>
               </div>
               <div className="winrate__track">
-                <div
-                  className="winrate__fill"
-                  style={{ width: '62%' }}
-                />
+                <div className="winrate__fill" style={{ width: `${Math.min(100, teamSummary.winPct * 100)}%` }} />
                 <span
                   className="winrate__marker"
                   style={{ left: '50%' }}
@@ -851,7 +902,7 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
                     <div
                       key={dateKey}
                       className={`qc-day-row ${isSelected ? 'selected' : ''} ${isToday ? 'is-today' : ''}`}
-                      onClick={() => {setQcSelectedDate(dateKey); setDayModalDate(d);}}
+                      onClick={() => {setQcSelectedDate(dateKey); setDayModalDate(d); setDayModalDateKey(dateKey)}}
                       role="button"
                       tabIndex={0}
                     >
@@ -1100,9 +1151,12 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
 
       <DayGamesModal
         date={dayModalDate}
-        games={dayModalDate ? gamesByDate.get(dayModalDate.toISOString().split('T')[0]) || [] : []}
+        games={dayModalDateKey ? gamesByDate.get(dayModalDateKey) || [] : []}
         teams={allTeams}
-        onClose={() => setDayModalDate(null)}
+        onClose={() => {
+          setDayModalDate(null);
+          setDayModalDateKey(null);
+        }}
       />
     </div>
   );

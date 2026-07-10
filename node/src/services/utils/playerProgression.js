@@ -16,6 +16,7 @@
 // this service works with that same snake_case shape directly.
 
 const { supabaseAdmin } = require('../../config/supabase');
+const { getProgressionModifiers, parseTraitCards } = require('./traitCards');
 
 const TRAIT_KEYS = [
   'three_point', 'mid_range', 'inside_scoring', 'passing',
@@ -130,7 +131,7 @@ class playerProgressionService {
     for (const idChunk of idChunks) {
       const { data, error } = await supabaseAdmin
         .from('players')
-        .select('id, team_id, position, age, overall_rating, potential_rating, traits')
+        .select('id, team_id, position, age, overall_rating, potential_rating, traits, trait_cards')
         .eq('saved_game_id', savedGameId)
         .in('id', idChunk);
 
@@ -271,13 +272,12 @@ class playerProgressionService {
     return map;
   }
 
-  // ── Per-player delta computation ─────────────────────────────────────
-
   static _computePlayerDelta(player, agg) {
     const age      = player.age || 25;
     const traits   = { ...(player.traits || {}) };
     const overall  = player.overall_rating || 60;
     const potential = player.potential_rating || overall;
+    const cardMods = getProgressionModifiers(parseTraitCards(player));
 
     // Usage factor: players barely playing shouldn't swing much
     const avgMinutes = agg.minutes / Math.max(1, agg.games);
@@ -289,7 +289,7 @@ class playerProgressionService {
     const perf = {
       three_pct: agg.fga_3 >= 2 ? (agg.fgm_3 / agg.fga_3) : null,
       mid_makes: per36(agg.fgm - agg.fgm_3),
-      rim_makes: per36(agg.fgm - agg.fgm_3), // approximation without shot-zone split in box score
+      rim_makes: per36(agg.fgm - agg.fgm_3),
       assists:   per36(agg.assists),
       turnovers: per36(agg.turnovers),
       steals:    per36(agg.steals),
@@ -297,8 +297,6 @@ class playerProgressionService {
       rebounds:  per36(agg.rebounds),
     };
 
-    // Baselines a "typical" player with this trait value would produce per-36
-    // (rough linear mapping, trait 50 ≈ league-average per-36 rate).
     const expected = {
       three_pct: 0.30 + ((traits.three_point || 50) - 50) * 0.0035,
       assists:   2 + ((traits.passing || 50) - 50) * 0.08,
@@ -308,9 +306,10 @@ class playerProgressionService {
       rebounds:  5 + ((traits.rebounding || 50) - 50) * 0.08,
     };
 
-    // Trait deltas: small nudges, scaled by age (young = more plastic) and usage
+    // Trait deltas: small nudges, scaled by age (young = more plastic), usage,
+    // and now by any "gym_rat"/"quick_study"/"plateaued" card the player holds.
     const ageMultiplier = age <= 24 ? 1.3 : age <= 29 ? 1.0 : 0.6;
-    const learnRate = 0.15 * ageMultiplier * usageFactor;
+    const learnRate = 0.15 * ageMultiplier * usageFactor * cardMods.learnRateMultiplier;
 
     const nudge = (traitKey, actual, exp, scale = 1) => {
       if (actual === null || exp === undefined) return;
@@ -319,14 +318,13 @@ class playerProgressionService {
       traits[traitKey] = clampTrait((traits[traitKey] ?? 50) + delta);
     };
 
-    nudge('three_point',       perf.three_pct, expected.three_pct, 40);   // pct diff scaled up
+    nudge('three_point',       perf.three_pct, expected.three_pct, 40);
     nudge('passing',           perf.assists,   expected.assists,   1);
-    nudge('ball_handling',    -perf.turnovers, -expected.turnovers, 1);   // fewer TOs is better
+    nudge('ball_handling',    -perf.turnovers, -expected.turnovers, 1);
     nudge('perimeter_defense', perf.steals,    expected.steals,    1);
     nudge('post_defense',      perf.blocks,    expected.blocks,    1);
     nudge('rebounding',        perf.rebounds,  expected.rebounds,  1);
 
-    // Efficiency (overall FG%) nudges inside_scoring/mid_range slightly
     if (agg.fga > 0) {
       const fgPct = agg.fgm / agg.fga;
       const expectedFgPct = 0.44 + ((traits.inside_scoring || 50) - 50) * 0.002;
@@ -336,29 +334,33 @@ class playerProgressionService {
     }
 
     // ── Pure age drift (independent of this batch's performance) ──
-    const drift = ageDriftRate(age);
+    // "late_bloomer" shifts the prime window later; "aging_gracefully" /
+    // "fading_fast" scale how hard the decline phase hits.
+    const effectiveAge = age - cardMods.primeAgeShift;
+    let drift = ageDriftRate(effectiveAge);
+    if (drift < 0) drift *= cardMods.declineMultiplier;
     for (const key of TRAIT_KEYS) {
       traits[key] = clampTrait((traits[key] ?? 50) + drift * 0.5 * usageFactor);
     }
 
-// ── Recalculate overall from updated traits, then pull toward potential ──
+    // ── Card-driven regression/variance events ──
+    // Injury-prone players occasionally take an extra setback; Iron Man /
+    // regression-resist cards dampen the chance and size of any setback.
+    let regressionEvent = 0;
+    const regressionChance = Math.max(0, 0.03 + cardMods.regressionRisk - cardMods.regressionResist);
+    if (Math.random() < regressionChance) {
+      const severity = 0.5 + Math.random() * 1.5; // 0.5–2.0 rating points
+      regressionEvent = -severity * (1 - Math.min(0.9, cardMods.regressionResist));
+    }
+
+    // ── Recalculate overall from updated traits, then pull toward potential ──
     const recalculated = this._recalculateOverall(traits, player.position);
-    const pull = potentialPullRate(age);
+    const pull = potentialPullRate(age) * cardMods.potentialPullMultiplier;
     const potentialPull = pull * (potential - recalculated) * usageFactor;
 
-    const ratingDelta = (recalculated - overall) + potentialPull;
+    const ratingDelta = (recalculated - overall) + potentialPull + regressionEvent;
 
     return { traits, ratingDelta };
-  }
-
-  static _recalculateOverall(traits, position) {
-    const weights = { ...OVERALL_WEIGHTS, ...(POS_OVERRIDES[position] || {}) };
-    const total = Object.values(weights).reduce((a, b) => a + b, 0);
-    let weightedSum = 0;
-    for (const key of TRAIT_KEYS) {
-      weightedSum += ((traits[key] ?? 50) * (weights[key] ?? 0.1)) / total;
-    }
-    return clampRating(Math.round(weightedSum));
   }
 }
 
