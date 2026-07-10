@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import ReactDOM from 'react-dom';
 import { GameResult } from '../../../api/leagueApi';
-import IndividualGameView from './tabComponents/IndividualGameView';
+import IndividualGameView from './tabComponents/IndividualGameViewFinal';
 import GamesListView from './tabComponents/GamesListView';
 import MiniCalendar from './tabComponents/MiniCalendar';
 import GameSnapshot from './tabComponents/GameSnapshot';

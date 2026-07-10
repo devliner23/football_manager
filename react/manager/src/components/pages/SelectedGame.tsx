@@ -453,6 +453,8 @@ const SelectedGame: React.FC<SelectedGameProps> = ({
                 allTeams={teams}
                 onSimulateToDate={handleSimulateToDate}
                 schedule={schedule}
+                currentTeam={managedClubId}
+                currentDate={lastSimulatedDate}
                 />
             )}
             {!loading && activeTab === 'leagueRoster' && (

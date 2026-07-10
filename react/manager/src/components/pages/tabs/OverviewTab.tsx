@@ -164,6 +164,8 @@ interface OverviewTabProps {
   allTeams: Team[];
   onSimulateToDate: (date: string) => void;
   schedule?: Record<number, GameResult[]>;
+  currentDate?: string | null;
+  currentTeam?: string | null;
 }
 
 const OverviewTab: React.FC<OverviewTabProps> = ({
@@ -178,7 +180,9 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   onGameClick,
   allTeams,
   onSimulateToDate,
-  schedule
+  schedule,
+  currentDate, 
+  currentTeam
 }) => {
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [showSimForwardPicker, setShowSimForwardPicker] = useState(false);
@@ -186,13 +190,21 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
 
   // ── Quick Continue day-list state ──
   const qcAnchorDate = useMemo(
-    () => (game.current_game_date ? new Date(game.current_game_date) : new Date()),
-    [game.current_game_date]
+    () => (currentDate ? new Date(currentDate + 'T00:00:00') : new Date()),
+    [currentDate]
   );
   const [qcVisibleCount, setQcVisibleCount] = useState(7);
   const [qcSelectedDate, setQcSelectedDate] = useState<string | null>(
-    game.current_game_date ? game.current_game_date.slice(0, 10) : null
+    currentDate ? currentDate.slice(0, 10) : null
   );
+
+  // Sync the selected quick-continue date when the simulation updates currentDate
+  useEffect(() => {
+    if (currentDate) {
+      setQcSelectedDate(currentDate.slice(0, 10));
+    }
+  }, [currentDate]);
+
   const qcListRef = useRef<HTMLDivElement | null>(null);
 
   const qcFormatDate = (d: Date) => {
@@ -399,18 +411,17 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
   }, [simForwardDate]);
 
   const endWeekDayLabel = useMemo(() => {
-    const base = game.current_game_date ? new Date(game.current_game_date) : new Date();
+    const base = currentDate ? new Date(currentDate + 'T00:00:00') : new Date();
     const dayOfWeek = base.getDay();
     const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
     const sunday = new Date(base);
     sunday.setDate(sunday.getDate() + daysUntilSunday);
     return sunday.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-  }, [game.current_game_date]);
-
+  }, [currentDate]);
+  
   const handleSimulateToWeekEnd = () => {
-    const base = game.current_game_date ? new Date(game.current_game_date) : new Date();
-    const dayOfWeek = base.getDay();
-    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+    const base = currentDate ? new Date(currentDate + 'T00:00:00') : new Date();
+    const dayOfWeek = base.getDay();    const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
     const sunday = new Date(base);
     sunday.setDate(sunday.getDate() + daysUntilSunday);
     const y = sunday.getFullYear();
@@ -465,8 +476,8 @@ const OverviewTab: React.FC<OverviewTabProps> = ({
               <div className="league-chip">
                 <span className="league-chip__label">Date</span>
                 <span className="league-chip__value">
-                  {game.current_game_date
-                    ? new Date(game.current_game_date).toLocaleDateString(undefined, {
+                  {currentDate
+                    ? new Date(currentDate + 'T00:00:00').toLocaleDateString(undefined, {
                         month: 'short',
                         day: 'numeric',
                       })

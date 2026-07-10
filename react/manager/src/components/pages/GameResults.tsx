@@ -6,7 +6,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { leagueAPI, GameResult } from '../../api/leagueApi';
-import IndividualGameView from './tabs/tabComponents/IndividualGameView';
+import IndividualGameView from './tabs/tabComponents/IndividualGameViewFinal';
 import './GameResults.css';
 
 interface GameResultsProps {

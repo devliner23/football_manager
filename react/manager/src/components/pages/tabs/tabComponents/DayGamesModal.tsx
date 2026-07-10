@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { GameResult } from '../../../../api/leagueApi';
 import { X, CalendarDays } from 'lucide-react';
-import IndividualGameView from './IndividualGameView';
+import ScheduledGameView from './IndividualGameViewScheduled';
 import './styles/DayGamesModal.css'
 
 interface TeamLite {
@@ -39,7 +39,7 @@ const DayGamesModal: React.FC<DayGamesModalProps> = ({ date, games, teams, onClo
       <div className="day-modal" onClick={(e) => e.stopPropagation()}>
         {selectedGame ? (
           teamMap.get(selectedGame.home_team_id) && teamMap.get(selectedGame.away_team_id) ? (
-            <IndividualGameView
+            <ScheduledGameView
               game={selectedGame}
               homeTeam={teamMap.get(selectedGame.home_team_id)!}
               awayTeam={teamMap.get(selectedGame.away_team_id)!}

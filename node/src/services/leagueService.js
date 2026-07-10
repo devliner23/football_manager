@@ -741,6 +741,51 @@ class leagueService {
     };
   }
 
+  async simulateToDate(targetDate, chunkSize = 500) {
+    if (!targetDate) throw new Error('targetDate is required');
+    const seasonId = await this.getCurrentSeasonId();
+
+    const [{ data: games, error: gamesErr }, { count, error: countErr }] = await Promise.all([
+      supabaseAdmin
+        .from('games')
+        .select('*')
+        .eq('season_id', seasonId)
+        .eq('status', 'scheduled')
+        .lte('game_date', `${targetDate}T23:59:59.999Z`)
+        .order('game_date', { ascending: true })
+        .limit(chunkSize),
+      supabaseAdmin
+        .from('games')
+        .select('id', { count: 'exact', head: true })
+        .eq('season_id', seasonId)
+        .eq('status', 'scheduled')
+        .lte('game_date', `${targetDate}T23:59:59.999Z`),
+    ]);
+    if (gamesErr) throw new Error(`Failed to fetch games: ${gamesErr.message}`);
+    if (countErr) throw new Error(`Failed to count games: ${countErr.message}`);
+    if (!games?.length) return { gamesSimulated: 0, gamesRemaining: 0, complete: true, results: [], summary: null };
+
+    const results = await this._bulkSimulateGames(games, seasonId, 'batch');
+    const maxSimDate = games[games.length - 1].game_date;
+    const state = await this._getGameState();
+    const summary = await this._buildSimSummary(games, results, state?.managed_club_id, seasonId);
+
+    this._gameStateCache = { ...state, last_simulated_to: maxSimDate, last_simulated_at: new Date().toISOString() };
+    this._currentGameDateCache = maxSimDate;
+    await supabaseAdmin
+      .from('saved_games')
+      .update({ current_game_date: maxSimDate, game_state: this._gameStateCache })
+      .eq('id', this.savedGameId);
+
+    return {
+      gamesSimulated: games.length,
+      gamesRemaining: Math.max(0, (count || 0) - games.length),
+      complete: (count || 0) <= games.length,
+      results,
+      summary,
+    };
+  }
+
   // ── Core Bulk Simulation (HOT PATH - HEAVILY OPTIMIZED) ─────────────────────
   async _bulkSimulateGames(games, seasonId, progressionType = 'batch') {
     if (!games?.length) return [];
@@ -1070,49 +1115,49 @@ class leagueService {
   }
 
   // ── Date-based Simulation ───────────────────────────────────────────────────
-  async simulateToDate(targetDate, chunkSize = 500) {
-    if (!targetDate) throw new Error('targetDate is required');
-    const seasonId = await this.getCurrentSeasonId();
+  // async simulateToDate(targetDate, chunkSize = 500) {
+  //   if (!targetDate) throw new Error('targetDate is required');
+  //   const seasonId = await this.getCurrentSeasonId();
 
-    const [{ data: games, error: gamesErr }, { count, error: countErr }] = await Promise.all([
-      supabaseAdmin
-        .from('games')
-        .select('*')
-        .eq('season_id', seasonId)
-        .eq('status', 'scheduled')
-        .lte('game_date', `${targetDate}T23:59:59.999Z`)
-        .order('game_date', { ascending: true })
-        .limit(chunkSize),
-      supabaseAdmin
-        .from('games')
-        .select('id', { count: 'exact', head: true })
-        .eq('season_id', seasonId)
-        .eq('status', 'scheduled')
-        .lte('game_date', `${targetDate}T23:59:59.999Z`),
-    ]);
-    if (gamesErr) throw new Error(`Failed to fetch games: ${gamesErr.message}`);
-    if (countErr) throw new Error(`Failed to count games: ${countErr.message}`);
-    if (!games?.length) return { gamesSimulated: 0, gamesRemaining: 0, complete: true, results: [], summary: null };
+  //   const [{ data: games, error: gamesErr }, { count, error: countErr }] = await Promise.all([
+  //     supabaseAdmin
+  //       .from('games')
+  //       .select('*')
+  //       .eq('season_id', seasonId)
+  //       .eq('status', 'scheduled')
+  //       .lte('game_date', `${targetDate}T23:59:59.999Z`)
+  //       .order('game_date', { ascending: true })
+  //       .limit(chunkSize),
+  //     supabaseAdmin
+  //       .from('games')
+  //       .select('id', { count: 'exact', head: true })
+  //       .eq('season_id', seasonId)
+  //       .eq('status', 'scheduled')
+  //       .lte('game_date', `${targetDate}T23:59:59.999Z`),
+  //   ]);
+  //   if (gamesErr) throw new Error(`Failed to fetch games: ${gamesErr.message}`);
+  //   if (countErr) throw new Error(`Failed to count games: ${countErr.message}`);
+  //   if (!games?.length) return { gamesSimulated: 0, gamesRemaining: 0, complete: true, results: [], summary: null };
 
-    const results = await this._bulkSimulateGames(games, seasonId, 'batch');
-    const maxSimDate = games[games.length - 1].game_date;
-    const state = await this._getGameState();
-    const summary = await this._buildSimSummary(games, results, state?.managed_club_id, seasonId);
+  //   const results = await this._bulkSimulateGames(games, seasonId, 'batch');
+  //   const maxSimDate = games[games.length - 1].game_date;
+  //   const state = await this._getGameState();
+  //   const summary = await this._buildSimSummary(games, results, state?.managed_club_id, seasonId);
 
-    this._gameStateCache = { ...state, last_simulated_to: maxSimDate, last_simulated_at: new Date().toISOString() };
-    await supabaseAdmin
-      .from('saved_games')
-      .update({ current_game_date: maxSimDate, game_state: this._gameStateCache })
-      .eq('id', this.savedGameId);
+  //   this._gameStateCache = { ...state, last_simulated_to: maxSimDate, last_simulated_at: new Date().toISOString() };
+  //   await supabaseAdmin
+  //     .from('saved_games')
+  //     .update({ current_game_date: maxSimDate, game_state: this._gameStateCache })
+  //     .eq('id', this.savedGameId);
 
-    return {
-      gamesSimulated: games.length,
-      gamesRemaining: Math.max(0, (count || 0) - games.length),
-      complete: (count || 0) <= games.length,
-      results,
-      summary,
-    };
-  }
+  //   return {
+  //     gamesSimulated: games.length,
+  //     gamesRemaining: Math.max(0, (count || 0) - games.length),
+  //     complete: (count || 0) <= games.length,
+  //     results,
+  //     summary,
+  //   };
+  // }
 
   async simulateSeason() {
     throw new Error('Use simulateWeek() or simulateToNextUserGame() instead.');

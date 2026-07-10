@@ -7,6 +7,7 @@ import {
   Crosshair,
   Filter,
 } from 'lucide-react';
+import { ScatterChart } from '@mui/x-charts/ScatterChart';
 import './styles/StandingsTab.css';
 
 interface StandingsTabProps {
@@ -205,7 +206,7 @@ function TableView({ rows }: { rows: EnrichedRow[] }) {
   );
 }
 
-// ── 3. Differential Scatter ──────────────────────────────────────────────────
+// ── 3. Differential Scatter (Modern MUI X Glass Implementation) ──────────
 function DifferentialView({ rows }: { rows: EnrichedRow[] }) {
   const playedRows = rows.filter(r => r.wins + r.losses > 0);
 
@@ -218,122 +219,176 @@ function DifferentialView({ rows }: { rows: EnrichedRow[] }) {
     );
   }
 
-  const margin = { top: 8, right: 12, bottom: 20, left: 20 };
-  const innerWidth  = 100 - margin.left - margin.right;
-  const innerHeight = 100 - margin.top  - margin.bottom;
+  // Format data for MUI X
+  const data = playedRows.map(row => {
+    const c = teamColor(row.team?.name ?? row.team_id);
+    return {
+      x: parseFloat(row.oppg.toFixed(1)),
+      y: parseFloat(row.ppg.toFixed(1)),
+      id: row.team_id,
+      name: row.team?.abbreviation ?? '???',
+      fullName: row.team?.name ?? 'Unknown',
+      diff: row.diff,
+      color: c,
+      isUser: row.isUser,
+    };
+  });
 
-  const ppgs  = playedRows.map(r => r.ppg);
-  const oppgs = playedRows.map(r => r.oppg);
-  let minX = Math.min(...oppgs);
-  let maxX = Math.max(...oppgs);
-  let minY = Math.min(...ppgs);
-  let maxY = Math.max(...ppgs);
+  // Calculate domain bounds
+  const minX = Math.floor(Math.min(...data.map(d => d.x)) - 2);
+  const maxX = Math.ceil(Math.max(...data.map(d => d.x)) + 2);
+  const minY = Math.floor(Math.min(...data.map(d => d.y)) - 2);
+  const maxY = Math.ceil(Math.max(...data.map(d => d.y)) + 2);
 
-  const padX = (maxX - minX) * 0.1 || 1;
-  const padY = (maxY - minY) * 0.1 || 1;
-  minX = Math.floor((minX - padX) * 10) / 10;
-  maxX = Math.ceil ((maxX + padX) * 10) / 10;
-  minY = Math.floor((minY - padY) * 10) / 10;
-  maxY = Math.ceil ((maxY + padY) * 10) / 10;
+  // Custom Glass Tooltip for MUI X
+  const CustomGlassTooltip = (props: any) => {
+    const pointData = props.context?.data?.[0];
+    if (!pointData?.series?.data) return null;
 
-  if (minX === maxX) { minX -= 1; maxX += 1; }
-  if (minY === maxY) { minY -= 1; maxY += 1; }
+    // Find the exact object from our array based on hover coordinates
+    const hoveredItem = pointData.series.data.find(
+      (d: any) => d.x === pointData.xAxis.value && d.y === pointData.yAxis.value
+    );
 
-  const toSvgX = (v: number) => margin.left + ((v - minX) / (maxX - minX)) * innerWidth;
-  const toSvgY = (v: number) => margin.top  + (1 - (v - minY) / (maxY - minY)) * innerHeight;
+    if (!hoveredItem) return null;
 
-  const diagStart = Math.max(minX, minY);
-  const diagEnd   = Math.min(maxX, maxY);
+    const diffStr = hoveredItem.diff >= 0 ? `+${hoveredItem.diff.toFixed(1)}` : hoveredItem.diff.toFixed(1);
 
-  function niceTicks(min: number, max: number, count = 4): number[] {
-    const range = max - min;
-    const step = Math.pow(10, Math.floor(Math.log10(range / count)));
-    const niceMin = Math.floor(min / step) * step;
-    const niceMax = Math.ceil(max / step) * step;
-    const ticks: number[] = [];
-    for (let v = niceMin; v <= niceMax + step/2; v += step) ticks.push(v);
-    return ticks;
-  }
+    return (
+      <div style={{
+        background: 'linear-gradient(135deg, rgba(20, 20, 30, 0.95), rgba(10, 10, 20, 0.98))',
+        backdropFilter: 'blur(20px)',
+        WebkitBackdropFilter: 'blur(20px)',
+        border: `1px solid ${hoveredItem.color.main}50`,
+        borderRadius: '12px',
+        padding: '12px 16px',
+        boxShadow: `0 10px 40px rgba(0,0,0,0.7), 0 0 20px ${hoveredItem.color.glass}`,
+      }}>
+        <p style={{ margin: '0 0 8px 0', fontSize: '0.85rem', fontWeight: 700, color: hoveredItem.color.main, letterSpacing: '0.5px' }}>
+          {hoveredItem.fullName}
+        </p>
+        <div style={{ display: 'flex', gap: '16px', fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)' }}>
+          <span>PPG: <strong style={{ color: '#fff' }}>{hoveredItem.y}</strong></span>
+          <span>OPPG: <strong style={{ color: '#fff' }}>{hoveredItem.x}</strong></span>
+          <span>DIFF: <strong style={{ color: hoveredItem.diff >= 0 ? '#4ade80' : '#f87171' }}>{diffStr}</strong></span>
+        </div>
+      </div>
+    );
+  };
 
-  const xTicks = niceTicks(minX, maxX);
-  const yTicks = niceTicks(minY, maxY);
+  // Custom Dot Component to render our Glass Circles & Abbreviations
+  const CustomScatterDot = (props: any) => {
+    const { x, y, dataIndex, series } = props;
+    const d = series?.data?.[dataIndex];
+    if (!d) return null;
+    const c = d.color;
 
-  const qLabels = [
-    { text: 'High Off / Low Def', x: margin.left + innerWidth * 0.05, y: margin.top + innerHeight * 0.08, anchor: 'start', color: '#4ade80' },
-    { text: 'Low Off / High Def', x: margin.left + innerWidth * 0.95, y: margin.top + innerHeight * 0.92, anchor: 'end', color: '#f87171' },
-  ];
+    if (d.isUser) {
+      return (
+        <g>
+          <circle cx={x} cy={y} r={12} fill="none" stroke={c.main} strokeWidth={1.5} opacity={0}>
+            <animate attributeName="r" values="8;14;8" dur="2s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.6;0;0.6" dur="2s" repeatCount="indefinite" />
+          </circle>
+          <circle cx={x} cy={y} r={8} fill="none" stroke={c.main} strokeWidth={1} opacity={0.4} />
+          <circle cx={x} cy={y} r={5} fill={c.glass} stroke={c.main} strokeWidth={2} />
+          <text x={x} y={y + 1} textAnchor="middle" dominantBaseline="middle" fill={c.main} fontSize="8" fontWeight="800" style={{ pointerEvents: 'none' }}>{d.name}</text>
+        </g>
+      );
+    }
+
+    return (
+      <g>
+        <circle cx={x} cy={y} r={6} fill={c.glass} stroke={c.main} strokeWidth={1.5} style={{ filter: `drop-shadow(0 0 4px ${c.glass})` }} />
+        <text x={x} y={y + 1} textAnchor="middle" dominantBaseline="middle" fill={c.main} fontSize="7" fontWeight="700" style={{ pointerEvents: 'none' }}>{d.name}</text>
+      </g>
+    );
+  };
+
+  // Custom SVG Injection for the 45-Degree Reference Line using MUI's internal D3 scales
+  const DiagonalReferenceLine = (props: any) => {
+    const { xAxis, yAxis } = props;
+    if (!xAxis?.[0]?.scale || !yAxis?.[0]?.scale) return null;
+
+    const xScale = xAxis[0].scale;
+    const yScale = yAxis[0].scale;
+    
+    const startVal = Math.max(minX, minY);
+    const endVal = Math.min(maxX, maxY);
+
+    if (endVal <= startVal) return null;
+
+    return (
+      <line
+        x1={xScale(startVal)}
+        y1={yScale(startVal)}
+        x2={xScale(endVal)}
+        y2={yScale(endVal)}
+        stroke="rgba(255, 255, 255, 0.15)"
+        strokeDasharray="5 5"
+        strokeWidth={2}
+      />
+    );
+  };
 
   return (
     <div className="diff-view">
       <div className="diff-axis-label diff-axis-label--y">Points Scored (PPG)</div>
 
-      <div className="diff-chart-wrap">
-        <div className="diff-y-ticks">
-          {yTicks.map(v => (
-            <span key={v} style={{ top: `${100 - ((v - minY) / (maxY - minY)) * 100}%` }}>
-              {v.toFixed(1)}
-            </span>
-          ))}
+      <div className="diff-chart-wrap" style={{ 
+        position: 'relative', 
+        width: '100%', 
+        height: '450px',
+        background: 'rgba(255, 255, 255, 0.02)',
+        border: '1px solid rgba(255, 255, 255, 0.06)',
+        borderRadius: '12px',
+        padding: '10px',
+        boxSizing: 'border-box',
+        backdropFilter: 'blur(10px)'
+      }}>
+        {/* Quadrant Labels */}
+        <div style={{ position: 'absolute', top: 24, left: 24, fontSize: '0.65rem', color: 'rgba(74, 222, 128, 0.4)', fontWeight: 600, pointerEvents: 'none', zIndex: 10 }}>
+          GOOD OFFENSE
+        </div>
+        <div style={{ position: 'absolute', bottom: 34, right: 24, fontSize: '0.65rem', color: 'rgba(248, 113, 113, 0.4)', fontWeight: 600, pointerEvents: 'none', zIndex: 10 }}>
+          BAD DEFENSE
         </div>
 
-        <svg className="diff-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-          <defs>
-            <linearGradient id="posGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="rgba(74,222,128,0.06)" />
-              <stop offset="100%" stopColor="transparent" />
-            </linearGradient>
-            <linearGradient id="negGrad" x1="0" y1="1" x2="0" y2="0">
-              <stop offset="0%" stopColor="rgba(248,113,113,0.06)" />
-              <stop offset="100%" stopColor="transparent" />
-            </linearGradient>
-          </defs>
-
-          <rect x={margin.left} y={margin.top} width={innerWidth} height={innerHeight} fill="rgba(255,255,255,0.015)" rx="1" />
-          
-          {xTicks.map(v => <line key={`xg-${v}`} x1={toSvgX(v)} y1={margin.top} x2={toSvgX(v)} y2={margin.top + innerHeight} stroke="rgba(255,255,255,0.06)" strokeWidth="0.4" />)}
-          {yTicks.map(v => <line key={`yg-${v}`} x1={margin.left} y1={toSvgY(v)} x2={margin.left + innerWidth} y2={toSvgY(v)} stroke="rgba(255,255,255,0.06)" strokeWidth="0.4" />)}
-
-          <line x1={margin.left} y1={margin.top + innerHeight} x2={margin.left + innerWidth} y2={margin.top + innerHeight} stroke="rgba(255,255,255,0.2)" strokeWidth="0.6" />
-          <line x1={margin.left} y1={margin.top} x2={margin.left} y2={margin.top + innerHeight} stroke="rgba(255,255,255,0.2)" strokeWidth="0.6" />
-
-          <line x1={toSvgX(diagStart)} y1={toSvgY(diagStart)} x2={toSvgX(diagEnd)} y2={toSvgY(diagEnd)} stroke="rgba(255,255,255,0.15)" strokeWidth="0.8" strokeDasharray="3 3" />
-
-          <rect x={margin.left} y={margin.top} width={innerWidth} height={innerHeight} fill="url(#posGrad)" />
-          <rect x={margin.left} y={margin.top} width={innerWidth} height={innerHeight} fill="url(#negGrad)" />
-
-          {qLabels.map((ql, i) => (
-            <text key={i} x={ql.x} y={ql.y} fontSize="2.2" fill={ql.color} opacity="0.4" fontWeight="600" style={{ pointerEvents: 'none', userSelect: 'none' }}>{ql.text}</text>
-          ))}
-
-          {playedRows.map(row => {
-            const cx = toSvgX(row.oppg);
-            const cy = toSvgY(row.ppg);
-            const c = teamColor(row.team?.name ?? row.team_id);
-            const abbr = row.team?.abbreviation ?? '???';
-            const r = row.isUser ? 4.5 : 3.2;
-
-            return (
-              <g key={row.team_id} className="bubble-group">
-                {row.isUser && (
-                  <circle cx={cx} cy={cy} r={r + 2.5} fill="none" stroke={c.main} strokeWidth="0.8" opacity="0.6">
-                    <animate attributeName="r" values={`${r + 2};${r + 4};${r + 2}`} dur="2s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="0.6;0.2;0.6" dur="2s" repeatCount="indefinite" />
-                  </circle>
-                )}
-                <circle cx={cx} cy={cy} r={r} fill={c.glass} stroke={c.main} strokeWidth="0.6" />
-                <text x={cx} y={cy + 1} textAnchor="middle" fontSize="2.2" fontWeight="700" fill={c.main} style={{ pointerEvents: 'none', userSelect: 'none' }}>{abbr}</text>
-              </g>
-            );
-          })}
-
-          {xTicks.map(v => (
-            <text key={`xt-${v}`} x={toSvgX(v)} y={margin.top + innerHeight + 3.5} textAnchor="middle" fontSize="2.4" fill="rgba(255,255,255,0.4)" style={{ pointerEvents: 'none', userSelect: 'none' }}>{v.toFixed(1)}</text>
-          ))}
-        </svg>
+        <ScatterChart
+          margin={{ top: 20, right: 30, bottom: 40, left: 40 }}
+          sx={{
+            '.MuiChartsAxis-line': { stroke: 'rgba(255, 255, 255, 0.15)' },
+            '.MuiChartsAxis-tick': { stroke: 'rgba(255, 255, 255, 0.15)' },
+            '.MuiChartsAxis-tickLabel': { fill: 'rgba(255, 255, 255, 0.4)', fontSize: '11px' },
+            '.MuiChartsGrid-line': { stroke: 'rgba(255, 255, 255, 0.04)', strokeDasharray: '3 3' },
+          }}
+          xAxis={[{
+            min: minX,
+            max: maxX,
+            label: 'Points Allowed (OPPG)',
+            labelStyle: { fill: 'rgba(255, 255, 255, 0.5)', fontSize: '12px', fontWeight: 600 },
+          }]}
+          yAxis={[{
+            min: minY,
+            max: maxY,
+            label: 'Points Scored (PPG)',
+            labelStyle: { fill: 'rgba(255, 255, 255, 0.5)', fontSize: '12px', fontWeight: 600 },
+          }]}
+          series={[{
+            data: data,
+            markerSize: 8,
+            // Hide default MUI X dot borders by making them transparent
+            color: 'transparent', 
+          }]}
+          slots={{
+            tooltip: CustomGlassTooltip,
+          }}
+        />
       </div>
 
       <div className="diff-axis-label diff-axis-label--x">Points Allowed (OPPG)</div>
 
+      {/* Legend */}
       <div className="diff-legend">
         {playedRows.map(row => {
           const c = teamColor(row.team?.name ?? row.team_id);
