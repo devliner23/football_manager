@@ -1,95 +1,882 @@
 {
-  "firstNames": [
-    "James","Michael","Marcus","Anthony","Brandon","Tyler","Jordan","Isaiah",
-    "Malik","Andre","Devin","Carlos","Xavier","Elijah","Caleb","Dominic",
-    "Jalen","Trevor","Aaron","Nathaniel","Cameron","Julian","Mason","Eli",
-    "Tristan","Marco","Damon","Reggie","Theo","Quentin"
-  ],
-  "lastNames": [
-    "Carter","Bennett","Walker","Reed","Foster","Coleman","Hayes","Sullivan",
-    "Mercer","Whitfield","Donovan","Pierce","Hawkins","Lawson","Vance","Mosley",
-    "Whitaker","Sterling","Marsh","Calloway","Beckett","Hollis","Sandoval",
-    "Pruitt","Thatcher","Galloway","Brewer","Stone","Nakamura","Okafor"
-  ],
-  "traitDefinitions": {
-    "clutch_shooter": { "name": "Clutch Shooter", "category": "Shooting", "base": 40, "variance": 30 },
-    "deep_range": { "name": "Deep Range", "category": "Shooting", "base": 40, "variance": 30 },
-    "mid_range": { "name": "Mid-Range Maestro", "category": "Shooting", "base": 40, "variance": 30 },
-    "catch_shoot": { "name": "Catch & Shoot", "category": "Shooting", "base": 40, "variance": 30 },
-    "stepback": { "name": "Stepback Specialist", "category": "Shooting", "base": 40, "variance": 30 },
-    "finisher": { "name": "Finisher", "category": "Scoring", "base": 40, "variance": 30 },
-    "slasher": { "name": "Slasher", "category": "Scoring", "base": 40, "variance": 30 },
-    "post_scorer": { "name": "Post Scorer", "category": "Scoring", "base": 40, "variance": 30 },
-    "float_game": { "name": "Floater Game", "category": "Scoring", "base": 40, "variance": 30 },
-    "floor_general": { "name": "Floor General", "category": "Playmaking", "base": 40, "variance": 30 },
-    "dimer": { "name": "Dimer", "category": "Playmaking", "base": 40, "variance": 30 },
-    "handles": { "name": "Ball Handler", "category": "Playmaking", "base": 40, "variance": 30 },
-    "breakstarter": { "name": "Break Starter", "category": "Playmaking", "base": 40, "variance": 30 },
-    "lockdown": { "name": "Lockdown Defender", "category": "Defense", "base": 40, "variance": 30 },
-    "rim_protector": { "name": "Rim Protector", "category": "Defense", "base": 40, "variance": 30 },
-    "pickpocket": { "name": "Pickpocket", "category": "Defense", "base": 40, "variance": 30 },
-    "chase_down": { "name": "Chase Down", "category": "Defense", "base": 40, "variance": 30 },
-    "speedster": { "name": "Speedster", "category": "Athleticism", "base": 40, "variance": 30 },
-    "vertical": { "name": "High Flyer", "category": "Athleticism", "base": 40, "variance": 30 },
-    "stamina": { "name": "Iron Man", "category": "Athleticism", "base": 40, "variance": 30 },
-    "clutch_performer": { "name": "Clutch Performer", "category": "Clutch", "base": 40, "variance": 30 },
-    "microwave": { "name": "Microwave", "category": "Clutch", "base": 40, "variance": 30 },
-    "ice_veins": { "name": "Ice Veins", "category": "Clutch", "base": 40, "variance": 30 },
-    "leader": { "name": "Leader", "category": "Intangible", "base": 40, "variance": 30 },
-    "glue_guy": { "name": "Glue Guy", "category": "Intangible", "base": 40, "variance": 30 },
-    "hustle": { "name": "Hustle", "category": "Intangible", "base": 40, "variance": 30 }
+  "rosterComposition": {
+    "total": 53,
+    "byPosition": {
+      "QB": 3,
+      "RB": 3,
+      "FB": 1,
+      "WR": 7,
+      "TE": 3,
+      "LT": 2,
+      "LG": 1,
+      "C": 2,
+      "RG": 1,
+      "RT": 2,
+      "DE": 4,
+      "DT": 3,
+      "NT": 1,
+      "OLB": 4,
+      "MLB": 2,
+      "ILB": 1,
+      "CB": 6,
+      "FS": 2,
+      "SS": 2,
+      "K": 1,
+      "P": 1,
+      "LS": 1
+    },
+    "practiceSquad": 0
   },
-  "positionHeights": {
-    "PG": [70, 76],
-    "SG": [73, 79],
-    "SF": [76, 82],
-    "PF": [79, 85],
-    "C":  [82, 88]
+  "positionGroups": {
+    "QB": [
+      "QB"
+    ],
+    "RB": [
+      "RB",
+      "FB"
+    ],
+    "WR": [
+      "WR"
+    ],
+    "TE": [
+      "TE"
+    ],
+    "OL": [
+      "LT",
+      "LG",
+      "C",
+      "RG",
+      "RT"
+    ],
+    "DL": [
+      "DE",
+      "DT",
+      "NT"
+    ],
+    "LB": [
+      "OLB",
+      "MLB",
+      "ILB"
+    ],
+    "DB": [
+      "CB",
+      "FS",
+      "SS"
+    ],
+    "ST": [
+      "K",
+      "P",
+      "LS"
+    ]
+  },
+  "positionPhysicals": {
+    "QB": {
+      "height": [
+        73,
+        78
+      ],
+      "weight": [
+        205,
+        240
+      ]
+    },
+    "RB": {
+      "height": [
+        68,
+        74
+      ],
+      "weight": [
+        195,
+        230
+      ]
+    },
+    "FB": {
+      "height": [
+        71,
+        74
+      ],
+      "weight": [
+        235,
+        255
+      ]
+    },
+    "WR": {
+      "height": [
+        69,
+        77
+      ],
+      "weight": [
+        175,
+        225
+      ]
+    },
+    "TE": {
+      "height": [
+        75,
+        79
+      ],
+      "weight": [
+        240,
+        265
+      ]
+    },
+    "LT": {
+      "height": [
+        76,
+        80
+      ],
+      "weight": [
+        300,
+        330
+      ]
+    },
+    "LG": {
+      "height": [
+        75,
+        79
+      ],
+      "weight": [
+        305,
+        335
+      ]
+    },
+    "C": {
+      "height": [
+        74,
+        78
+      ],
+      "weight": [
+        295,
+        320
+      ]
+    },
+    "RG": {
+      "height": [
+        75,
+        79
+      ],
+      "weight": [
+        305,
+        335
+      ]
+    },
+    "RT": {
+      "height": [
+        76,
+        80
+      ],
+      "weight": [
+        305,
+        335
+      ]
+    },
+    "DE": {
+      "height": [
+        74,
+        79
+      ],
+      "weight": [
+        255,
+        290
+      ]
+    },
+    "DT": {
+      "height": [
+        73,
+        78
+      ],
+      "weight": [
+        290,
+        320
+      ]
+    },
+    "NT": {
+      "height": [
+        72,
+        77
+      ],
+      "weight": [
+        310,
+        350
+      ]
+    },
+    "OLB": {
+      "height": [
+        73,
+        77
+      ],
+      "weight": [
+        235,
+        260
+      ]
+    },
+    "MLB": {
+      "height": [
+        72,
+        76
+      ],
+      "weight": [
+        230,
+        255
+      ]
+    },
+    "ILB": {
+      "height": [
+        72,
+        76
+      ],
+      "weight": [
+        230,
+        255
+      ]
+    },
+    "CB": {
+      "height": [
+        69,
+        74
+      ],
+      "weight": [
+        180,
+        205
+      ]
+    },
+    "FS": {
+      "height": [
+        70,
+        75
+      ],
+      "weight": [
+        190,
+        210
+      ]
+    },
+    "SS": {
+      "height": [
+        70,
+        75
+      ],
+      "weight": [
+        200,
+        220
+      ]
+    },
+    "K": {
+      "height": [
+        70,
+        75
+      ],
+      "weight": [
+        180,
+        210
+      ]
+    },
+    "P": {
+      "height": [
+        72,
+        77
+      ],
+      "weight": [
+        190,
+        220
+      ]
+    },
+    "LS": {
+      "height": [
+        72,
+        76
+      ],
+      "weight": [
+        235,
+        255
+      ]
+    }
   },
   "ageRanges": {
-    "rookie": [19, 22],
-    "star": [24, 32],
-    "rolePlayer": [22, 35],
-    "bench": [22, 35]
+    "rookie": [
+      21,
+      23
+    ],
+    "star": [
+      24,
+      31
+    ],
+    "rolePlayer": [
+      23,
+      33
+    ],
+    "bench": [
+      22,
+      34
+    ],
+    "kickerException": [
+      22,
+      40
+    ]
   },
-  "weightRange": [160, 290],
-  "ratingAdjustments": {
-    "starter": [5, 15],
-    "bench": [-5, 5],
-    "star": [5, 15],
-    "randomVariation": [-5, 5]
+  "universalAttributes": [
+    "speed",
+    "acceleration",
+    "agility",
+    "strength",
+    "stamina",
+    "awareness",
+    "injury_resistance"
+  ],
+  "positionSkills": {
+    "QB": [
+      "throw_power",
+      "throw_accuracy_short",
+      "throw_accuracy_mid",
+      "throw_accuracy_deep",
+      "decision_making",
+      "pocket_presence",
+      "scramble",
+      "play_action"
+    ],
+    "RB": [
+      "vision",
+      "elusiveness",
+      "break_tackle",
+      "carrying",
+      "receiving",
+      "pass_block",
+      "burst"
+    ],
+    "FB": [
+      "run_block",
+      "carrying",
+      "receiving",
+      "break_tackle"
+    ],
+    "WR": [
+      "catching",
+      "route_running",
+      "release",
+      "deep_threat",
+      "run_after_catch",
+      "contested_catch"
+    ],
+    "TE": [
+      "catching",
+      "route_running",
+      "run_block",
+      "pass_block",
+      "contested_catch"
+    ],
+    "LT": [
+      "pass_block",
+      "run_block",
+      "anchor",
+      "footwork"
+    ],
+    "LG": [
+      "run_block",
+      "pass_block",
+      "anchor",
+      "pull_speed"
+    ],
+    "C": [
+      "run_block",
+      "pass_block",
+      "anchor",
+      "line_calls"
+    ],
+    "RG": [
+      "run_block",
+      "pass_block",
+      "anchor",
+      "pull_speed"
+    ],
+    "RT": [
+      "pass_block",
+      "run_block",
+      "anchor",
+      "footwork"
+    ],
+    "DE": [
+      "pass_rush_finesse",
+      "pass_rush_power",
+      "run_stop",
+      "shed_block",
+      "pursuit"
+    ],
+    "DT": [
+      "pass_rush_power",
+      "run_stop",
+      "shed_block",
+      "anchor"
+    ],
+    "NT": [
+      "run_stop",
+      "anchor",
+      "shed_block"
+    ],
+    "OLB": [
+      "blitz",
+      "coverage_zone",
+      "tackling",
+      "run_stop",
+      "pursuit"
+    ],
+    "MLB": [
+      "tackling",
+      "coverage_zone",
+      "run_stop",
+      "play_recognition",
+      "blitz"
+    ],
+    "ILB": [
+      "tackling",
+      "coverage_zone",
+      "run_stop",
+      "play_recognition"
+    ],
+    "CB": [
+      "coverage_man",
+      "coverage_zone",
+      "press",
+      "ball_skills",
+      "tackling"
+    ],
+    "FS": [
+      "coverage_zone",
+      "ball_skills",
+      "range",
+      "tackling",
+      "play_recognition"
+    ],
+    "SS": [
+      "tackling",
+      "coverage_zone",
+      "run_support",
+      "blitz",
+      "ball_skills"
+    ],
+    "K": [
+      "kick_power",
+      "kick_accuracy",
+      "clutch"
+    ],
+    "P": [
+      "punt_power",
+      "punt_hang_time",
+      "punt_placement"
+    ],
+    "LS": [
+      "snap_accuracy",
+      "snap_speed"
+    ]
+  },
+  "skillGeneration": {
+    "base": 45,
+    "variance": 25,
+    "ratingAdjustments": {
+      "star": [
+        8,
+        18
+      ],
+      "starter": [
+        4,
+        12
+      ],
+      "rolePlayer": [
+        -2,
+        6
+      ],
+      "bench": [
+        -8,
+        2
+      ],
+      "randomVariation": [
+        -4,
+        4
+      ]
+    },
+    "speedByPositionGroup": {
+      "QB": [
+        -5,
+        5
+      ],
+      "RB": [
+        8,
+        18
+      ],
+      "WR": [
+        10,
+        20
+      ],
+      "TE": [
+        0,
+        8
+      ],
+      "OL": [
+        -25,
+        -12
+      ],
+      "DL": [
+        -15,
+        -5
+      ],
+      "LB": [
+        0,
+        8
+      ],
+      "DB": [
+        8,
+        18
+      ],
+      "ST": [
+        -10,
+        0
+      ]
+    }
+  },
+  "traits": {
+    "field_general": {
+      "name": "Field General",
+      "positions": [
+        "QB"
+      ],
+      "category": "Mental"
+    },
+    "gunslinger": {
+      "name": "Gunslinger",
+      "positions": [
+        "QB"
+      ],
+      "category": "Passing"
+    },
+    "escape_artist": {
+      "name": "Escape Artist",
+      "positions": [
+        "QB"
+      ],
+      "category": "Mobility"
+    },
+    "workhorse": {
+      "name": "Workhorse",
+      "positions": [
+        "RB"
+      ],
+      "category": "Stamina",
+      "effect": "fatigue_accrual_x0.8"
+    },
+    "home_run_threat": {
+      "name": "Home Run Threat",
+      "positions": [
+        "RB",
+        "WR"
+      ],
+      "category": "Speed"
+    },
+    "possession": {
+      "name": "Possession Receiver",
+      "positions": [
+        "WR",
+        "TE"
+      ],
+      "category": "Hands"
+    },
+    "deep_ball_magnet": {
+      "name": "Deep Ball Magnet",
+      "positions": [
+        "WR"
+      ],
+      "category": "Hands"
+    },
+    "road_grader": {
+      "name": "Road Grader",
+      "positions": [
+        "LT",
+        "LG",
+        "C",
+        "RG",
+        "RT",
+        "FB"
+      ],
+      "category": "Blocking"
+    },
+    "blindside_wall": {
+      "name": "Blindside Wall",
+      "positions": [
+        "LT"
+      ],
+      "category": "Blocking"
+    },
+    "edge_bender": {
+      "name": "Edge Bender",
+      "positions": [
+        "DE",
+        "OLB"
+      ],
+      "category": "Pass Rush"
+    },
+    "run_stuffer": {
+      "name": "Run Stuffer",
+      "positions": [
+        "DT",
+        "NT",
+        "MLB"
+      ],
+      "category": "Run Defense"
+    },
+    "ball_hawk": {
+      "name": "Ball Hawk",
+      "positions": [
+        "CB",
+        "FS",
+        "SS"
+      ],
+      "category": "Turnovers"
+    },
+    "shutdown": {
+      "name": "Shutdown Corner",
+      "positions": [
+        "CB"
+      ],
+      "category": "Coverage"
+    },
+    "enforcer": {
+      "name": "Enforcer",
+      "positions": [
+        "SS",
+        "MLB"
+      ],
+      "category": "Tackling"
+    },
+    "iron_man": {
+      "name": "Iron Man",
+      "positions": [
+        "*"
+      ],
+      "category": "Durability",
+      "effect": "injury_prob_x0.6"
+    },
+    "glass": {
+      "name": "Injury Prone",
+      "positions": [
+        "*"
+      ],
+      "category": "Durability",
+      "effect": "injury_prob_x1.6",
+      "negative": true
+    },
+    "clutch": {
+      "name": "Clutch",
+      "positions": [
+        "*"
+      ],
+      "category": "Mental"
+    },
+    "locker_room_leader": {
+      "name": "Locker Room Leader",
+      "positions": [
+        "*"
+      ],
+      "category": "Intangible"
+    },
+    "motor": {
+      "name": "Nonstop Motor",
+      "positions": [
+        "DE",
+        "DT",
+        "OLB",
+        "MLB"
+      ],
+      "category": "Stamina",
+      "effect": "fatigue_accrual_x0.85"
+    }
   },
   "numTraitsByRating": {
-    "90": [6, 8],
-    "80": [4, 6],
-    "70": [2, 4],
-    "default": [1, 2]
+    "90": [
+      3,
+      4
+    ],
+    "80": [
+      2,
+      3
+    ],
+    "70": [
+      1,
+      2
+    ],
+    "default": [
+      0,
+      1
+    ]
   },
-  "positionTraitPools": {
-    "PG": ["dimer", "floor_general", "handles", "breakstarter", "speedster", "pickpocket", "clutch_performer", "leader"],
-    "SG": ["catch_shoot", "stepback", "deep_range", "mid_range", "slasher", "lockdown", "microwave", "ice_veins"],
-    "SF": ["slasher", "finisher", "mid_range", "deep_range", "lockdown", "chase_down", "speedster", "vertical"],
-    "PF": ["post_scorer", "finisher", "mid_range", "rim_protector", "lockdown", "vertical", "hustle", "glue_guy"],
-    "C":  ["post_scorer", "rim_protector", "finisher", "lockdown", "vertical", "hustle", "stamina", "glue_guy"]
+  "fatigueModel": {
+    "comment": "fatigue is 0-100 on players; accrued per game from snaps, recovered weekly via recover_fatigue().",
+    "accrualPerSnapByGroup": {
+      "QB": 0.28,
+      "RB": 0.55,
+      "WR": 0.42,
+      "TE": 0.4,
+      "OL": 0.38,
+      "DL": 0.5,
+      "LB": 0.42,
+      "DB": 0.4,
+      "ST": 0.1
+    },
+    "staminaScaling": "accrual * (1 - (stamina - 50) * 0.006)",
+    "weeklyRecoveryBase": 25,
+    "weeklyRecoveryStaminaBonus": "(stamina - 50) * 0.3",
+    "byeWeekMultiplier": 2.0,
+    "performancePenalty": {
+      "comment": "sim engine multiplies effective skill checks by this",
+      "formula": "1 - max(0, fatigue - 30) * 0.004",
+      "floor": 0.75
+    },
+    "autoRestThreshold": 85,
+    "autoRestComment": "DepthChartService benches a player above this unless user overrides"
   },
-  "extraTraitsForStars": ["clutch_performer", "ice_veins", "floor_general"],
-  "skillAttributes": {
-    "keys": ["three_point", "mid_range", "inside", "passing", "ball_handling", "perimeter_defense", "interior_defense", "rebounding", "speed", "strength"],
-    "positionModifiers": {
-      "PG": { "three_point": 6, "mid_range": 3, "inside": -8, "passing": 10, "ball_handling": 12, "perimeter_defense": 4, "interior_defense": -10, "rebounding": -12, "speed": 8, "strength": -6 },
-      "SG": { "three_point": 8, "mid_range": 5, "inside": -4, "passing": 2, "ball_handling": 6, "perimeter_defense": 4, "interior_defense": -8, "rebounding": -8, "speed": 5, "strength": -3 },
-      "SF": { "three_point": 2, "mid_range": 2, "inside": 2, "passing": 0, "ball_handling": 0, "perimeter_defense": 2, "interior_defense": 0, "rebounding": 0, "speed": 2, "strength": 0 },
-      "PF": { "three_point": -4, "mid_range": -2, "inside": 6, "passing": -4, "ball_handling": -6, "perimeter_defense": -2, "interior_defense": 6, "rebounding": 8, "speed": -3, "strength": 6 },
-      "C":  { "three_point": -10, "mid_range": -6, "inside": 8, "passing": -8, "ball_handling": -10, "perimeter_defense": -6, "interior_defense": 10, "rebounding": 14, "speed": -8, "strength": 10 }    },
-    "overallWeights": {
-      "PG": { "three_point": 1, "mid_range": 1, "inside": 0.5, "passing": 2, "ball_handling": 1.5, "perimeter_defense": 1, "interior_defense": 0.3, "rebounding": 0.4, "speed": 1.2, "strength": 0.5 },
-      "SG": { "three_point": 1.5, "mid_range": 1.3, "inside": 0.8, "passing": 1, "ball_handling": 1.2, "perimeter_defense": 1, "interior_defense": 0.4, "rebounding": 0.5, "speed": 1, "strength": 0.6 },
-      "SF": { "three_point": 1.1, "mid_range": 1.1, "inside": 1.1, "passing": 0.9, "ball_handling": 0.9, "perimeter_defense": 1, "interior_defense": 0.8, "rebounding": 0.9, "speed": 0.9, "strength": 0.9 },
-      "PF": { "three_point": 0.6, "mid_range": 0.9, "inside": 1.3, "passing": 0.6, "ball_handling": 0.5, "perimeter_defense": 0.7, "interior_defense": 1.3, "rebounding": 1.4, "speed": 0.6, "strength": 1.2 },
-      "C":  { "three_point": 0.3, "mid_range": 0.6, "inside": 1.4, "passing": 0.5, "ball_handling": 0.3, "perimeter_defense": 0.5, "interior_defense": 1.6, "rebounding": 1.7, "speed": 0.5, "strength": 1.4 }
+  "injuryModel": {
+    "baseProbPerSnap": 0.00035,
+    "fatigueMultiplier": "1 + max(0, fatigue - 40) * 0.02",
+    "injuryResistanceScaling": "prob * (1 - (injury_resistance - 50) * 0.008)",
+    "positionRiskMultiplier": {
+      "QB": 0.8,
+      "RB": 1.5,
+      "FB": 1.2,
+      "WR": 1.0,
+      "TE": 1.1,
+      "LT": 0.9,
+      "LG": 0.9,
+      "C": 0.9,
+      "RG": 0.9,
+      "RT": 0.9,
+      "DE": 1.1,
+      "DT": 1.0,
+      "NT": 1.0,
+      "OLB": 1.1,
+      "MLB": 1.2,
+      "ILB": 1.2,
+      "CB": 1.0,
+      "FS": 1.0,
+      "SS": 1.1,
+      "K": 0.2,
+      "P": 0.2,
+      "LS": 0.3
+    },
+    "severityTable": [
+      {
+        "status": "questionable",
+        "weeks": [
+          0,
+          1
+        ],
+        "probability": 0.45,
+        "examples": [
+          "bruised ribs",
+          "ankle sprain",
+          "shoulder stinger"
+        ]
       },
-      "attributeNoise": 9,
-      "minAttr": 25,
-      "maxAttr": 99
+      {
+        "status": "doubtful",
+        "weeks": [
+          1,
+          2
+        ],
+        "probability": 0.25,
+        "examples": [
+          "hamstring strain",
+          "knee sprain",
+          "concussion protocol"
+        ]
+      },
+      {
+        "status": "out",
+        "weeks": [
+          2,
+          6
+        ],
+        "probability": 0.22,
+        "examples": [
+          "high ankle sprain",
+          "MCL sprain",
+          "broken hand"
+        ]
+      },
+      {
+        "status": "ir",
+        "weeks": [
+          6,
+          18
+        ],
+        "probability": 0.08,
+        "examples": [
+          "ACL tear",
+          "Achilles rupture",
+          "broken leg"
+        ]
+      }
+    ]
+  },
+  "depthChartSlots": {
+    "offense": [
+      "QB",
+      "RB1",
+      "RB2",
+      "FB",
+      "WR1",
+      "WR2",
+      "SLOT",
+      "TE1",
+      "TE2",
+      "LT",
+      "LG",
+      "C",
+      "RG",
+      "RT"
+    ],
+    "defense": [
+      "LE",
+      "RE",
+      "DT1",
+      "DT2",
+      "OLB1",
+      "OLB2",
+      "MLB",
+      "CB1",
+      "CB2",
+      "NICKEL",
+      "FS",
+      "SS"
+    ],
+    "special_teams": [
+      "K",
+      "P",
+      "LS",
+      "KR",
+      "PR"
+    ]
+  },
+  "contractModel": {
+    "salaryCap": 255000000,
+    "leagueMinimumByYearsPro": [
+      900000,
+      1000000,
+      1100000,
+      1200000
+    ],
+    "rookieScaleByRound": [
+      9000000,
+      4500000,
+      2200000,
+      1500000,
+      1200000,
+      1050000,
+      950000
+    ],
+    "starSalaryRange": [
+      20000000,
+      55000000
+    ],
+    "starterSalaryRange": [
+      6000000,
+      20000000
+    ],
+    "deadCapComment": "on cut/trade, remaining signing_bonus_proration accelerates to current year"
   }
 }
